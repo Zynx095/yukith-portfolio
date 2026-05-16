@@ -98,7 +98,7 @@ function ContactScene() {
           </p>
           <div data-contact-reveal="" className="flex flex-wrap gap-3">
             <motion.a
-              href="mailto:hello@yukith.dev"
+              href="mailto:yukithj@gmail.com"
               className="font-mono uppercase rounded-full px-7 py-3 text-[#111113] bg-[var(--accent-cyan)]"
               style={{ fontSize: "11px", letterSpacing: "0.2em" }}
               whileHover={{ scale: 1.04, boxShadow: "0 0 40px rgba(0,212,255,0.4)" }}
