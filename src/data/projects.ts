@@ -1,79 +1,131 @@
-export const PROJECTS = [
-{
-id: "01",
-title: "AURA\n  SYSTEM",
-role: "AI Operating System",
-year: "2026",
-tags: ["Next.js", "FastAPI", "Whisper AI"],
-accent: "#00d4ff",
-desc: "Experimental AI ecosystem combining real-time voice interaction, memory systems, orchestration pipelines, immersive UI systems, and multimodal AI workflows.",
-stat1: { n: "Realtime", l: "Inference" },
-stat2: { n: "Modular", l: "Architecture" },
-github: "https://github.com/Zynx095/AURA",
-},
+export interface Project {
+  id: string;
+  title: string;
+  role: string;
+  year: string;
+  tags: string[];
+  accent: string;
+  desc: string;
+  verifiedFeatures?: string[];
+  github?: string;
+  isPlaceholder?: boolean;
+}
 
-{
-id: "02",
-title: "SHADOW\n  GUARD",
-role: "Cybersecurity System",
-year: "2026",
-tags: ["Python", "DLP", "AI Security"],
-accent: "#7dd3fc",
-desc: "Enterprise-grade AI security system preventing unauthorized LLM data exfiltration using real-time detection and automated enforcement systems.",
-stat1: { n: "24/7", l: "Monitoring" },
-stat2: { n: "AI", l: "Detection" },
-github: "https://github.com/Zynx095/shadowguard",
-},
-
-{
-id: "03",
-title: "SUGAR\n  AI",
-role: "Offline Voice Assistant",
-year: "2025",
-tags: ["Whisper", "Ollama", "Python"],
-accent: "#a5b4fc",
-desc: "Offline-first multimodal AI assistant with wake-word activation, low-latency voice pipelines, and local LLM orchestration.",
-stat1: { n: "<1s", l: "Latency" },
-stat2: { n: "Offline", l: "Inference" },
-github: "https://github.com/Zynx095/SUGAR-AI",
-},
-
-{
-id: "04",
-title: "EDITH\n  AR",
-role: "AR Interface System",
-year: "2025",
-tags: ["ESP32", "IoT", "AR HUD"],
-accent: "#93c5fd",
-desc: "Wearable augmented reality HUD system using optics, embedded hardware, and modular interface architecture.",
-stat1: { n: "AR", l: "Display" },
-stat2: { n: "HUD", l: "Interface" },
-github: "https://github.com/Zynx095/edith-ar-system",
-},
-
-{
-id: "05",
-title: "STP\n  BOT",
-role: "Autonomous Robotics",
-year: "2025",
-tags: ["Arduino", "ML", "Robotics"],
-accent: "#67e8f9",
-desc: "Monitoring and automation dashboard for autonomous sewage treatment robots with intelligent waste classification systems.",
-stat1: { n: "Smart", l: "Automation" },
-stat2: { n: "ML", l: "Classification" },
-github: "https://github.com/Zynx095/smart-waste_management",
-},
-
-{
-id: "06",
-title: "NIDS\n  ENGINE",
-role: "Intrusion Detection",
-year: "2025",
-tags: ["Scapy", "ML", "Security"],
-accent: "#818cf8",
-desc: "Machine learning powered intrusion detection system using live packet inspection and anomaly classification pipelines.",
-stat1: { n: "Live", l: "Packets" },
-stat2: { n: "ML", l: "Analysis" },
-github: "https://github.com/Zynx095/network-intrusion-detection-system",
-},
+export const PROJECTS: Project[] = [
+  {
+    id: "01",
+    title: "ETTH",
+    role: "Encrypted Traffic Threat Hunter",
+    year: "2026",
+    tags: ["Python", "scikit-learn", "dpkt/Scapy", "PCAP Analysis"],
+    accent: "#00d4ff",
+    desc: "Machine learning pipeline for encrypted traffic analysis and threat detection without payload decryption.",
+    verifiedFeatures: [
+      "leakage-controlled ML pipeline",
+      "bidirectional flow reconstruction from raw PCAPs",
+      "TLS ClientHello fingerprint extraction",
+      "JA3",
+      "JA3S",
+      "JA4",
+      "payloads are not decrypted",
+      "deterministic SHA-256 behavioral hashing",
+      "GroupShuffleSplit train/test isolation",
+      "deterministic identifiers removed",
+      "five experimental configurations",
+      "46/46 passing unit tests",
+      "dataset/capture-environment confounding documented",
+      "generalization claims appropriately scoped"
+    ]
+  },
+  {
+    id: "02",
+    title: "AURA",
+    role: "Autonomous Unified Recognition Assistant",
+    year: "2026",
+    tags: ["Next.js", "FastAPI", "YOLOv8", "WebSockets", "SQLite"],
+    accent: "#7dd3fc",
+    desc: "Real-time AI surveillance platform utilizing computer vision for tracking and behavioral analysis.",
+    verifiedFeatures: [
+      "team project",
+      "real-time AI surveillance platform",
+      "YOLOv8",
+      "centroid-based multi-frame tracking",
+      "NORMAL → OBSERVED → SUSPICIOUS behavioral state machine",
+      "FastAPI/WebSocket backend",
+      "JWT/bcrypt authentication",
+      "polygon-based zone intrusion engine",
+      "incident generation",
+      "evidence snapshots",
+      "Next.js live detection dashboard"
+    ],
+    github: "https://github.com/Zynx095/AURA"
+  },
+  {
+    id: "03",
+    title: "ShadowGuard",
+    role: "Enterprise AI Data Protection System",
+    year: "2026",
+    tags: ["Cybersecurity", "Access Control", "DLP"],
+    accent: "#a5b4fc",
+    desc: "Defensive architecture concept/prototype for enterprise data protection, anomaly detection, and insider-threat monitoring.",
+    verifiedFeatures: [
+      "defensive architecture concept/prototype",
+      "access control",
+      "DLP",
+      "anomaly detection",
+      "policy enforcement",
+      "system hardening",
+      "breach-response workflow",
+      "shutdown protocols",
+      "insider-threat monitoring"
+    ],
+    github: "https://github.com/Zynx095/shadowguard"
+  },
+  {
+    id: "04",
+    title: "Sugar AI",
+    role: "Offline Voice-Controlled Desktop Assistant",
+    year: "2025",
+    tags: ["Python", "Whisper AI", "Ollama", "MeloTTS", "CustomTkinter"],
+    accent: "#93c5fd",
+    desc: "Fully offline desktop assistant running local speech processing and LLM pipelines.",
+    verifiedFeatures: [
+      "fully offline desktop assistant",
+      "on-device speech/language processing",
+      "user data remains local",
+      "multithreaded transcription/inference/playback pipeline",
+      "responsive voice interaction"
+    ],
+    github: "https://github.com/Zynx095/SUGAR-AI"
+  },
+  {
+    id: "05",
+    title: "STP BOT",
+    role: "",
+    year: "",
+    tags: [],
+    accent: "#67e8f9",
+    desc: "",
+    isPlaceholder: true
+  },
+  {
+    id: "06",
+    title: "EDITH AR",
+    role: "",
+    year: "",
+    tags: [],
+    accent: "#818cf8",
+    desc: "",
+    isPlaceholder: true
+  },
+  {
+    id: "07",
+    title: "NIDS ENGINE",
+    role: "",
+    year: "",
+    tags: [],
+    accent: "#c4b5fd",
+    desc: "",
+    isPlaceholder: true
+  }
 ];
