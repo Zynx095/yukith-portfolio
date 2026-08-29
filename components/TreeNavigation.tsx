@@ -1,92 +1,95 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState } from 'react';
 
-const SECTIONS = [
-  { id: "hero", label: "Sapling" },
-  { id: "about", label: "Roots" },
-  { id: "work", label: "Branches" },
-  { id: "experience", label: "Trunk" },
-  { id: "achievements", label: "Rings" },
-  { id: "contact", label: "Canopy" }
+const navNodes = [
+  { id: 'hero', label: 'INTRO' },
+  { id: 'about', label: 'ABOUT' },
+  { id: 'work', label: 'WORK' },
+  { id: 'experience', label: 'EXPERIENCE' },
+  { id: 'achievements', label: 'ACHIEVEMENTS' },
+  { id: 'contact', label: 'CONTACT' },
 ];
 
-export function TreeNavigation() {
-  const [activeSection, setActiveSection] = useState("hero");
+export default function TreeNavigation() {
+  const [activeSection, setActiveSection] = useState('hero');
 
   useEffect(() => {
-    const observers: IntersectionObserver[] = [];
-    
-    SECTIONS.forEach(({ id }) => {
-      const element = document.getElementById(id);
-      if (element) {
-        const observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              if (entry.isIntersecting) {
-                setActiveSection(id);
-              }
-            });
-          },
-          { rootMargin: "-40% 0px -40% 0px" }
-        );
-        observer.observe(element);
-        observers.push(observer);
-      }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    navNodes.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
     });
 
-    return () => observers.forEach(o => o.disconnect());
+    return () => observer.disconnect();
   }, []);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
-    <nav className="fixed right-6 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col items-center">
-      {/* Central Vine/Stem */}
-      <div className="absolute top-0 bottom-0 w-[1px] bg-wood-900/10 left-1/2 -translate-x-1/2" />
-      
-      {SECTIONS.map((section, idx) => {
-        const isActive = activeSection === section.id;
-        // Alternate branches left and right
-        const isLeft = idx % 2 === 0;
-
-        return (
-          <button
-            key={section.id}
-            onClick={() => scrollTo(section.id)}
-            className="group relative flex items-center justify-center h-16 w-16"
-            aria-label={`Scroll to ${section.label}`}
-          >
-            {/* The Node (Bud/Leaf) */}
-            <div className={`relative z-10 w-3 h-3 rounded-full transition-all duration-500 ${
-              isActive ? "bg-forest-700 scale-150" : "bg-leaf-300 hover:bg-forest-700 hover:scale-125"
-            }`} />
-
-            {/* Label (Leaf shape appearance on hover/active) */}
-            <div className={`absolute ${isLeft ? 'right-full mr-4' : 'left-full ml-4'} 
-              transition-all duration-300 pointer-events-none flex items-center bg-cream-100/90 backdrop-blur-sm px-3 py-1 rounded-xl
-              ${isActive ? 'opacity-100 translate-x-0 shadow-sm' : 'opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-2'}
-            `}>
-              <span className={`font-sans text-xs uppercase tracking-widest ${
-                isActive ? 'text-forest-700 font-bold' : 'text-wood-800 font-medium'
-              }`}>
-                {section.label}
-              </span>
-            </div>
-            
-            {isActive && (
-              <motion.div 
-                layoutId="activeBranch"
-                className={`absolute top-1/2 -translate-y-1/2 w-4 h-[2px] bg-forest-700 ${isLeft ? 'right-1/2' : 'left-1/2'}`}
+    <>
+      {/* Desktop fixed sidebar */}
+      <nav className="hidden lg:flex fixed left-8 top-1/2 -translate-y-1/2 flex-col items-center z-50 mix-blend-difference" aria-label="Desktop Navigation">
+        <div className="absolute w-[1px] h-full bg-white/20 -z-10" />
+        {navNodes.map(({ id, label }) => {
+          const isActive = activeSection === id;
+          return (
+            <button
+              key={id}
+              onClick={() => scrollTo(id)}
+              aria-label={`Scroll to ${label}`}
+              className="group relative flex items-center justify-center w-8 h-12 outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
+            >
+              <span 
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  isActive ? 'bg-[#B99755] scale-150' : 'bg-white/50 group-hover:bg-white'
+                }`}
               />
-            )}
-          </button>
-        );
-      })}
-    </nav>
+              <span 
+                className={`absolute left-10 font-mono text-xs tracking-widest transition-all duration-300 ${
+                  isActive ? 'opacity-100 text-[#B99755]' : 'opacity-0 text-white/50 group-hover:opacity-100'
+                }`}
+              >
+                {label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Mobile bottom bar */}
+      <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-[#12351F]/90 backdrop-blur-md border border-[#B99755]/30 rounded-full z-50 flex items-center justify-between px-2 py-2 pb-[env(safe-area-inset-bottom)]" aria-label="Mobile Navigation">
+        {navNodes.map(({ id, label }) => {
+          const isActive = activeSection === id;
+          return (
+            <button
+              key={id}
+              onClick={() => scrollTo(id)}
+              aria-label={`Scroll to ${label}`}
+              className={`min-h-[44px] min-w-[44px] flex-1 flex items-center justify-center rounded-full transition-colors text-[10px] font-mono tracking-wider ${
+                isActive ? 'bg-[#B99755] text-[#12351F] font-bold' : 'text-[#F4F1EA]/70 hover:bg-white/10'
+              }`}
+            >
+              {label.substring(0, 3)}
+            </button>
+          );
+        })}
+      </nav>
+    </>
   );
 }

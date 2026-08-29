@@ -1,131 +1,101 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useEffect, useRef } from 'react';
+import { useScroll, useTransform, motion } from 'framer-motion';
+import { gsap } from 'gsap';
+import { profileData } from '@/src/data/profile';
+import { socialData } from '@/src/data/social';
+import Link from 'next/link';
 
-gsap.registerPlugin(ScrollTrigger);
-
-import { profileData } from "@/src/data/profile";
-import { socialData } from "@/src/data/social";
-
-export function Hero() {
-  const sectionRef = useRef<HTMLElement>(null);
+export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
   
   const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start start", "end start"],
+    target: containerRef,
+    offset: ["start start", "end start"]
   });
 
-  // Smooth fade and slight upward drift on scroll down
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const y = useTransform(scrollYProgress, [0, 1], [0, 100]);
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
+  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!textRef.current) return;
     
-    const ctx = gsap.context(() => {
-      // Elegant, editorial fade up
-      gsap.fromTo(
-        ".hero-element",
-        { y: 30, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1.5,
-          stagger: 0.15,
-          ease: "power3.out",
-          delay: 0.2
-        }
-      );
-    }, containerRef);
-
-    return () => ctx.revert();
+    const elements = textRef.current.children;
+    gsap.fromTo(elements, 
+      { y: 50, opacity: 0 },
+      { 
+        y: 0, 
+        opacity: 1, 
+        stagger: 0.1, 
+        duration: 1, 
+        ease: "power3.out",
+        delay: 0.2
+      }
+    );
   }, []);
 
   return (
-    <section
-      id="hero"
-      ref={sectionRef}
-      className="relative w-full h-screen overflow-hidden flex items-center justify-center bg-cream-100"
-      aria-label="Hero Introduction"
+    <section 
+      id="hero" 
+      aria-label="Hero Introduction" 
+      ref={containerRef}
+      className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#F4F1EA]"
     >
-      {/* Soft natural lighting gradient */}
-      <div 
-        className="absolute inset-0 pointer-events-none opacity-40"
-        style={{ background: "radial-gradient(circle at 50% 30%, rgba(255,250,235,1) 0%, rgba(243,235,221,0) 70%)" }}
-      />
+      {/* Background Grid */}
+      <div className="absolute inset-0 z-0 opacity-20" style={{ backgroundImage: 'linear-gradient(#B99755 1px, transparent 1px), linear-gradient(90deg, #B99755 1px, transparent 1px)', backgroundSize: '40px 40px', transform: 'perspective(500px) rotateX(60deg)', transformOrigin: 'bottom' }} />
 
       <motion.div 
-        ref={containerRef}
-        className="relative z-10 w-full max-w-5xl px-6 md:px-12 flex flex-col items-center text-center h-full justify-center will-change-transform"
-        style={{ opacity, y }}
+        style={{ y, opacity }}
+        className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 flex flex-col items-start justify-center"
+        ref={textRef}
       >
-        {/* The Sapling Metaphor - Abstract Botanical SVG */}
-        <div className="hero-element mb-12 opacity-80">
-          <svg width="60" height="120" viewBox="0 0 60 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M30 120C30 90 28 60 30 30" stroke="var(--wood-700)" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M30 70C25 65 15 60 15 50" stroke="var(--wood-700)" strokeWidth="1.5" strokeLinecap="round"/>
-            <path d="M30 50C35 45 45 40 45 30" stroke="var(--wood-700)" strokeWidth="1.5" strokeLinecap="round"/>
-            {/* Leaves */}
-            <circle cx="13" cy="48" r="3" fill="var(--leaf-600)" />
-            <circle cx="47" cy="28" r="3" fill="var(--leaf-600)" />
-            <circle cx="30" cy="27" r="4" fill="var(--leaf-700)" />
-          </svg>
-        </div>
-
-        <h1 className="hero-element font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-medium tracking-tight text-wood-900 mb-6">
+        <h1 className="text-5xl sm:text-7xl md:text-[9rem] font-serif font-bold text-[#12351F] leading-tight mb-2 tracking-tight">
           {profileData.name}
         </h1>
-
-        <div className="hero-element font-sans text-sm md:text-base text-wood-800 mb-6 max-w-xl bg-cream-100/90 backdrop-blur-sm p-4 rounded-xl">
+        
+        <p className="text-xl sm:text-2xl md:text-3xl font-serif text-[#3A2417] mb-6 max-w-3xl">
           {profileData.degree}
+        </p>
+
+        <div className="flex flex-wrap gap-3 mb-10">
+          {profileData.primaryFocus.map((focus: string, i: number) => (
+            <span key={i} className="px-4 py-2 bg-[#12351F]/10 text-[#12351F] font-mono text-sm rounded-full border border-[#12351F]/20">
+              {focus}
+            </span>
+          ))}
         </div>
 
-        <div className="hero-element font-sans text-xs md:text-sm tracking-widest text-leaf-700 uppercase mb-12 flex flex-wrap justify-center gap-3">
-          Cybersecurity <span className="text-moss-500">·</span> AI/ML <span className="text-moss-500">·</span> Networking <span className="text-moss-500">·</span> Intelligent Systems
-        </div>
-
-        {/* Action Nodes */}
-        <div className="hero-element flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-4">
-          <motion.a
-            href="#work"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="group px-8 py-3 rounded-full border border-forest-700 bg-forest-700 text-cream-100 font-sans text-xs uppercase tracking-widest transition-colors hover:bg-forest-900"
+        <div className="flex flex-wrap items-center gap-4">
+          <Link 
+            href="#work" 
+            className="px-8 py-4 min-w-[44px] min-h-[44px] bg-[#12351F] text-[#F4F1EA] font-sans font-medium rounded hover:bg-[#315D39] transition-colors flex items-center justify-center"
           >
             Explore Work
-          </motion.a>
-
-          <div className="flex flex-wrap gap-4">
-            {socialData.map((link) => (
-              <motion.a
-                key={link.platform}
-                href={link.platform === "Resume" ? "/resume.pdf" : link.url}
-                target={link.platform === "Email" ? undefined : "_blank"}
+          </Link>
+          
+          <div className="flex flex-wrap gap-3">
+            {Object.entries(socialData).map(([key, data]: [string, any]) => (
+              <a 
+                key={key}
+                href={key === 'resume' ? '/resume.pdf' : data.url}
+                target={key === 'resume' ? undefined : "_blank"}
                 rel="noopener noreferrer"
-                whileHover={{ scale: 1.05, backgroundColor: "var(--cream-200)" }}
-                whileTap={{ scale: 0.95 }}
-                className="text-wood-700 hover:text-wood-900 transition-colors font-sans text-xs uppercase tracking-widest border border-wood-900/10 px-5 py-3 hover:border-wood-900/30 rounded-full bg-cream-100 shadow-sm"
+                className="px-6 py-4 min-w-[44px] min-h-[44px] border border-[#3A2417]/30 text-[#3A2417] hover:border-[#12351F] hover:text-[#12351F] font-sans rounded transition-colors flex items-center justify-center"
               >
-                {link.platform}
-              </motion.a>
+                {data.label}
+              </a>
             ))}
           </div>
         </div>
       </motion.div>
 
       {/* Scroll indicator */}
-      <motion.div 
-        className="hidden md:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-3 hero-element opacity-60"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2, duration: 1 }}
-      >
-        <div className="w-[1px] h-16 bg-gradient-to-b from-wood-900 to-transparent" />
-      </motion.div>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-2 animate-bounce opacity-70">
+        <span className="text-[#3A2417] font-mono text-xs uppercase tracking-widest">Scroll</span>
+        <div className="w-[1px] h-12 bg-[#3A2417]"></div>
+      </div>
     </section>
   );
 }

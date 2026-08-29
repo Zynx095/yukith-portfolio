@@ -1,194 +1,140 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
-import { motion, useSpring } from "framer-motion";
-import { PROJECTS } from "@/src/data/projects";
+import React, { useRef, useState, useEffect } from 'react';
+import { PROJECTS } from '@/src/data/projects';
+import { Github } from 'lucide-react';
 
-type AuraState = "NORMAL" | "OBSERVED" | "SUSPICIOUS";
-
-export function ProjectAURA() {
+export default function ProjectAURA() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [state, setState] = useState<AuraState>("NORMAL");
-  const [inputPos, setInputPos] = useState({ x: 0, y: 0 });
-  const [isInteracting, setIsInteracting] = useState(false);
+  const crosshairRef = useRef<HTMLDivElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
+  
+  const project = PROJECTS.find(p => p.title === "AURA");
 
-  // Smooth springs for tracking the bounding box (tuned to slightly lag the cursor)
-  const trackX = useSpring(0, { stiffness: 40, damping: 15, mass: 1.2 });
-  const trackY = useSpring(0, { stiffness: 40, damping: 15, mass: 1.2 });
-
-  const aura = PROJECTS.find((p) => p.title === "AURA");
-
-  // Zone coordinates (normalized 0-1) for the detection region
-  const zone = {
-    xMin: 0.4,
-    xMax: 0.9,
-    yMin: 0.4,
-    yMax: 0.9
+  const stateColors = {
+    NORMAL: '#315D39', // Forest light
+    OBSERVED: '#B99755', // Gold
+    SUSPICIOUS: '#ff4b4b' // Red/Alert
   };
 
-  useEffect(() => {
-    trackX.set(inputPos.x);
-    trackY.set(inputPos.y);
-  }, [inputPos, trackX, trackY]);
-
-  const handlePointerMove = (x: number, y: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const relativeX = x - rect.left;
-    const relativeY = y - rect.top;
+  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!containerRef.current || !crosshairRef.current || !statusRef.current) return;
     
-    setInputPos({ x: relativeX, y: relativeY });
-
-    // Calculate state based on zone intrusion
-    const normX = relativeX / rect.width;
-    const normY = relativeY / rect.height;
-
-    const inZone = (normX >= zone.xMin && normX <= zone.xMax && normY >= zone.yMin && normY <= zone.yMax);
-
-    if (inZone) {
-      if (state === "NORMAL") setState("OBSERVED");
-      // Simulate progression to suspicious if staying in zone
-      const timer = setTimeout(() => {
-        setState(prev => prev === "OBSERVED" ? "SUSPICIOUS" : prev);
-      }, 1500);
-      return () => clearTimeout(timer);
+    let clientX, clientY;
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
     } else {
-      setState("NORMAL");
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
     }
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+
+    // Update crosshair pos directly via ref
+    crosshairRef.current.style.left = `${x}%`;
+    crosshairRef.current.style.top = `${y}%`;
+
+    // State machine logic
+    const distanceToCenter = Math.sqrt(Math.pow(x - 50, 2) + Math.pow(y - 50, 2));
+    
+    let newState: 'NORMAL' | 'OBSERVED' | 'SUSPICIOUS' = 'NORMAL';
+    if (distanceToCenter < 15) {
+      newState = 'SUSPICIOUS';
+    } else if (distanceToCenter < 35) {
+      newState = 'OBSERVED';
+    }
+
+    const color = stateColors[newState];
+    crosshairRef.current.style.borderColor = color;
+    crosshairRef.current.style.boxShadow = `0 0 20px ${color}40`;
+    
+    statusRef.current.textContent = `STATUS: ${newState}`;
+    statusRef.current.style.color = color;
+    statusRef.current.style.borderColor = color;
   };
 
-  if (!aura) return null;
-
-  const getStateColors = () => {
-    switch(state) {
-      case "NORMAL": return { text: "text-forest-900", border: "border-forest-900", bg: "bg-forest-900/10", tag: "bg-forest-700 text-cream-100" };
-      case "OBSERVED": return { text: "text-earth-500", border: "border-earth-500", bg: "bg-earth-500/10", tag: "bg-earth-500 text-cream-100" };
-      case "SUSPICIOUS": return { text: "text-earth-600", border: "border-earth-600", bg: "bg-earth-600/20", tag: "bg-earth-600 text-cream-100" };
-    }
-  };
-
-  const colors = getStateColors();
+  if (!project) return null;
 
   return (
-    <section className="relative w-full min-h-screen bg-transparent py-32 overflow-hidden flex items-center">
-      
-      <div className="max-w-7xl mx-auto px-6 lg:px-24 w-full flex flex-col lg:flex-row gap-16 items-center">
+    <section 
+      className="min-h-screen relative flex items-center justify-center py-20 px-4 overflow-hidden"
+      style={{ backgroundColor: '#0D0A08', color: '#F4F1EA' }}
+    >
+      <div 
+        ref={containerRef}
+        className="absolute inset-0 z-0 opacity-20 cursor-crosshair touch-none"
+        onMouseMove={handlePointerMove}
+        onTouchMove={handlePointerMove}
+        onTouchStart={handlePointerMove}
+      >
+        <div 
+          ref={crosshairRef}
+          className="absolute w-32 h-32 border-2 rounded-full -translate-x-1/2 -translate-y-1/2 transition-colors duration-300 pointer-events-none"
+          style={{ 
+            left: `50%`, 
+            top: `50%`,
+            borderColor: stateColors.NORMAL,
+            boxShadow: `0 0 20px ${stateColors.NORMAL}40`
+          }}
+        >
+          <div className="absolute top-1/2 left-0 w-full h-px bg-current opacity-50" />
+          <div className="absolute left-1/2 top-0 w-px h-full bg-current opacity-50" />
+        </div>
         
-        {/* Left: Info */}
-        <div className="flex-1 w-full z-10 bg-cream-100/80 backdrop-blur-md p-8 rounded-2xl shadow-sm border border-cream-300">
-          <div className="font-sans text-[10px] tracking-widest text-forest-700 mb-4 uppercase">
-            [ Active Project ]
-          </div>
-          <h2 className="text-4xl md:text-6xl font-serif font-medium tracking-tight mb-2 text-forest-900">
-            {aura.title}
-          </h2>
-          <div className="text-xl font-sans text-wood-700 font-medium mb-4">
-            {aura.role}
-          </div>
-          <p className="font-sans text-wood-700 text-sm md:text-base max-w-md mb-8">
-            {aura.desc}
-          </p>
+        {/* Detection Zones */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-dashed border-[#B99755]/30 rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-[#ff4b4b]/30 rounded-full bg-[#ff4b4b]/5 pointer-events-none" />
+      </div>
 
+      <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10 pointer-events-none">
+        <div>
+          <div 
+            ref={statusRef}
+            className="inline-block px-3 py-1 mb-6 border font-mono text-sm rounded transition-colors duration-300"
+            style={{ borderColor: stateColors.NORMAL, color: stateColors.NORMAL }}
+          >
+            STATUS: NORMAL
+          </div>
+          <h2 className="text-4xl md:text-6xl font-serif mb-6 text-[#E3CB8A]">{project.title}</h2>
+          <p className="text-xl font-serif text-[#D8C9A8] mb-4">{project.role}</p>
+          <p className="text-base text-[#D8C9A8]/80 mb-8 max-w-lg font-sans leading-relaxed">
+            {project.desc}
+          </p>
+          
           <div className="flex flex-wrap gap-2 mb-8">
-            {aura.tags.map(tech => (
-              <span key={tech} className="px-3 py-1 text-[10px] font-sans uppercase tracking-widest border border-forest-700/20 rounded-full text-forest-900 bg-leaf-300/20">
-                {tech}
+            {project.tags.map(tag => (
+              <span key={tag} className="px-3 py-1 border border-[#315D39]/30 rounded-full text-xs font-mono text-[#D8C9A8]">
+                {tag}
               </span>
             ))}
           </div>
 
-          <div className="flex flex-col gap-2 mb-8">
-            <span className="font-sans text-[10px] uppercase tracking-widest text-wood-500">State Machine Pipeline</span>
-            <div className="flex items-center gap-2 font-sans text-xs text-wood-600">
-               <span className={state === "NORMAL" ? "text-forest-900 font-bold" : ""}>NORMAL</span>
-               <span className="opacity-50 text-wood-400">→</span>
-               <span className={state === "OBSERVED" ? "text-earth-500 font-bold" : ""}>OBSERVED</span>
-               <span className="opacity-50 text-wood-400">→</span>
-               <span className={state === "SUSPICIOUS" ? "text-earth-600 font-bold" : ""}>SUSPICIOUS</span>
-            </div>
-          </div>
-
-          {aura.github && (
+          {project.github && (
             <a 
-              href={aura.github} 
+              href={project.github} 
               target="_blank" 
-              rel="noreferrer"
-              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-6 border border-forest-700 hover:bg-forest-700 text-forest-900 hover:text-cream-100 font-sans text-sm transition-colors rounded-full"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#15100C] hover:bg-[#3A2417] border border-[#51321E] text-[#E3CB8A] rounded transition-colors pointer-events-auto min-h-[44px]"
             >
-              View Source
+              <Github size={20} />
+              <span className="font-mono text-sm">View Repository</span>
             </a>
           )}
         </div>
 
-        {/* Right: Technical Tracking Visualization */}
-        <div 
-          ref={containerRef}
-          className="flex-1 w-full aspect-square md:aspect-[4/3] bg-cream-100 relative rounded-2xl overflow-hidden cursor-crosshair group touch-none border border-cream-300 shadow-sm"
-          onMouseEnter={() => setIsInteracting(true)}
-          onMouseLeave={() => { setIsInteracting(false); setState("NORMAL"); }}
-          onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
-          onTouchStart={(e) => { setIsInteracting(true); if(e.touches[0]) handlePointerMove(e.touches[0].clientX, e.touches[0].clientY); }}
-          onTouchMove={(e) => { if(e.touches[0]) handlePointerMove(e.touches[0].clientX, e.touches[0].clientY); }}
-          onTouchEnd={() => { setIsInteracting(false); setState("NORMAL"); }}
-        >
-          {/* Subtle grid to indicate technical space, but in wood tones */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "linear-gradient(var(--wood-900) 1px, transparent 1px), linear-gradient(90deg, var(--wood-900) 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
-
-          {/* Detection Zone (Polygon simulation) */}
-          <div 
-            className="absolute border border-dashed transition-colors duration-500 pointer-events-none flex items-center justify-center"
-            style={{ 
-              left: `${zone.xMin * 100}%`, 
-              top: `${zone.yMin * 100}%`, 
-              width: `${(zone.xMax - zone.xMin) * 100}%`, 
-              height: `${(zone.yMax - zone.yMin) * 100}%`,
-              borderColor: state === "NORMAL" ? "var(--sage-400)" : "var(--earth-500)",
-              backgroundColor: state === "NORMAL" ? "transparent" : "var(--earth-500)",
-              opacity: state === "NORMAL" ? 0.3 : 0.05
-            }}
-          >
-            <span className="font-sans text-[10px] uppercase tracking-widest text-wood-500 opacity-50">Monitoring Zone</span>
-          </div>
-
-          {/* Object Bounding Box */}
-          <motion.div 
-            className={`absolute pointer-events-none border-2 z-20 flex flex-col justify-end transition-colors duration-300 ${colors.border} ${colors.bg}`}
-            style={{ 
-              left: trackX, top: trackY, 
-              width: 120, height: 160,
-              x: "-50%", y: "-50%",
-            }}
-            animate={{ opacity: isInteracting ? 1 : 0, scale: isInteracting ? 1 : 0.8 }}
-          >
-            {/* HUD details for the box */}
-            <div className={`absolute -top-6 left-0 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${colors.tag}`}>
-              PERSON // ID:07
-            </div>
-            
-            <div className={`w-full p-1 text-[8px] font-mono uppercase bg-white/50 backdrop-blur-sm ${colors.text} border-t ${colors.border}`}>
-              CONF: 0.94<br/>
-              STATE: {state}
-            </div>
-          </motion.div>
-
-          {/* Status Overlay */}
-          <div className="absolute top-4 right-4 flex flex-col items-end pointer-events-none z-10">
-            <span className="font-sans text-[10px] tracking-widest text-wood-500 uppercase mb-1">System State</span>
-            <div className={`px-3 py-1 font-sans font-medium text-[10px] tracking-widest uppercase rounded-sm transition-colors ${colors.tag}`}>
-              {state}
-            </div>
-          </div>
-          
-          <div className="absolute bottom-4 left-4 font-sans text-[9px] text-wood-400 uppercase pointer-events-none z-10">
-            YOLOv8 // FASTAPI // CENTROID TRACKING
-          </div>
-
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-500" style={{ opacity: isInteracting ? 0 : 1 }}>
-            <span className="font-sans text-xs uppercase tracking-widest text-forest-900 bg-cream-100/90 px-6 py-3 rounded-full backdrop-blur-md shadow-sm border border-forest-700/20">
-              Interact to Track
-            </span>
-          </div>
-
+        <div className="bg-[#15100C]/80 backdrop-blur-md border border-[#51321E] p-8 rounded-lg shadow-2xl pointer-events-auto">
+          <h3 className="text-[#B99755] font-serif mb-4 text-xl border-b border-[#3A2417] pb-2">Verified Features</h3>
+          <ul className="space-y-3 text-sm font-sans text-[#D8C9A8]">
+            {project.verifiedFeatures?.map((feature, i) => (
+              <li key={i} className="flex items-start gap-3 group">
+                <span className="text-[#315D39] mt-0.5 group-hover:text-[#B99755] transition-colors">⚡</span> 
+                <span className="opacity-80 group-hover:opacity-100 transition-opacity">{feature}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>

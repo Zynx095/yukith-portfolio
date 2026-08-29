@@ -1,224 +1,257 @@
 "use client";
 
-import React, { useRef, useMemo, useEffect, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Points, PointMaterial, Environment, Float, Html, Stars } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing';
-import * as THREE from 'three';
+import React, { useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { Billboard } from "@react-three/drei";
+import { EffectComposer, Bloom, Vignette, Noise } from "@react-three/postprocessing";
+import * as THREE from "three";
+import { MotionValue } from "framer-motion";
 
-type StoryCanvasProps = {
-  scrollYProgress: any; // Framer motion MotionValue
-};
+import { CameraRig } from "./CameraRig";
+import { GrowthTree } from "../tree/GrowthTree";
 
-// Abstract procedural 3D elements for the story
+// Seeded RNG
+function mulberry32(a: number) {
+  return function() {
+    let t = a += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
 
-const HolographicFace = ({ scrollProgress }: { scrollProgress: number }) => {
-  const headRef = useRef<THREE.Group>(null);
+interface StoryCanvasProps {
+  scrollProgress: MotionValue<number>;
+}
+
+function AvatarBillboard() {
+  const texture = useLoader(THREE.TextureLoader, '/images/avatar.png');
+  const ref = useRef<THREE.Mesh>(null);
   
   useFrame((state) => {
-    if (!headRef.current) return;
-    
-    // Position the head slightly below and in front of the camera
-    const cameraPos = state.camera.position;
-    
-    // Calculate a target position relative to the camera
-    // Camera looks towards negative Z. We place the head at Z - 3
-    const targetZ = cameraPos.z - 3;
-    const targetY = cameraPos.y - 1.5;
-    const targetX = cameraPos.x;
-    
-    // Smoothly follow the camera
-    headRef.current.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), 0.1);
-    
-    // Slowly rotate to look holographic and mystical
-    headRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.2;
-    headRef.current.rotation.x = Math.cos(state.clock.elapsedTime * 0.3) * 0.1;
+    if (ref.current) {
+      ref.current.position.y = 5 + Math.sin(state.clock.elapsedTime * 2) * 0.2;
+    }
   });
-  
+
   return (
-    <group ref={headRef as any}>
-      <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
-        <mesh>
-          <icosahedronGeometry args={[0.5, 2]} />
-          <meshStandardMaterial color="#B99755" wireframe transparent opacity={0.6} emissive="#B99755" emissiveIntensity={0.5} toneMapped={false} />
-        </mesh>
-        <mesh scale={0.8}>
-          <icosahedronGeometry args={[0.5, 1]} />
-          <meshStandardMaterial color="#315D39" wireframe transparent opacity={0.3} emissive="#12351F" emissiveIntensity={2} toneMapped={false} />
-        </mesh>
-        
-        {/* Glowing eyes/core */}
-        <mesh position={[-0.15, 0.1, 0.4]}>
-          <sphereGeometry args={[0.03, 8, 8]} />
-          <meshBasicMaterial color="#F4F1EA" />
-        </mesh>
-        <mesh position={[0.15, 0.1, 0.4]}>
-          <sphereGeometry args={[0.03, 8, 8]} />
-          <meshBasicMaterial color="#F4F1EA" />
-        </mesh>
-      </Float>
+    <Billboard position={[0, 5, -5]}>
+      <mesh ref={ref}>
+        <planeGeometry args={[3, 3]} />
+        <meshStandardMaterial 
+          map={texture} 
+          transparent 
+          emissive="#B99755" 
+          emissiveIntensity={0.2}
+          side={THREE.DoubleSide} 
+        />
+      </mesh>
+    </Billboard>
+  );
+}
+
+// Zone 0: Study
+function ZoneStudy() {
+  const lightRef = useRef<THREE.PointLight>(null);
+  const particlesRef = useRef<THREE.Points>(null);
+  const rand = useMemo(() => mulberry32(1), []);
+
+  const particlesGeometry = useMemo(() => {
+    const geo = new THREE.BufferGeometry();
+    const count = 200;
+    const positions = new Float32Array(count * 3);
+    for(let i=0; i<count*3; i+=3) {
+      positions[i] = (rand() - 0.5) * 10;
+      positions[i+1] = rand() * 10;
+      positions[i+2] = (rand() - 0.5) * 10;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return geo;
+  }, [rand]);
+
+  useFrame((state) => {
+    if (lightRef.current) {
+      lightRef.current.intensity = 2 + Math.sin(state.clock.elapsedTime * 10) * 0.5;
+    }
+    if (particlesRef.current) {
+      const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
+      for (let i = 1; i < positions.length; i += 3) {
+        positions[i] += 0.005;
+        if (positions[i] > 10) positions[i] = 0;
+      }
+      particlesRef.current.geometry.attributes.position.needsUpdate = true;
+    }
+  });
+
+  return (
+    <group position={[2, 0, -15]}>
+      {/* Desk */}
+      <mesh position={[0, 3, 0]}>
+        <boxGeometry args={[6, 0.2, 3]} />
+        <meshStandardMaterial color="#3A2417" />
+      </mesh>
+      {/* Legs */}
+      <mesh position={[-2.8, 1.5, -1.3]}><boxGeometry args={[0.2, 3, 0.2]} /><meshStandardMaterial color="#15100C" /></mesh>
+      <mesh position={[2.8, 1.5, -1.3]}><boxGeometry args={[0.2, 3, 0.2]} /><meshStandardMaterial color="#15100C" /></mesh>
+      <mesh position={[-2.8, 1.5, 1.3]}><boxGeometry args={[0.2, 3, 0.2]} /><meshStandardMaterial color="#15100C" /></mesh>
+      <mesh position={[2.8, 1.5, 1.3]}><boxGeometry args={[0.2, 3, 0.2]} /><meshStandardMaterial color="#15100C" /></mesh>
+      
+      {/* Books */}
+      <mesh position={[-1, 3.2, 0]}><boxGeometry args={[0.6, 0.1, 0.8]} /><meshStandardMaterial color="#51321E" /></mesh>
+      <mesh position={[-1, 3.3, 0.1]} rotation={[0, 0.2, 0]}><boxGeometry args={[0.5, 0.1, 0.7]} /><meshStandardMaterial color="#D8C9A8" /></mesh>
+
+      {/* Candle */}
+      <mesh position={[2, 3.2, -0.5]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.4]} />
+        <meshStandardMaterial color="#F4F1EA" emissive="#F4F1EA" emissiveIntensity={0.5} />
+      </mesh>
+      <pointLight ref={lightRef} position={[2, 3.5, -0.5]} color="#E3CB8A" distance={15} />
+      <spotLight position={[0, 15, 0]} angle={0.3} penumbra={0.5} intensity={5} color="#D8C9A8" />
+      
+      <points ref={particlesRef} geometry={particlesGeometry}>
+        <pointsMaterial size={0.05} color="#D8C9A8" transparent opacity={0.6} />
+      </points>
     </group>
   );
-};
+}
 
-// Procedural Tree Climax
-const MassiveTree = ({ scrollProgress }: { scrollProgress: number }) => {
-  const trunkRef = useRef<THREE.Mesh>(null);
-  const canopy1Ref = useRef<THREE.Mesh>(null);
-  const canopy2Ref = useRef<THREE.Mesh>(null);
+// Zone 3: First Computer
+function ZoneComputer() {
+  const screenRef = useRef<THREE.MeshStandardMaterial>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const { camera } = useThree();
 
   useFrame(() => {
-    const p = Math.max(0, (scrollProgress - 0.85) / 0.15); // Progress from 85% to 100%
-    if (trunkRef.current) {
-      trunkRef.current.scale.set(1 + p * 5, p * 15, 1 + p * 5); // Huge growth
-      trunkRef.current.position.y = -10 + (p * 15) / 2;
-    }
-    if (canopy1Ref.current && canopy2Ref.current) {
-      canopy1Ref.current.scale.setScalar(p * 20);
-      canopy1Ref.current.position.y = -10 + p * 15 + p * 5;
-      canopy1Ref.current.rotation.y += 0.005;
-
-      canopy2Ref.current.scale.setScalar(p * 15);
-      canopy2Ref.current.position.y = -10 + p * 15 + p * 10;
-      canopy2Ref.current.rotation.y -= 0.003;
+    const dist = camera.position.distanceTo(new THREE.Vector3(-2, 4, -110));
+    const active = dist < 20;
+    if (screenRef.current && lightRef.current) {
+      const targetIntensity = active ? 2 : 0;
+      screenRef.current.emissiveIntensity = THREE.MathUtils.lerp(screenRef.current.emissiveIntensity, targetIntensity, 0.1);
+      lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, targetIntensity * 2, 0.1);
     }
   });
 
   return (
-    <group position={[0, -10, -320]}>
-      {/* Trunk */}
-      <mesh ref={trunkRef as any}>
-        <cylinderGeometry args={[1, 1.2, 1, 8, 1, true]} />
-        <meshStandardMaterial color="#0B2116" roughness={1} wireframe={true} />
+    <group position={[-2, 4, -110]}>
+      {/* Monitor Case */}
+      <mesh position={[0, 0, -1]}>
+        <boxGeometry args={[3, 2.5, 2]} />
+        <meshStandardMaterial color="#15100C" />
       </mesh>
-      
-      {/* Canopy Layers */}
-      <mesh ref={canopy1Ref as any}>
-        <icosahedronGeometry args={[1, 2]} />
-        <meshStandardMaterial color="#12351F" roughness={0.8} transparent opacity={0.8} wireframe />
+      {/* Screen */}
+      <mesh position={[0, 0, 0.01]}>
+        <planeGeometry args={[2.8, 2.3]} />
+        <meshStandardMaterial ref={screenRef} color="#000000" emissive="#315D39" emissiveIntensity={0} />
       </mesh>
-      <mesh ref={canopy2Ref as any}>
-        <icosahedronGeometry args={[1, 1]} />
-        <meshStandardMaterial color="#315D39" roughness={0.6} transparent opacity={0.6} wireframe />
+      <pointLight ref={lightRef} color="#315D39" distance={15} intensity={0} position={[0, 0, 1]} />
+      {/* Keyboard */}
+      <mesh position={[0, -1.2, 1]}>
+        <boxGeometry args={[3, 0.1, 1]} />
+        <meshStandardMaterial color="#15100C" />
       </mesh>
     </group>
   );
-};
+}
 
-const Scene = ({ scrollYProgress }: { scrollYProgress: any }) => {
-  const [scrollP, setScrollP] = useState(0);
+function ZoneClimax({ scrollProgress }: { scrollProgress: MotionValue<number> }) {
+  const [progress, setProgress] = useState(0);
+  
+  useFrame(() => {
+    // Climax triggers from 0.8 to 1.0 progress
+    const p = Math.max(0, Math.min(1, (scrollProgress.get() - 0.8) / 0.2));
+    if (Math.abs(progress - p) > 0.001) {
+      setProgress(p);
+    }
+  });
 
-  useEffect(() => {
-    return scrollYProgress.onChange((v: number) => setScrollP(v));
-  }, [scrollYProgress]);
+  return (
+    <group position={[0, 0, -340]}>
+      <GrowthTree growthProgress={progress} />
+    </group>
+  );
+}
 
-  useFrame((state) => {
-    // Scroll progress maps from 0 to 1
-    // Camera travels from Z = 10 down to Z = -330
-    const targetZ = 10 - scrollP * 340; 
+function Scene({ scrollProgress }: { scrollProgress: MotionValue<number> }) {
+  const ambientLightRef = useRef<THREE.AmbientLight>(null);
+  
+  useFrame(() => {
+    const p = scrollProgress.get();
+    const colorStart = new THREE.Color("#B99755");
+    const colorEnd = new THREE.Color("#1D4A2B");
+    colorStart.lerp(colorEnd, p);
     
-    // Smooth camera interpolation
-    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.05);
-    
-    // Add subtle cinematic sway (wobble based on time and scroll)
-    const swayX = Math.sin(state.clock.elapsedTime * 0.5) * 0.5;
-    const swayY = Math.cos(state.clock.elapsedTime * 0.3) * 0.5;
-    
-    // Camera look target shifts slightly as you scroll (to simulate looking around)
-    state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, swayX + Math.sin(scrollP * Math.PI * 4) * 5, 0.05);
-    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, swayY + Math.cos(scrollP * Math.PI * 2) * 2, 0.05);
-    
-    // Camera always looks ahead, but slightly off-center for cinematic feel
-    const lookAtZ = state.camera.position.z - 20;
-    state.camera.lookAt(
-      swayX * 0.5 + Math.sin(scrollP * Math.PI * 4) * 2,
-      swayY * 0.5,
-      lookAtZ
-    );
+    if (ambientLightRef.current) {
+      ambientLightRef.current.color = colorStart;
+    }
   });
 
   return (
     <>
-      <ambientLight intensity={Math.max(0.2, 1 - scrollP * 2)} color="#B99755" />
-      <directionalLight position={[10, 20, 5]} intensity={1} color="#315D39" />
-      <pointLight position={[0, 0, -50]} intensity={2} color="#E3CB8A" distance={30} />
-      <pointLight position={[0, 0, -150]} intensity={3} color="#1D4A2B" distance={50} />
-      <pointLight position={[0, 0, -310]} intensity={5} color="#F4F1EA" distance={100} />
-
-      <fog attach="fog" args={['#0D0A08', 5, 40]} />
+      <fog attach="fog" args={["#0D0A08", 10, 80]} />
+      <ambientLight ref={ambientLightRef} intensity={0.5} />
       
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+      <CameraRig scrollProgress={scrollProgress} />
+      
+      <AvatarBillboard />
+      <ZoneStudy />
+      
+      {/* Zone 1: Childhood */}
+      <group position={[-3, 0, -45]}>
+        <mesh position={[0, -0.1, 0]} rotation={[-Math.PI/2, 0, 0]}><planeGeometry args={[20, 20]} /><meshStandardMaterial color="#15100C" /></mesh>
+        <pointLight color="#E3CB8A" intensity={1} distance={20} position={[0, 5, 0]} />
+      </group>
 
-      {/* The new Holographic Narrator */}
-      <HolographicFace scrollProgress={scrollP} />
+      {/* Zone 2: School */}
+      <group position={[4, 0, -75]}>
+        <mesh position={[0, 2, 0]}><boxGeometry args={[1, 1, 1]} /><meshStandardMaterial color="#3A2417" /></mesh>
+      </group>
 
-      {/* Zone 1-2: Childhood & School (Z: -20 to -40) */}
-      <Float speed={2} rotationIntensity={1} floatIntensity={1}>
-        <group position={[3, 0, -30]}>
-           <mesh rotation={[0.2, 0.5, 0]}>
-             <boxGeometry args={[4, 0.5, 3]} />
-             <meshStandardMaterial color="#51321E" roughness={0.8} />
-           </mesh>
-           <mesh position={[-1, 1, 0]} rotation={[0, 0.2, 0.1]}>
-             <boxGeometry args={[1.5, 0.2, 2]} />
-             <meshStandardMaterial color="#D8C9A8" roughness={1} />
-           </mesh>
-        </group>
-      </Float>
+      <ZoneComputer />
+      
+      {/* Zone 4: Discovery */}
+      <group position={[5, 6, -150]}>
+        <mesh><icosahedronGeometry args={[2, 0]} /><meshBasicMaterial color="#315D39" wireframe /></mesh>
+      </group>
 
-      {/* Zone 4: First Computer (Z: -80) */}
-      <Float speed={1} rotationIntensity={0.5} floatIntensity={0.5}>
-        <group position={[-4, 1, -80]}>
-           <mesh>
-             <boxGeometry args={[3, 3, 3]} />
-             <meshStandardMaterial color="#1E150F" />
-           </mesh>
-           <mesh position={[0, 0, 1.6]}>
-             <planeGeometry args={[2.5, 2.5]} />
-             <meshBasicMaterial color="#315D39" toneMapped={false} />
-           </mesh>
-        </group>
-      </Float>
+      {/* Zone 5: University */}
+      <group position={[-4, 5, -190]}>
+        <mesh><sphereGeometry args={[3, 16, 16]} /><meshStandardMaterial color="#B99755" emissive="#B99755" emissiveIntensity={0.5} /></mesh>
+      </group>
 
-      {/* Zone 6-7: University & Engineering (Z: -120 to -160) */}
-      {Array.from({ length: 20 }).map((_, i) => (
-        <mesh key={`node-${i}`} position={[(Math.random() - 0.5) * 30, (Math.random() - 0.5) * 20, -120 - Math.random() * 40]}>
-          <icosahedronGeometry args={[0.5, 0]} />
-          <meshBasicMaterial color="#B99755" wireframe />
+      {/* Zone 6: Engineering */}
+      <group position={[3, 4, -230]}>
+        <mesh><boxGeometry args={[4, 2, 2]} /><meshStandardMaterial color="#1D4A2B" /></mesh>
+      </group>
+
+      {/* Zone 7: Professional */}
+      <group position={[-2, 0, -270]}>
+        <mesh position={[0, -0.1, 0]} rotation={[-Math.PI/2, 0, 0]}>
+          <planeGeometry args={[40, 40]} />
+          <meshStandardMaterial color="#15100C" wireframe />
         </mesh>
-      ))}
+      </group>
 
-      {/* Zone 8: Projects (Z: -180 to -220) */}
-      <Float speed={3} rotationIntensity={2} floatIntensity={2}>
-        <group position={[5, -2, -190]}>
-           <mesh>
-             <torusGeometry args={[2, 0.1, 16, 100]} />
-             <meshStandardMaterial color="#1D4A2B" emissive="#315D39" emissiveIntensity={5} toneMapped={false} />
-           </mesh>
-           <mesh rotation={[Math.PI / 2, 0, 0]}>
-             <torusGeometry args={[2, 0.1, 16, 100]} />
-             <meshStandardMaterial color="#12351F" emissive="#1D4A2B" emissiveIntensity={2} toneMapped={false} />
-           </mesh>
-        </group>
-      </Float>
+      {/* Zone 8: Growth */}
+      <group position={[0, 4, -305]}>
+        <mesh><cylinderGeometry args={[1, 1, 4, 16]} /><meshStandardMaterial color="#B99755" emissive="#B99755" emissiveIntensity={0.8} /></mesh>
+      </group>
 
+      <ZoneClimax scrollProgress={scrollProgress} />
+      
       <EffectComposer>
-        <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.9} height={300} intensity={1.5} />
-        <Noise opacity={0.03} />
-        <Vignette eskil={false} offset={0.1} darkness={1.1} />
+        <Bloom luminanceThreshold={0.3} luminanceSmoothing={0.9} intensity={1.0} />
+        <Noise opacity={0.02} />
+        <Vignette offset={0.1} darkness={1.1} />
       </EffectComposer>
-
-      {/* The Final Climax Tree (Z: -320) */}
-      <MassiveTree scrollProgress={scrollP} />
     </>
   );
-};
+}
 
-export function StoryCanvas({ scrollYProgress }: StoryCanvasProps) {
+export function StoryCanvas({ scrollProgress }: StoryCanvasProps) {
   return (
-    <div className="absolute inset-0 z-0 bg-[#0D0A08]">
-      <Canvas camera={{ position: [0, 0, 10], fov: 60, near: 0.1, far: 100 }}>
-        <Scene scrollYProgress={scrollYProgress} />
+    <div style={{ width: "100%", height: "100vh", position: "fixed", top: 0, left: 0, zIndex: -1 }}>
+      <Canvas dpr={[1, 2]} gl={{ antialias: false }}>
+        <Scene scrollProgress={scrollProgress} />
       </Canvas>
     </div>
   );

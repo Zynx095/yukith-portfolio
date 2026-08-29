@@ -1,33 +1,31 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { skillsData, certificationsData } from "@/src/data/skills";
-import { profileData } from "@/src/data/profile";
-import { educationData } from "@/src/data/education";
-import { leadershipData } from "@/src/data/leadership";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { profileData } from '@/src/data/profile';
+import { skillsData } from '@/src/data/skills';
+import { educationData } from '@/src/data/education';
+import { leadershipData } from '@/src/data/leadership';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export function AboutScene() {
+export default function AboutScene() {
   const sectionRef = useRef<HTMLElement>(null);
-  
-  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!sectionRef.current) return;
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".root-node",
-        { opacity: 0, y: 40, scale: 0.95, filter: "blur(8px)" },
+      gsap.fromTo(".about-reveal", 
+        { y: 50, opacity: 0 },
         {
-          opacity: 1, y: 0, scale: 1, filter: "blur(0px)",
-          stagger: 0.15, duration: 1.2, ease: "expo.out",
+          y: 0,
+          opacity: 1,
+          stagger: 0.1,
+          duration: 0.8,
+          ease: "power2.out",
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: "top 75%",
+            start: "top 80%",
           }
         }
       );
@@ -36,118 +34,78 @@ export function AboutScene() {
   }, []);
 
   return (
-    <section ref={sectionRef} id="about" className="relative w-full min-h-screen py-32 bg-cream-200">
-      <div className="max-w-6xl mx-auto px-6 lg:px-12 w-full relative z-10">
-        
-        <div className="root-node mb-16">
-          <span className="font-sans text-xs tracking-[0.3em] uppercase text-wood-800 block mb-4">
-            Phase 01 / Roots
-          </span>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-wood-900 tracking-tight">
-            Fundamentals & Foundation
-          </h2>
-        </div>
+    <section id="about" ref={sectionRef} className="py-24 px-6 md:px-12 bg-[#F4F1EA] text-[#3A2417]">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-4xl md:text-5xl font-serif text-[#12351F] font-bold mb-12 border-b border-[#3A2417]/20 pb-4 about-reveal">
+          ABOUT
+        </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16">
-          
-          {/* Education & Bio */}
-          <div className="flex flex-col gap-8 xl:col-span-1 md:col-span-1">
-            <div className="root-node">
-              <h3 className="font-sans text-xs uppercase tracking-widest text-wood-800 mb-6 border-b border-wood-900/10 pb-4">
-                Education
-              </h3>
-              <div className="flex flex-col gap-2 bg-cream-100/90 backdrop-blur-sm p-4 rounded-xl">
-                <span className="text-wood-900 font-serif text-2xl">{educationData[0].degree}</span>
-                <span className="text-wood-800 font-sans">{educationData[0].institution}</span>
-                <span className="text-wood-800 font-sans text-sm">{educationData[0].period}</span>
-              </div>
-            </div>
-            
-            <div className="root-node bg-cream-100/90 backdrop-blur-sm p-4 rounded-xl">
-              <p className="text-wood-800 leading-relaxed font-sans">
-                My engineering roots are grounded in the intersection of secure network architectures and applied machine learning. I believe the most robust systems are built by deeply understanding the physical and logical layers they run on.
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Intro & Education */}
+          <div className="lg:col-span-1 space-y-12">
+            <div className="about-reveal">
+              <h3 className="text-2xl font-serif text-[#12351F] mb-4">Background</h3>
+              <p className="font-sans leading-relaxed text-[#3A2417]">
+                Hi, I'm {profileData.name}, a passionate student studying {profileData.degree}. 
+                My focus areas include {profileData.primaryFocus.join(', ')}. I enjoy building robust applications and exploring the intersection of technology and creativity.
               </p>
             </div>
-          </div>
 
-          {/* Core Technical Branches */}
-          <div className="flex flex-col xl:col-span-1 md:col-span-1">
-            <h3 className="root-node font-sans text-xs uppercase tracking-widest text-wood-800 mb-6 border-b border-wood-900/10 pb-4">
-              Core Disciplines
-            </h3>
-            <div className="flex flex-col gap-8">
-              {skillsData.map((category, idx) => (
-                <motion.div 
-                  key={idx} 
-                  className="root-node relative cursor-pointer p-4 -m-4 rounded-2xl transition-colors duration-300 hover:bg-cream-100/60"
-                  onMouseEnter={() => setHoveredCategory(category.title)}
-                  onMouseLeave={() => setHoveredCategory(null)}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                >
-                  <div className={`font-serif text-xl mb-3 transition-colors duration-300 ${hoveredCategory === category.title ? 'text-forest-700' : 'text-leaf-700'}`}>
-                    {category.title}
-                  </div>
+            <div className="about-reveal">
+              <h3 className="text-2xl font-serif text-[#12351F] mb-4">Education</h3>
+              {educationData.map((edu, idx) => (
+                <div key={idx} className="w-full sm:min-w-[280px] bg-white/50 border border-[#3A2417]/20 p-6 rounded-lg mb-4">
+                  <h4 className="font-bold font-sans text-lg text-[#12351F]">{edu.degree}</h4>
+                  <p className="font-sans text-[#3A2417] mb-2">{edu.institution} | {edu.period}</p>
+                  <p className="font-mono text-sm text-[#51321E] mb-3">CGPA: {edu.cgpa}</p>
                   <div className="flex flex-wrap gap-2">
-                    {category.skills.map((skill, sIdx) => (
-                      <motion.span 
-                        key={skill} 
-                        className={`px-3 py-1 bg-cream-100 border text-xs font-sans rounded-full transition-all duration-300 ${hoveredCategory === category.title ? 'border-forest-700 text-forest-900 shadow-sm' : 'border-wood-900/5 text-wood-800'}`}
-                        animate={{ 
-                          y: hoveredCategory === category.title ? -2 : 0,
-                          opacity: hoveredCategory && hoveredCategory !== category.title ? 0.6 : 1
-                        }}
-                        transition={{ delay: hoveredCategory === category.title ? sIdx * 0.03 : 0 }}
-                      >
-                        {skill}
-                      </motion.span>
+                    {edu.coursework.map((course: string, i: number) => (
+                      <span key={i} className="text-xs font-mono bg-[#12351F]/5 text-[#12351F] px-2 py-1 rounded">
+                        {course}
+                      </span>
                     ))}
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Leadership & Impact */}
-          <div className="flex flex-col xl:col-span-1 md:col-span-2">
-            <h3 className="root-node font-sans text-xs uppercase tracking-widest text-wood-800 mb-6 border-b border-wood-900/10 pb-4">
-              Leadership & Impact
-            </h3>
-            <div className="flex flex-col gap-4">
-              {leadershipData.map((role, i) => (
-                <motion.div 
-                  key={i} 
-                  className="root-node p-5 border border-wood-900/10 bg-cream-100 rounded-xl shadow-sm cursor-pointer"
-                  whileHover={{ backgroundColor: "var(--leaf-300)", borderColor: "var(--forest-700)", scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div className="text-wood-900 text-sm font-sans font-medium">{role.role} — {role.eventOrClub}</div>
-                  {role.organization && <div className="text-wood-800 text-xs mt-1">{role.organization}</div>}
-                  <div className="text-forest-700 text-xs font-sans mt-3">{role.period}</div>
-                </motion.div>
-              ))}
-              
-              {certificationsData.map((cert, i) => (
-                <motion.div 
-                  key={i} 
-                  className="root-node p-5 border border-leaf-700/20 bg-leaf-700/5 rounded-lg mt-4 cursor-pointer group"
-                  whileHover={{ backgroundColor: "var(--forest-700)", scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div className="text-leaf-700 group-hover:text-cream-200 text-xs font-sans uppercase tracking-widest mb-2 transition-colors">Certification</div>
-                  <div className="text-wood-900 group-hover:text-white text-sm font-serif transition-colors">{cert}</div>
-                </motion.div>
-              ))}
+          {/* Skills, Leadership, Certs */}
+          <div className="lg:col-span-2 space-y-12">
+            <div className="about-reveal">
+              <h3 className="text-2xl font-serif text-[#12351F] mb-6">Skills & Technologies</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                {Object.entries(skillsData).map(([category, skills]: [string, any], idx) => (
+                  <div key={idx} className="bg-white/40 p-5 rounded border border-[#3A2417]/10">
+                    <h4 className="font-serif font-bold text-[#51321E] mb-3 capitalize">{category}</h4>
+                    <ul className="space-y-2">
+                      {skills.map((skill: string, i: number) => (
+                        <li key={i} className="font-mono text-sm text-[#3A2417] flex items-center before:content-['▹'] before:mr-2 before:text-[#B99755]">
+                          {skill}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="about-reveal md:col-span-2">
+                <h3 className="text-2xl font-serif text-[#12351F] mb-4">Leadership</h3>
+                <div className="space-y-4">
+                  {leadershipData.map((item, idx) => (
+                    <div key={idx} className="border-l-2 border-[#B99755] pl-4">
+                      <h4 className="font-bold font-sans text-[#12351F]">{item.role}</h4>
+                      <p className="text-sm font-sans text-[#51321E]">{item.eventOrClub}{item.organization ? ` | ${item.organization}` : ''} | {item.period}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-
         </div>
       </div>
-      
-      {/* Abstract Root SVG background */}
-      <svg className="absolute bottom-0 left-0 w-full h-64 pointer-events-none opacity-5" viewBox="0 0 1000 200" preserveAspectRatio="none">
-        <path d="M0,0 Q250,200 500,100 T1000,200 L1000,250 L0,250 Z" fill="var(--wood-900)" />
-      </svg>
     </section>
   );
 }
