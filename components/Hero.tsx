@@ -43,8 +43,17 @@ export default function Hero() {
       ref={containerRef}
       className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#F4F1EA]"
     >
-      {/* Background Grid */}
-      <div className="absolute inset-0 z-0 opacity-20" style={{ backgroundImage: 'linear-gradient(#B99755 1px, transparent 1px), linear-gradient(90deg, #B99755 1px, transparent 1px)', backgroundSize: '40px 40px', transform: 'perspective(500px) rotateX(60deg)', transformOrigin: 'bottom' }} />
+      {/* Background Pattern — subtle leaves/canopy motif */}
+      <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" 
+        style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5C45 5 55 15 55 30C55 45 45 55 30 55C15 55 5 45 5 30C5 15 15 5 30 5ZM30 10C20 10 10 20 10 30C10 40 20 50 30 50C40 50 50 40 50 30C50 20 40 10 30 10Z' fill='%2312351F' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E")`,
+          backgroundSize: '120px 120px',
+          backgroundPosition: 'center',
+          transform: 'translateY(-10vh)', // Slight offset
+          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%)'
+        }} 
+      />
 
       <motion.div 
         style={{ y, opacity }}

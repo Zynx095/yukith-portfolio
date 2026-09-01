@@ -52,11 +52,24 @@ export default function WorkScene() {
   }, []);
 
   return (
-    <section id="work" ref={containerRef} className="relative w-full bg-[#0D0A08]">
-      <div className="py-24 px-4 max-w-7xl mx-auto" ref={headerRef}>
-        <h2 className="text-5xl md:text-7xl font-serif text-[#E3CB8A] mb-4 text-center">Selected Works</h2>
-        <div className="w-24 h-1 bg-[#315D39] mx-auto opacity-50" />
+    <section id="work" ref={containerRef} className="relative w-full bg-[#0D0A08] border-t-2 border-[#1A120D]">
+      {/* Decorative top roots linking from the previous section */}
+      <div className="absolute top-0 left-1/4 w-px h-16 bg-gradient-to-b from-[#3A2417] to-transparent"></div>
+      <div className="absolute top-0 right-1/4 w-px h-24 bg-gradient-to-b from-[#3A2417] to-transparent"></div>
+      <div className="absolute top-0 left-1/2 w-px h-32 bg-gradient-to-b from-[#51321E] to-transparent hidden md:block"></div>
+
+      <div className="py-32 px-4 max-w-7xl mx-auto relative z-10" ref={headerRef}>
+        <div className="text-center mb-4 flex justify-center items-center gap-4">
+          <div className="h-[1px] w-12 bg-[#315D39]/50"></div>
+          <span className="text-[#B99755] font-mono text-sm tracking-widest uppercase">Branches</span>
+          <div className="h-[1px] w-12 bg-[#315D39]/50"></div>
+        </div>
+        <h2 className="text-5xl md:text-7xl font-serif text-[#E3CB8A] mb-8 text-center">Selected Works</h2>
       </div>
+
+      <div className="relative">
+        {/* Central timeline root */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-full bg-[#1A120D] hidden lg:block z-0"></div>
 
       <div className="project-wrapper">
         <ProjectETTH />
@@ -72,6 +85,8 @@ export default function WorkScene() {
       
       <div className="project-wrapper">
         <ProjectSugarAI />
+      </div>
+      
       </div>
     </section>
   );
