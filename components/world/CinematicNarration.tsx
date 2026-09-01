@@ -15,48 +15,48 @@ interface StorySegment {
 const STORY_SEGMENTS: StorySegment[] = [
   {
     start: 0.0,
-    end: 0.12,
+    end: 0.08,
     subtitle: "WELCOME",
     text: "My name is Yukith M Joseph."
   },
   {
-    start: 0.12,
-    end: 0.22,
-    subtitle: "THE WORLD BEFORE CODE",
+    start: 0.08,
+    end: 0.18,
+    subtitle: "MY WORLD",
     text: "I'm 19, studying Computer Science at Presidency University in Bangalore."
   },
   {
-    start: 0.22,
-    end: 0.35,
-    subtitle: "FAMILY & FOUNDATION",
-    text: "My world starts with my favourite people — my mom, dad, aunt, brother, grandma, my dog, and my girlfriend."
+    start: 0.18,
+    end: 0.32,
+    subtitle: "MY FAMILY",
+    text: "My mom, my dad, my grandma, my aunt, her son — my brother — and my lovely Shih Tzu, Bella. And my girlfriend."
   },
   {
-    start: 0.35,
-    end: 0.48,
-    subtitle: "ENGINEERING & PURPOSE",
-    text: "I've always enjoyed building real-world systems — taking ideas off the screen and turning them into practical tools that solve real problems."
+    start: 0.32,
+    end: 0.42,
+    subtitle: "THEIR SUPPORT",
+    text: "They support me so much. They are my foundation, my strength, and the reason I keep going."
   },
   {
-    start: 0.48,
-    end: 0.58,
-    subtitle: "TANGIBLE CREATION",
-    text: "Technology became a way for me to turn curiosity into something tangible — something I could build, break, rebuild, and eventually make work."
+    start: 0.42,
+    end: 0.55,
+    subtitle: "COLLEGE LIFE",
+    text: "At Presidency University, I found my passion for cybersecurity and AI. The journey has been challenging but incredibly rewarding."
   },
   {
-    start: 0.58,
-    end: 0.70,
-    subtitle: "PASSION & CONNECTION",
-    text: "Outside engineering, I'm a gaming enthusiast who loves meeting people, socializing, and building a network where ideas become collaborations."
+    start: 0.55,
+    end: 0.68,
+    subtitle: "ACHIEVEMENTS",
+    text: "From hackathons to internships at NVIDIA and Elevance, every milestone shaped who I am today."
   },
   {
-    start: 0.70,
-    end: 0.84,
+    start: 0.68,
+    end: 0.78,
     subtitle: "THE TRANSITION",
     text: "Somewhere along the way, curiosity became projects... and those projects became a world of their own."
   },
   {
-    start: 0.84,
+    start: 0.78,
     end: 0.99,
     subtitle: "THE ARCHIVE",
     text: "Welcome inside the World Tree — the living archive of everything I have built."

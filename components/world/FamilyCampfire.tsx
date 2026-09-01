@@ -7,8 +7,8 @@ import * as THREE from "three";
 // ─── Shih Tzu Dog (Bella) - More Detailed ─────────────────────────────────────
 function Bella() {
   const groupRef = useRef<THREE.Group>(null);
-  const posRef = useRef(new THREE.Vector3(7.5, 0, -16));
-  const targetRef = useRef(new THREE.Vector3(4, 0, -14));
+  const posRef = useRef(new THREE.Vector3(10, 0, -13));
+  const targetRef = useRef(new THREE.Vector3(4, 0, -17));
   const isAtTarget = useRef(false);
 
   useFrame((state, delta) => {
@@ -43,7 +43,7 @@ function Bella() {
   });
 
   return (
-    <group ref={groupRef} position={[7.5, 0, -16]} scale={0.85}>
+    <group ref={groupRef} position={[10, 0, -13]} scale={0.85}>
       {/* Body - fluffy shih tzu */}
       <mesh castShadow position={[0, 0.35, 0]}>
         <capsuleGeometry args={[0.2, 0.45, 4, 8]} />
@@ -140,7 +140,7 @@ function DadCharacter() {
   });
 
   return (
-    <group position={[5, 0, -13]} scale={1.15}>
+    <group position={[5, 0, -14]} scale={1.15}>
       {/* torso - broad shoulders */}
       <mesh castShadow position={[0, 0.85, 0]}>
         <capsuleGeometry args={[0.32, 0.75, 4, 8]} />
@@ -277,7 +277,7 @@ function MomCharacter() {
   });
 
   return (
-    <group position={[7, 0, -15]} scale={1.0}>
+    <group position={[9, 0, -15]} scale={1.0}>
       {/* Body - elegant */}
       <mesh castShadow position={[0, 0.75, 0]}>
         <capsuleGeometry args={[0.26, 0.65, 4, 8]} />
@@ -400,7 +400,7 @@ function MomCharacter() {
 // ─── Aunt Character - More Detailed ────────────────────────────────────────────
 function AuntCharacter() {
   return (
-    <group position={[8, 0, -14.5]} scale={0.95}>
+    <group position={[11, 0, -14.5]} scale={0.95}>
       {/* Body */}
       <mesh castShadow position={[0, 0.72, 0]}>
         <capsuleGeometry args={[0.24, 0.58, 4, 8]} />
@@ -507,7 +507,7 @@ function GrandmaCharacter() {
   });
 
   return (
-    <group position={[9, 0, -16]} scale={0.9}>
+    <group position={[12, 0, -16]} scale={0.9}>
       {/* Sitting body - hunched */}
       <mesh castShadow position={[0, 0.4, 0]} rotation={[0.1, 0, 0]}>
         <capsuleGeometry args={[0.24, 0.45, 4, 8]} />
@@ -590,7 +590,7 @@ function GirlfriendCharacter() {
   });
 
   return (
-    <group position={[4, 0, -19]} scale={0.95}>
+    <group position={[3, 0, -18]} scale={0.95}>
       {/* Body - slimmer figure */}
       <mesh castShadow position={[0, 0.68, 0]}>
         <capsuleGeometry args={[0.22, 0.58, 4, 8]} />
@@ -713,7 +713,7 @@ function BrotherCharacter() {
   });
 
   return (
-    <group position={[6, 0, -17]} scale={0.85}>
+    <group position={[7, 0, -17]} scale={0.85}>
       {/* Chunky body */}
       <mesh castShadow position={[0, 0.58, 0]}>
         <capsuleGeometry args={[0.34, 0.52, 4, 8]} />
@@ -835,7 +835,7 @@ function Campfire() {
   });
 
   return (
-    <group position={[5, 0, -14]}>
+    <group position={[5, 0, -15]}>
       {/* Stone ring */}
       {Array.from({ length: 12 }).map((_, i) => {
         const angle = (i / 12) * Math.PI * 2;
@@ -906,9 +906,10 @@ function Campfire() {
 }
 
 // ─── Main Family Campfire Scene ────────────────────────────────────────────────
+// Position: Near waterfall and lake (z ≈ -65), offset to the right of the path
 export function FamilyCampfire() {
   return (
-    <group>
+    <group position={[12, 0, -65]} scale={1.5}>
       <Campfire />
       <DadCharacter />
       <MomCharacter />

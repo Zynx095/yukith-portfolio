@@ -57,8 +57,7 @@ export const PROJECTS: Project[] = [
       "incident generation",
       "evidence snapshots",
       "Next.js live detection dashboard"
-    ],
-    github: "https://github.com/Zynx095/AURA"
+    ]
   },
   {
     id: "03",
@@ -78,8 +77,7 @@ export const PROJECTS: Project[] = [
       "breach-response workflow",
       "shutdown protocols",
       "insider-threat monitoring"
-    ],
-    github: "https://github.com/Zynx095/shadowguard"
+    ]
   },
   {
     id: "04",
@@ -95,8 +93,7 @@ export const PROJECTS: Project[] = [
       "user data remains local",
       "multithreaded transcription/inference/playback pipeline",
       "responsive voice interaction"
-    ],
-    github: "https://github.com/Zynx095/SUGAR-AI"
+    ]
   },
   {
     id: "05",

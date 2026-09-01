@@ -111,19 +111,12 @@ function getTerrainHeight(x: number, z: number): TerrainHeightResult {
     height = height * (1 - slopeFactor * 0.3);
   }
   
-  // Terrain near family campsite (z ≈ -2)
-  const campDist = Math.sqrt((x - 8) * (x - 8) + (z + 2) * (z + 2));
-  if (campDist < 15) {
-    const campFactor = 1 - campDist / 15;
-    height = height * (1 - campFactor * 0.4) + campFactor * 1;
-  }
-
-  // Terrain near NEW family campsite after waterfall (z ≈ -66)
-  const newCampDist = Math.sqrt(x * x + (z + 66) * (z + 66));
-  if (newCampDist < 18) {
-    const campFactor = 1 - newCampDist / 18;
-    // Flatten area for campfire
-    height = THREE.MathUtils.lerp(height, 0, campFactor * 0.6);
+  // Terrain near family campsite (z ≈ -65) - NEAR WATERFALL AND LAKE
+  const campDist = Math.sqrt((x - 7) * (x - 7) + (z + 65) * (z + 65));
+  if (campDist < 30) {
+    const campFactor = 1 - campDist / 30;
+    // Flatten area for campfire clearing
+    height = THREE.MathUtils.lerp(height, 0, campFactor * 0.9);
   }
   
   // Determine material based on height
@@ -284,9 +277,9 @@ export function EnvironmentProps() {
         const side = rng() > 0.5 ? 1 : -1;
         x = side * (20 + rng() * 60); // Keep corridor clear
         
-        // Exclude family campsite
-        const distToFamily = Math.hypot(x - 7, z - (-15));
-        if (distToFamily < 25) continue;
+        // Exclude family campsite area (z ≈ -65, x ≈ 7) - WIDER CLEARING
+        const distToFamily = Math.hypot(x - 7, z - (-65));
+        if (distToFamily < 40) continue; // Increased to 40 for bigger clearing
         
         valid = true;
       }
