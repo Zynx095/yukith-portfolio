@@ -11,36 +11,29 @@ import { leadershipData } from "@/src/data/leadership";
 import { experienceData } from "@/src/data/experience";
 import { personalStory } from "@/src/data/personal";
 
-function createParchmentTexture() {
+// Replaced parchment texture generator with holographic grid generator
+function createHolographicGrid() {
   if (typeof window === "undefined") return null;
-  const size = 512;
+  const size = 64;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  ctx.fillStyle = "#1A1510";
+  ctx.fillStyle = "rgba(0,0,0,0)";
   ctx.fillRect(0, 0, size, size);
 
-  // Subtle grain
-  for (let i = 0; i < 3000; i++) {
-    const x = Math.random() * size;
-    const y = Math.random() * size;
-    const alpha = Math.random() * 0.03;
-    ctx.fillStyle = `rgba(212, 190, 150, ${alpha})`;
-    ctx.fillRect(x, y, 1, 1);
-  }
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, size);
+  ctx.lineTo(size, size);
+  ctx.moveTo(size, 0);
+  ctx.lineTo(size, size);
+  ctx.stroke();
 
-  // Subtle edge darkening
-  const gradient = ctx.createRadialGradient(size/2, size/2, size*0.3, size/2, size/2, size*0.7);
-  gradient.addColorStop(0, "rgba(0,0,0,0)");
-  gradient.addColorStop(1, "rgba(0,0,0,0.15)");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  return texture;
+  return new THREE.CanvasTexture(canvas);
 }
 
 interface DetailPanelProps {
@@ -60,79 +53,88 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
       <AnimatePresence>
         <motion.div
           key={zoneId}
-          initial={{ opacity: 0, x: 100 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 60 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
-          className="pointer-events-auto max-w-xl w-full"
+          initial={{ opacity: 0, x: 100, filter: "blur(10px)", scale: 0.95 }}
+          animate={{ opacity: 1, x: 0, filter: "blur(0px)", scale: 1 }}
+          exit={{ opacity: 0, x: 60, filter: "blur(10px)", scale: 0.95 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="pointer-events-auto max-w-2xl w-full"
         >
           <div
-            className="relative bg-[#1A2A15]/97 rounded-sm border border-[#3A5A35]/40 shadow-[0_20px_80px_rgba(0,0,0,0.9),0_0_40px_rgba(58,90,53,0.15)] overflow-hidden"
-            style={{ borderLeft: `3px solid ${accentColor}` }}
+            className="relative bg-black/30 backdrop-blur-2xl rounded-lg border border-white/5 overflow-hidden"
+            style={{ 
+              boxShadow: `0 30px 100px rgba(0,0,0,0.8), 0 0 60px ${accentColor}20, inset 0 0 30px ${accentColor}15`
+            }}
           >
-            {/* Parchment texture overlay */}
+            {/* Holographic grid overlay */}
             <div
-              className="absolute inset-0 opacity-[0.04] pointer-events-none"
+              className="absolute inset-0 pointer-events-none opacity-40 mix-blend-screen"
               style={{
-                backgroundImage:
-                  'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E")',
+                backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)`,
+                backgroundSize: '24px 24px'
               }}
             />
 
-            {/* Top accent line */}
-            <div className="h-[2px] w-full" style={{ background: `linear-gradient(90deg, ${accentColor}, transparent)` }} />
+            {/* Corner UI elements */}
+            <div className="absolute top-0 left-0 w-12 h-12 pointer-events-none" style={{ borderTop: `2px solid ${accentColor}`, borderLeft: `2px solid ${accentColor}`, opacity: 0.8 }} />
+            <div className="absolute bottom-0 right-0 w-12 h-12 pointer-events-none" style={{ borderBottom: `2px solid ${accentColor}`, borderRight: `2px solid ${accentColor}`, opacity: 0.8 }} />
+            <div className="absolute top-0 right-0 w-12 h-12 pointer-events-none" style={{ borderTop: `2px solid ${accentColor}`, opacity: 0.3 }} />
+            <div className="absolute bottom-0 left-0 w-12 h-12 pointer-events-none" style={{ borderBottom: `2px solid ${accentColor}`, opacity: 0.3 }} />
 
-            <div className="p-8 md:p-10">
+            {/* Scanning line effect */}
+            <motion.div 
+              className="absolute left-0 right-0 h-px pointer-events-none"
+              style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`, opacity: 0.5 }}
+              animate={{ top: ["0%", "100%"] }}
+              transition={{ duration: 4, ease: "linear", repeat: Infinity }}
+            />
+
+            <div className="relative p-10 md:p-12 z-10">
               {/* Header */}
-              <div className="flex items-start justify-between mb-6">
+              <div className="flex items-start justify-between mb-8">
                 <div>
-                  <p
-                    className="font-mono text-xs uppercase tracking-[0.3em] mb-2"
-                    style={{ color: accentColor }}
-                  >
-                    {config.subtitle || config.type}
-                  </p>
-                  <h2 className="font-serif text-3xl md:text-4xl text-white tracking-wide">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }} />
+                    <p className="font-mono text-xs uppercase tracking-[0.4em]" style={{ color: accentColor }}>
+                      {config.subtitle || config.type}
+                    </p>
+                  </div>
+                  <h2 className="font-sans font-light text-4xl md:text-5xl text-white tracking-tight drop-shadow-md">
                     {config.title}
                   </h2>
                 </div>
                 <button
                   onClick={onClose}
-                  className="ml-4 px-3 py-1.5 font-mono text-xs uppercase tracking-widest border border-[#3A5A35] text-[#8BA0B5] hover:text-[#E3CB8A] hover:border-[#3A5A35]/80 rounded-sm transition-colors"
+                  className="group relative ml-4 px-4 py-2 overflow-hidden border border-white/10 hover:border-white/30 rounded-sm transition-all"
                   aria-label="Close panel"
                 >
-                  Close [ESC]
+                  <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className="relative font-mono text-[10px] uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">
+                    Close [ESC]
+                  </span>
                 </button>
               </div>
 
               {/* Divider */}
-              <div className="w-full h-px bg-gradient-to-r from-[#3A5A35]/30 to-transparent mb-6" />
+              <div className="w-full h-px bg-white/5 mb-8 relative">
+                <div className="absolute left-0 top-0 h-full w-1/3" style={{ background: `linear-gradient(90deg, ${accentColor}, transparent)` }} />
+              </div>
 
               {/* Content */}
-              <div className="space-y-6">
+              <div className="space-y-8 max-h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                 {/* Overview */}
                 <section>
-                  <h3
-                    className="font-mono text-xs uppercase tracking-[0.2em] mb-3"
-                    style={{ color: accentColor }}
-                  >
-                    Overview
-                  </h3>
-                  <p className="font-sans text-[#E8DDD0] text-base leading-relaxed">
+                  <p className="font-sans font-light text-white/80 text-lg leading-relaxed">
                     {config.description}
                   </p>
                 </section>
 
                 {/* Problem */}
                 {config.problem && (
-                  <section>
-                    <h3
-                      className="font-mono text-xs uppercase tracking-[0.2em] mb-3"
-                      style={{ color: accentColor }}
-                    >
+                  <section className="bg-black/20 p-6 rounded-sm border border-white/5">
+                    <h3 className="font-mono text-xs uppercase tracking-[0.2em] mb-4 text-white/40">
                       The Problem
                     </h3>
-                    <p className="font-sans text-[#C8B8A8] text-sm leading-relaxed">
+                    <p className="font-sans text-white/70 text-base leading-relaxed">
                       {config.problem}
                     </p>
                   </section>
@@ -140,14 +142,11 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
 
                 {/* Approach */}
                 {config.approach && (
-                  <section>
-                    <h3
-                      className="font-mono text-xs uppercase tracking-[0.2em] mb-3"
-                      style={{ color: accentColor }}
-                    >
+                  <section className="bg-black/20 p-6 rounded-sm border border-white/5">
+                    <h3 className="font-mono text-xs uppercase tracking-[0.2em] mb-4 text-white/40">
                       The Approach
                     </h3>
-                    <p className="font-sans text-[#C8B8A8] text-sm leading-relaxed">
+                    <p className="font-sans text-white/70 text-base leading-relaxed">
                       {config.approach}
                     </p>
                   </section>
@@ -155,104 +154,77 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
 
                 {/* Engineering */}
                 {config.engineering && (
-                  <section>
-                    <h3
-                      className="font-mono text-xs uppercase tracking-[0.2em] mb-3"
-                      style={{ color: accentColor }}
-                    >
+                  <section className="bg-black/20 p-6 rounded-sm border border-white/5">
+                    <h3 className="font-mono text-xs uppercase tracking-[0.2em] mb-4 text-white/40">
                       Engineering
                     </h3>
-                    <p className="font-sans text-[#C8B8A8] text-sm leading-relaxed">
+                    <p className="font-sans text-white/70 text-base leading-relaxed">
                       {config.engineering}
                     </p>
                   </section>
                 )}
 
-                {/* Technology */}
-                {config.technology && config.technology.length > 0 && (
-                  <section>
-                    <h3
-                      className="font-mono text-xs uppercase tracking-[0.2em] mb-3"
-                      style={{ color: accentColor }}
-                    >
-                      Technology
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {config.technology.map((tech) => (
-                        <span
-                          key={tech}
-                          className="px-3 py-1.5 text-xs font-mono rounded-sm border"
-                          style={{
-                            backgroundColor: "#1A0D2E",
-                            borderColor: `${accentColor}40`,
-                            color: "#CCBBEE",
-                          }}
-                        >
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* Features */}
-                {config.features && config.features.length > 0 && (
-                  <section>
-                    <h3
-                      className="font-mono text-xs uppercase tracking-[0.2em] mb-3"
-                      style={{ color: accentColor }}
-                    >
-                      Key Details
-                    </h3>
-                    <ul className="space-y-2.5">
-                      {config.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-3 font-sans text-sm text-[#D8C8B8]">
+                {/* Technology & Features Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {config.technology && config.technology.length > 0 && (
+                    <section>
+                      <h3 className="font-mono text-[10px] uppercase tracking-[0.3em] mb-4 text-white/40">
+                        Tech Stack
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {config.technology.map((tech) => (
                           <span
-                            className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0"
-                            style={{ backgroundColor: accentColor }}
-                          />
-                          <span className="leading-relaxed">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
+                            key={tech}
+                            className="px-3 py-1.5 text-xs font-mono rounded-sm border bg-black/40 text-white/80"
+                            style={{ borderColor: `${accentColor}30` }}
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {config.features && config.features.length > 0 && (
+                    <section>
+                      <h3 className="font-mono text-[10px] uppercase tracking-[0.3em] mb-4 text-white/40">
+                        Key Features
+                      </h3>
+                      <ul className="space-y-3">
+                        {config.features.map((feature, i) => (
+                          <li key={i} className="flex items-start gap-3 font-sans text-sm text-white/70">
+                            <span className="mt-1.5 w-1 h-1 bg-white/50 rounded-full shrink-0" />
+                            <span className="leading-relaxed">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </div>
 
                 {/* Links */}
                 {config.links && config.links.length > 0 && (
-                  <section className="pt-4">
-                    <div className="flex flex-wrap gap-3">
+                  <section className="pt-6 border-t border-white/5">
+                    <div className="flex flex-wrap gap-4">
                       {config.links.map((link) => (
-                        <a
-                          key={link.label}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2.5 font-mono text-xs uppercase tracking-widest border rounded-sm transition-all"
-                          style={{
-                            borderColor: `${accentColor}60`,
-                            color: accentColor,
-                            backgroundColor: `${accentColor}10`,
-                          }}
-                          onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLElement).style.backgroundColor = `${accentColor}20`;
-                          }}
-                          onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLElement).style.backgroundColor = `${accentColor}10`;
-                          }}
-                        >
-                          <span>{link.label}</span>
-                          <span>→</span>
-                        </a>
+                         <a
+                         key={link.label}
+                         href={link.url}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="group flex items-center gap-3 px-6 py-3 border rounded-sm transition-all relative overflow-hidden"
+                         style={{ borderColor: `${accentColor}40`, backgroundColor: `${accentColor}10` }}
+                       >
+                         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ backgroundColor: `${accentColor}20` }} />
+                         <span className="relative font-mono text-xs uppercase tracking-widest text-white/90">{link.label}</span>
+                         <span className="relative text-white/50 group-hover:translate-x-1 transition-transform">→</span>
+                       </a>
                       ))}
                     </div>
                   </section>
                 )}
               </div>
             </div>
-
-            {/* Bottom accent */}
-            <div className="h-[2px] w-full" style={{ background: `linear-gradient(90deg, transparent, ${accentColor}50)` }} />
           </div>
         </motion.div>
 
@@ -261,7 +233,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-[#0A1A10]/70 backdrop-blur-sm z-[-1]"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-[-1]"
           onClick={onClose}
         />
       </AnimatePresence>

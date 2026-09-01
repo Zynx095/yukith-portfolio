@@ -3,7 +3,11 @@
 import React, { useRef, useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import * as BufferGeometryUtils from "three/addons/utils/BufferGeometryUtils.js";
+import { Html } from "@react-three/drei";
 import { useInteractionContext } from "@/hooks/useInteraction";
+import { PROJECTS } from "@/src/data/projects";
+import { personalStory } from "@/src/data/personal";
 
 // ─── Seeded PRNG ──────────────────────────────────────────────────────────────
 function seededRandom(seed: number) {
@@ -104,9 +108,9 @@ function applyBarkShader(shader: any) {
     `
     #include <color_fragment>
     
-    vec3 ivoryBase = vec3(0.96, 0.94, 0.91);
-    vec3 silverShadow = vec3(0.52, 0.55, 0.60);
-    vec3 warmHighlight = vec3(0.95, 0.92, 0.85);
+    vec3 ivoryBase = vec3(0.48, 0.33, 0.20); // Medium warm brown
+    vec3 silverShadow = vec3(0.18, 0.12, 0.08); // Deep dark brown grooves
+    vec3 warmHighlight = vec3(0.55, 0.38, 0.25); // Slightly lighter raised bark
     
     float barkLevel = smoothstep(-1.0, 1.0, vBarkDisplacement);
     vec3 barkColor = mix(silverShadow, ivoryBase, barkLevel);
@@ -347,12 +351,18 @@ function placeFoliage(
       // DENSE DARK VIBRANT GREEN - deep forest colors
       const greenIntensity = 0.3 + rng() * 0.6;
       const color = new THREE.Color(
-        0.01 + rng() * 0.06,
+        0.05 + rng() * 0.05,
         greenIntensity,
-        0.01 + rng() * 0.04
+        0.02 + rng() * 0.05
       );
 
-      placements.push({ position, rotation, scale, color, leafCount: 12 + Math.floor(rng() * 15) });
+      placements.push({
+        position,
+        rotation,
+        scale,
+        color,
+        leafCount: 1 + Math.floor(rng() * 3), // 1-3 leaves per cluster (down from 4-7)
+      });
     }
   }
 
@@ -360,35 +370,36 @@ function placeFoliage(
 }
 
 // ─── Tree Project Node (interactive element inside tree) ──────────────────────
-function TreeProjectNode({
+function ProjectArchiveCard({
   id,
-  title,
-  subtitle,
   position,
-  color,
-  shape = "sphere",
+  rotation = [0, 0, 0],
 }: {
   id: string;
-  title: string;
-  subtitle: string;
   position: [number, number, number];
-  color: string;
-  shape?: "sphere" | "octahedron" | "torus" | "cylinder";
+  rotation?: [number, number, number];
 }) {
   const meshRef = useRef<THREE.Group>(null);
   const { openPanel } = useInteractionContext();
 
+  const project: any = PROJECTS.find(p => p.title.toLowerCase() === id.toLowerCase() || p.id === id) || 
+                  personalStory.internships.find(e => e.company.toLowerCase().includes(id.toLowerCase())) || 
+                  personalStory.hackathons.find(a => a.name.toLowerCase().includes(id.toLowerCase())) || 
+                  personalStory.leadership.find(l => l.organization.toLowerCase().includes(id.toLowerCase())) ||
+                  { title: id, summary: "Information Record", technologies: [] };
+
   useFrame((state) => {
     if (!meshRef.current) return;
     const time = state.clock.elapsedTime;
-    meshRef.current.rotation.y = time * 0.4;
-    meshRef.current.position.y = position[1] + Math.sin(time * 0.8 + position[0]) * 0.3;
+    // Subtle float
+    meshRef.current.position.y = position[1] + Math.sin(time * 0.5 + position[0]) * 0.4;
   });
 
   return (
     <group
       ref={meshRef}
       position={position}
+      rotation={rotation}
       onClick={(e) => {
         e.stopPropagation();
         openPanel(id);
@@ -400,20 +411,49 @@ function TreeProjectNode({
         document.body.style.cursor = "auto";
       }}
     >
-      <mesh castShadow>
-        {shape === "sphere" && <sphereGeometry args={[2, 32, 32]} />}
-        {shape === "octahedron" && <octahedronGeometry args={[2.2, 0]} />}
-        {shape === "torus" && <torusGeometry args={[1.8, 0.5, 16, 32]} />}
-        {shape === "cylinder" && <cylinderGeometry args={[1.5, 1.8, 3, 8]} />}
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.8}
-          roughness={0.2}
-          metalness={0.7}
+      {/* Physical Backing Plaque (Ancient Wood) */}
+      <mesh receiveShadow castShadow position={[0, 0, -0.2]}>
+        <boxGeometry args={[14, 8, 0.4]} />
+        <meshStandardMaterial color="#2d1c10" roughness={0.9} metalness={0.1} />
+      </mesh>
+      
+      {/* Glass Face Plate */}
+      <mesh position={[0, 0, 0.05]}>
+        <boxGeometry args={[13.5, 7.5, 0.1]} />
+        <meshPhysicalMaterial 
+          color="#111111" 
+          transmission={0.4} 
+          roughness={0.1} 
+          metalness={0.8}
+          transparent={false}
         />
       </mesh>
-      <pointLight color={color} intensity={4} distance={15} />
+
+      {/* HTML Content Overlay */}
+      <Html
+        transform
+        distanceFactor={22}
+        position={[0, 0, 0.15]}
+        className="w-[380px] pointer-events-none select-none" 
+      >
+        <div className="flex flex-col bg-transparent text-[#e8e4dc] p-5 font-sans antialiased border border-[#E3CB8A]/20 rounded shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]" style={{ backgroundColor: 'rgba(15, 10, 5, 0.6)' }}>
+          <h3 className="text-4xl font-bold tracking-tight mb-2 text-[#E3CB8A]">
+            {project.title || project.company || project.name || project.organization || id}
+          </h3>
+          <p className="text-md font-light leading-relaxed mb-4 text-[#d8d4cc]">
+            {project.summary || project.subtitle || project.description || project.role || project.result}
+          </p>
+          {project.technologies && (
+            <div className="flex flex-wrap gap-2">
+              {project.technologies.slice(0, 4).map((tech: string, i: number) => (
+                <span key={i} className="text-xs uppercase tracking-widest bg-black/60 px-2 py-1 rounded text-[#E3CB8A]/80 border border-[#E3CB8A]/10">
+                  {tech}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </Html>
     </group>
   );
 }
@@ -446,9 +486,9 @@ export function WorldTree() {
     const rng = seededRandom(12345);
 
     // ─── TRUNK CONFIGURATION ────────────────────────────────────────────────
-    const trunkHeight = 180;
-    const trunkBaseRadius = 25;
-    const trunkTopRadius = 8;
+    const trunkHeight = 220; // Increased to ensure the cavity is tall enough
+    const trunkBaseRadius = 35; // Increased to create a massive hollow interior
+    const trunkTopRadius = 12;
     const trunkStrands = 7;
 
     // Build multi-strand twisting trunk
@@ -478,7 +518,7 @@ export function WorldTree() {
       }
 
       const curve = new THREE.CatmullRomCurve3(curvePoints);
-      const radius = trunkBaseRadius * 0.35 * (1 - rng() * 0.2);
+      const radius = trunkBaseRadius * 0.4 * (1 - rng() * 0.2); // Thicker strands to enclose cavity
       trunkGeos.push(new THREE.TubeGeometry(curve, 40, radius, 10, false));
     }
 
@@ -537,13 +577,13 @@ export function WorldTree() {
 
     // ─── FOLIAGE PLACEMENT ──────────────────────────────────────────────────
     const allEndpoints = [...primaryEndpoints, ...secondaryEndpoints, ...tertiaryEndpoints];
-    const foliagePlacements = placeFoliage(allEndpoints, rng, 35); // EXTREMELY DENSE
+    const foliagePlacements = placeFoliage(allEndpoints, rng, 8); 
 
     return {
-      trunkGeos,
-      rootGeos,
-      primaryGeos,
-      secondaryGeos,
+      trunkGeo: BufferGeometryUtils.mergeGeometries(trunkGeos),
+      rootGeo: BufferGeometryUtils.mergeGeometries(rootGeos),
+      primaryGeo: BufferGeometryUtils.mergeGeometries(primaryGeos),
+      secondaryGeo: BufferGeometryUtils.mergeGeometries(secondaryGeos),
       foliagePlacements,
       primaryEndpoints,
     };
@@ -570,7 +610,8 @@ export function WorldTree() {
         dummy.rotation.copy(foliage.rotation);
         dummy.rotation.x += (Math.random() - 0.5) * 0.5;
         dummy.rotation.z += (Math.random() - 0.5) * 0.5;
-        dummy.scale.setScalar(foliage.scale * (0.7 + Math.random() * 0.6));
+        // Increase scale to compensate for lower instance count, keeping volumetric feel
+        dummy.scale.setScalar(foliage.scale * (1.2 + Math.random() * 0.8));
         dummy.updateMatrix();
 
         foliageRef.current!.setMatrixAt(instanceIndex, dummy.matrix);
@@ -585,9 +626,9 @@ export function WorldTree() {
 
   const barkMaterial = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({
-      color: "#f4f1ea",
-      roughness: 0.7,
-      metalness: 0.1,
+      color: "#5c3a21", // Base natural brown
+      roughness: 0.8,
+      metalness: 0.05,
       side: THREE.DoubleSide,
     });
     mat.onBeforeCompile = applyBarkShader;
@@ -596,66 +637,56 @@ export function WorldTree() {
 
   const trunkMaterial = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({
-      color: "#e8e4dc",
-      roughness: 0.75,
-      metalness: 0.05,
-      side: THREE.DoubleSide,
+      color: "#4a2d19", // Darker inner brown
+      roughness: 0.85,
+      metalness: 0.0,
+      side: THREE.DoubleSide, // Essential for rendering the hollow interior
+
     });
     mat.onBeforeCompile = applyBarkShader;
     return mat;
   }, []);
 
-  const foliageMaterial = useMemo(() => {
-    return new THREE.MeshStandardMaterial({
-      color: "#0a2a0a",
-      roughness: 0.8,
-      metalness: 0.0,
-      vertexColors: true,
-      side: THREE.DoubleSide,
-    });
-  }, []);
-
   return (
     <group ref={treeGroupRef} position={[0, 0, -450]}>
       {/* ─── MASSIVE TWISTING TRUNK ─────────────────────────────────────────── */}
-      {treeStructure.trunkGeos.map((geo, idx) => (
-        <mesh key={`trunk-${idx}`} geometry={geo} material={trunkMaterial} castShadow receiveShadow />
-      ))}
+      {treeStructure.trunkGeo && (
+        <mesh geometry={treeStructure.trunkGeo} material={trunkMaterial} castShadow receiveShadow />
+      )}
 
       {/* ─── BUTTRESS ROOTS ─────────────────────────────────────────────────── */}
-      {treeStructure.rootGeos.map((geo, idx) => (
-        <mesh key={`root-${idx}`} geometry={geo} material={barkMaterial} castShadow receiveShadow />
-      ))}
+      {treeStructure.rootGeo && (
+        <mesh geometry={treeStructure.rootGeo} material={barkMaterial} castShadow receiveShadow />
+      )}
 
       {/* ─── PRIMARY BRANCHES ───────────────────────────────────────────────── */}
-      {treeStructure.primaryGeos.map((geo, idx) => (
-        <mesh key={`primary-${idx}`} geometry={geo} castShadow receiveShadow>
+      {treeStructure.primaryGeo && (
+        <mesh geometry={treeStructure.primaryGeo} castShadow receiveShadow>
           <meshStandardMaterial color="#d4d0c8" roughness={0.7} />
         </mesh>
-      ))}
+      )}
 
       {/* ─── SECONDARY BRANCHES ─────────────────────────────────────────────── */}
-      {treeStructure.secondaryGeos.map((geo, idx) => (
-        <mesh key={`secondary-${idx}`} geometry={geo} castShadow receiveShadow>
+      {treeStructure.secondaryGeo && (
+        <mesh geometry={treeStructure.secondaryGeo} castShadow receiveShadow>
           <meshStandardMaterial color="#c8c4bc" roughness={0.75} />
         </mesh>
-      ))}
+      )}
 
       {/* ─── DENSE ORGANIC LEAF FOLIAGE ─────────────────────────────────────── */}
       <instancedMesh
         ref={foliageRef}
-        args={[leafGeometry, undefined, treeStructure.foliagePlacements.reduce((sum, f) => sum + f.leafCount, 0)]}
+        args={[null as any, null as any, treeStructure.foliagePlacements.length * 3]}
         castShadow
         receiveShadow
       >
+        <planeGeometry args={[18, 18]} />
         <meshStandardMaterial
-          color="#0a3a0a"
-          roughness={0.6}
-          metalness={0.0}
-          vertexColors={true}
+          color="#a3c4a8"
+          transparent={false}
+          alphaTest={0.5}
           side={THREE.DoubleSide}
-          transparent
-          opacity={0.92}
+          roughness={0.8}
         />
       </instancedMesh>
 
@@ -671,61 +702,40 @@ export function WorldTree() {
           <meshStandardMaterial color="#3a2a1a" roughness={1} side={THREE.DoubleSide} />
         </mesh>
         
-        <TreeProjectNode
+        <ProjectArchiveCard
           id="aura"
-          title="AURA"
-          subtitle="AI Surveillance Platform"
-          position={[-4, 25, 0]}
-          color="#7dd3fc"
-          shape="sphere"
+          position={[-6, 35, 0]}
+          rotation={[-Math.PI / 2 + 0.2, 0, 0]}
         />
-        <TreeProjectNode
+        <ProjectArchiveCard
           id="etth"
-          title="ETTH"
-          subtitle="Encrypted Traffic Threat Hunter"
-          position={[4, 55, 0]}
-          color="#00d4ff"
-          shape="torus"
+          position={[6, 65, 0]}
+          rotation={[-Math.PI / 2 + 0.2, 0, 0]}
         />
-        <TreeProjectNode
+        <ProjectArchiveCard
           id="shadowguard"
-          title="ShadowGuard"
-          subtitle="Enterprise AI Data Protection"
-          position={[-4, 85, 0]}
-          color="#a5b4fc"
-          shape="octahedron"
+          position={[-5, 95, 0]}
+          rotation={[-Math.PI / 2 + 0.2, 0, 0]}
         />
-        <TreeProjectNode
+        <ProjectArchiveCard
           id="sugar-ai"
-          title="Sugar AI"
-          subtitle="Offline Voice Assistant"
-          position={[4, 115, 0]}
-          color="#93c5fd"
-          shape="sphere"
+          position={[5, 125, 0]}
+          rotation={[-Math.PI / 2 + 0.2, 0, 0]}
         />
-        <TreeProjectNode
+        <ProjectArchiveCard
           id="achievements"
-          title="Milestones"
-          subtitle="Hackathons & Competitions"
-          position={[0, 145, 0]}
-          color="#f59e0b"
-          shape="cylinder"
+          position={[-4, 155, 0]}
+          rotation={[-Math.PI / 2 + 0.2, 0, 0]}
         />
-        <TreeProjectNode
+        <ProjectArchiveCard
           id="leadership"
-          title="Leadership"
-          subtitle="InTech Club & Events"
-          position={[-3, 175, 0]}
-          color="#10b981"
-          shape="octahedron"
+          position={[4, 185, 0]}
+          rotation={[-Math.PI / 2 + 0.2, 0, 0]}
         />
-        <TreeProjectNode
+        <ProjectArchiveCard
           id="experience"
-          title="Experience"
-          subtitle="NVIDIA & Elevance"
-          position={[3, 205, 0]}
-          color="#6366f1"
-          shape="cylinder"
+          position={[0, 215, 0]}
+          rotation={[-Math.PI / 2 + 0.2, 0, 0]}
         />
         
         {/* Tree ring archive platforms */}

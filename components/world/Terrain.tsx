@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -210,189 +210,140 @@ export function Terrain() {
 
 // ─── Distant Mountains ────────────────────────────────────────────────────────
 export function Mountains() {
+  const mountRef = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const mountCount = 60;
+
   const mountains = useMemo(() => {
-    const data: Array<{ x: number; z: number; height: number; width: number }> = [];
+    const data: Array<{ x: number; z: number; height: number; width: number; colorIndex: number; sides: number }> = [];
     const rng = seededRandom(999);
     
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < mountCount; i++) {
       const z = -100 + rng() * -500;
       const side = rng() > 0.5 ? 1 : -1;
       const x = side * (150 + rng() * 200);
       const height = 80 + rng() * 160;
       const width = 60 + rng() * 120;
-      
-      data.push({ x, z, height, width });
+      const sides = 6 + Math.floor(rng() * 3);
+      data.push({ x, z, height, width, colorIndex: i % 3, sides });
     }
     return data;
   }, []);
   
+  useEffect(() => {
+    if (!mountRef.current) return;
+
+    const colors = ["#4a5a6a", "#5a6a5a", "#4a4a5a"];
+
+    mountains.forEach((m, i) => {
+      dummy.position.set(m.x, m.height / 2 - 20, m.z);
+      dummy.scale.set(m.width / 2, m.height, m.width / 2);
+      dummy.updateMatrix();
+      mountRef.current!.setMatrixAt(i, dummy.matrix);
+
+      const mColor = new THREE.Color(colors[m.colorIndex]);
+      mountRef.current!.setColorAt(i, mColor);
+    });
+
+    mountRef.current.instanceMatrix.needsUpdate = true;
+    if (mountRef.current.instanceColor) mountRef.current.instanceColor.needsUpdate = true;
+  }, [mountains, dummy]);
+
   return (
     <group position={[0, 0, -200]}>
-      {mountains.map((m, i) => (
-        <mesh 
-          key={`mount-${i}`} 
-          position={[m.x, m.height / 2 - 20, m.z]} 
-          castShadow 
-        >
-          <coneGeometry args={[m.width / 2, m.height, 6 + Math.floor(Math.random() * 3)]} />
-          <meshStandardMaterial
-            color={i % 3 === 0 ? "#4a5a6a" : i % 3 === 1 ? "#5a6a5a" : "#4a4a5a"}
-            roughness={0.9}
-            metalness={0.1}
-          />
-        </mesh>
-      ))}
+      <instancedMesh ref={mountRef} args={[new THREE.ConeGeometry(1, 1, 6), undefined, mountCount]} castShadow>
+        <meshStandardMaterial roughness={0.9} metalness={0.1} />
+      </instancedMesh>
     </group>
   );
 }
 
 // ─── Environment Props (trees, rocks, vegetation) ─────────────────────────────
 export function EnvironmentProps() {
-  const props = useMemo(() => {
-    const data: Array<{
-      type: string;
-      x: number;
-      z: number;
-      height?: number;
-      scale?: number;
-      rotation?: number;
-      size?: number;
-      angle?: number;
-    }> = [];
-    const rng = seededRandom(777);
-    
-    // EXTREMELY DENSE FOREST - super long and thick trees
-    for (let i = 0; i < 500; i++) {
-      const z = -80 + rng() * -420;
-      const side = rng() > 0.5 ? 1 : -1;
-      // Much closer to path for dense feel
-      const offset = 15 + rng() * 60;
-      const x = side * offset;
-      // Super long trees
-      const height = 30 + rng() * 50;
-
-      data.push({
-        type: 'tree',
-        x, z, height,
-        rotation: rng() * Math.PI * 2,
-        scale: 0.8 + rng() * 1.2
-      });
-    }
-
-    // Additional dense ring near camera path
-    for (let i = 0; i < 200; i++) {
-      const z = -20 + rng() * -100;
-      const side = rng() > 0.5 ? 1 : -1;
-      const offset = 10 + rng() * 25;
-      const x = side * offset;
-      const height = 25 + rng() * 40;
-
-      data.push({
-        type: 'tree',
-        x, z, height,
-        rotation: rng() * Math.PI * 2,
-        scale: 0.7 + rng() * 1.0
-      });
-    }
-    
-    // Rocks scattered naturally
-    for (let i = 0; i < 120; i++) {
-      const z = -60 + rng() * -400;
-      const side = rng() > 0.5 ? 1 : -1;
-      const offset = 20 + rng() * 60;
-      const x = side * offset;
-      const size = 1.5 + rng() * 5;
-      
-      data.push({
-        type: 'rock',
-        x, z, size,
-        rotation: rng() * Math.PI * 2
-      });
-    }
-    
-    // Dense forest near waterfall and mountain
-    for (let i = 0; i < 50; i++) {
-      const z = -60 + rng() * -30;
-      const angle = rng() * Math.PI * 2;
-      const dist = 20 + rng() * 40;
-      const x = Math.cos(angle) * dist + 15;
-      const yBase = getTerrainHeight(x, z).height;
-      
-      data.push({
-        type: 'tree',
-        x: x + 15, z, height: 12 + rng() * 20,
-        rotation: rng() * Math.PI * 2,
-        scale: 0.6 + rng() * 0.6
-      });
-    }
-    
-    return data;
-  }, []);
+  const treeCount = 40;
   
+  const trunkRef = useRef<THREE.InstancedMesh>(null);
+  const foliageRef = useRef<THREE.InstancedMesh>(null);
+
+  const { treeData } = useMemo(() => {
+    const tData: any[] = [];
+    const rng = seededRandom(1111);
+    
+    // Create a clear corridor down the Z axis (X from -10 to +10 is clear)
+    // Avoid Z = -15 to Z = -20 for the family campsite
+    
+    for (let i = 0; i < treeCount; i++) {
+      let x = 0;
+      let z = 0;
+      let valid = false;
+      let attempts = 0;
+      
+      while (!valid && attempts < 50) {
+        attempts++;
+        z = -30 + rng() * -380; // From lake to tree
+        const side = rng() > 0.5 ? 1 : -1;
+        x = side * (20 + rng() * 60); // Keep corridor clear
+        
+        // Exclude family campsite
+        const distToFamily = Math.hypot(x - 7, z - (-15));
+        if (distToFamily < 25) continue;
+        
+        valid = true;
+      }
+      
+      if (valid) {
+        tData.push({ 
+          x, 
+          z, 
+          height: 35 + rng() * 40, // Taller, majestic trees
+          rotation: rng() * Math.PI * 2, 
+          scale: 1.2 + rng() * 1.5 
+        });
+      }
+    }
+    return { treeData: tData };
+  }, []);
+
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  useEffect(() => {
+    if (!trunkRef.current || !foliageRef.current) return;
+
+    treeData.forEach((prop, i) => {
+      const terrainY = getTerrainHeight(prop.x, prop.z).height;
+      const h = prop.height * prop.scale;
+      const trunkRadius = 1.5 * prop.scale;
+
+      // Trunk
+      dummy.position.set(prop.x, terrainY + h * 0.4, prop.z);
+      dummy.rotation.set(0, prop.rotation, 0);
+      dummy.scale.set(trunkRadius, h * 0.8, trunkRadius);
+      dummy.updateMatrix();
+      trunkRef.current!.setMatrixAt(i, dummy.matrix);
+
+      // Single large foliage canopy (simplified high-quality look)
+      dummy.position.set(prop.x, terrainY + h * 0.85, prop.z);
+      dummy.rotation.set(0, prop.rotation, 0);
+      dummy.scale.set(12 * prop.scale, h * 0.4, 12 * prop.scale);
+      dummy.updateMatrix();
+      foliageRef.current!.setMatrixAt(i, dummy.matrix);
+    });
+
+    trunkRef.current.instanceMatrix.needsUpdate = true;
+    foliageRef.current.instanceMatrix.needsUpdate = true;
+  }, [treeData, dummy]);
+
   return (
     <group position={[0, 0, 0]}>
-      {props.map((prop, i) => {
-        const terrainY = getTerrainHeight(prop.x, prop.z).height;
-        
-        if (prop.type === 'tree') {
-          const scale = prop.scale || 1;
-          const h = (prop.height || 40) * scale;
-          const trunkRadius = (0.4 + scale * 0.3) * (h / 40);
-          return (
-            <group
-              key={`tree-${i}`}
-              position={[prop.x, terrainY, prop.z]}
-              rotation={[0, prop.rotation || 0, 0]}
-            >
-              {/* THICK TRUNK */}
-              <mesh castShadow position={[0, h * 0.35, 0]}>
-                <cylinderGeometry args={[trunkRadius * 0.7, trunkRadius, h * 0.7, 8]} />
-                <meshStandardMaterial color="#3a2510" roughness={1} />
-              </mesh>
+      {/* Detailed Trunk */}
+      <instancedMesh ref={trunkRef} args={[new THREE.CylinderGeometry(0.7, 1, 1, 8), undefined, treeData.length]} castShadow receiveShadow>
+        <meshStandardMaterial color="#423121" roughness={0.9} />
+      </instancedMesh>
 
-              {/* Massive foliage layers - 5 layers for dense canopy */}
-              {[0.25, 0.45, 0.65, 0.82, 0.95].map((hRatio, j) => (
-                <mesh
-                  key={`foliage-${i}-${j}`}
-                  position={[
-                    (Math.sin(j * 2.5) * scale),
-                    h * hRatio,
-                    (Math.cos(j * 1.8) * scale)
-                  ]}
-                >
-                  <coneGeometry args={[
-                    (5 - j * 0.6) * scale,
-                    h * 0.28,
-                    8
-                  ]} />
-                  <meshStandardMaterial
-                    color={j === 0 ? "#0a2a0a" : j === 1 ? "#1a4a15" : j === 2 ? "#2a6a20" : j === 3 ? "#1a5a18" : "#2a7a25"}
-                    roughness={0.85}
-                  />
-                </mesh>
-              ))}
-            </group>
-          );
-        }
-        
-        if (prop.type === 'rock') {
-          return (
-            <mesh
-              key={`rock-${i}`}
-              position={[prop.x, terrainY + (prop.size || 2) * 0.3, prop.z]}
-              rotation={[prop.rotation || 0, (prop.rotation || 0) * 0.5, 0]}
-            >
-              <dodecahedronGeometry args={[prop.size || 2, 0]} />
-              <meshStandardMaterial 
-                color={Math.random() > 0.5 ? "#5a5a55" : "#6a6560"} 
-                roughness={0.95} 
-              />
-            </mesh>
-          );
-        }
-        
-        return null;
-      })}
+      {/* Layered Foliage Canopy */}
+      <instancedMesh ref={foliageRef} args={[new THREE.DodecahedronGeometry(1, 1), undefined, treeData.length]} castShadow receiveShadow>
+        <meshStandardMaterial color="#2d4a22" roughness={0.8} />
+      </instancedMesh>
     </group>
   );
 }

@@ -144,91 +144,63 @@ function WaterfallCliff() {
 
 // ─── Animated Waterfall ───────────────────────────────────────────────────────
 function AnimatedWaterfall() {
-  const waterfallRef = useRef<THREE.InstancedMesh>(null);
-  const splashRef = useRef<THREE.InstancedMesh>(null);
+  const waterfallMatRef = useRef<THREE.ShaderMaterial>(null);
+  const splashMatRef = useRef<THREE.ShaderMaterial>(null);
   const mistRef = useRef<THREE.Points>(null);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
 
   const particleData = useMemo(() => {
-    const particles = [];
     const count = 500;
+    const positions = new Float32Array(count * 3);
+    const speeds = new Float32Array(count);
+    const offsets = new Float32Array(count);
+    const scales = new Float32Array(count);
+    const phases = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
-      // Water falls down the CENTER, not on the sides
-      particles.push({
-        x: (Math.random() - 0.5) * 8, // Narrower center fall
-        y: 45 - Math.random() * 60,
-        z: (Math.random() - 0.5) * 4,
-        speed: 0.6 + Math.random() * 0.8,
-        phase: Math.random() * Math.PI * 2
-      });
+      positions[i * 3] = (Math.random() - 0.5) * 8; // x
+      positions[i * 3 + 1] = 0; 
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 4; // z
+      
+      speeds[i] = 30.0 + Math.random() * 40.0;
+      offsets[i] = Math.random() * 80.0;
+      scales[i] = 1.0 + Math.random() * 1.5;
+      phases[i] = Math.random() * Math.PI * 2;
     }
-    return particles;
+    return { positions, speeds, offsets, scales, phases };
   }, []);
 
   const splashData = useMemo(() => {
-    const particles = [];
     const count = 80;
+    const positions = new Float32Array(count * 3);
+    const speeds = new Float32Array(count);
+    const offsets = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
-      particles.push({
-        x: (Math.random() - 0.5) * 12,
-        y: Math.random() * 5,
-        z: (Math.random() - 0.5) * 6,
-        speed: 0.2 + Math.random() * 0.4,
-        phase: Math.random() * Math.PI * 2
-      });
+      positions[i * 3] = (Math.random() - 0.5) * 12;
+      positions[i * 3 + 1] = 0;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 6;
+      
+      speeds[i] = 10.0 + Math.random() * 15.0;
+      offsets[i] = Math.random() * 30.0;
     }
-    return particles;
+    return { positions, speeds, offsets };
   }, []);
 
   const mistData = useMemo(() => {
     const positions = new Float32Array(150 * 3);
-
     for (let i = 0; i < 150; i++) {
       positions[i * 3] = (Math.random() - 0.5) * 20;
       positions[i * 3 + 1] = -28 + Math.random() * 12;
-      positions[i * 3 + 2] = -85 + (Math.random() - 0.5) * 12;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 12;
     }
-
     return { positions, count: 150 };
   }, []);
 
   useFrame((state) => {
     const time = state.clock.elapsedTime;
 
-    // Animate waterfall particles
-    if (waterfallRef.current) {
-      particleData.forEach((p, i) => {
-        p.y -= p.speed;
-        if (p.y < -30) p.y = 45;
-
-        const sway = Math.sin(time * 1.5 + p.phase) * 0.3;
-        dummy.position.set(p.x + sway, p.y, p.z);
-        dummy.scale.set(
-          0.3 + Math.random() * 0.2,
-          1.0 + Math.random() * 0.6,
-          0.3 + Math.random() * 0.2
-        );
-        dummy.updateMatrix();
-        waterfallRef.current!.setMatrixAt(i, dummy.matrix);
-      });
-      waterfallRef.current.instanceMatrix.needsUpdate = true;
-    }
-
-    // Animate splashes
-    if (splashRef.current) {
-      splashData.forEach((p, i) => {
-        p.y += p.speed * 0.4;
-        if (p.y > 5) p.y = 0;
-
-        dummy.position.set(p.x, p.y - 30, p.z - 85);
-        dummy.scale.setScalar((5 - p.y) / 5 * 0.4);
-        dummy.updateMatrix();
-        splashRef.current!.setMatrixAt(i, dummy.matrix);
-      });
-      splashRef.current.instanceMatrix.needsUpdate = true;
-    }
+    if (waterfallMatRef.current) waterfallMatRef.current.uniforms.uTime.value = time;
+    if (splashMatRef.current) splashMatRef.current.uniforms.uTime.value = time;
 
     // Animate mist
     if (mistRef.current) {
@@ -277,33 +249,104 @@ function AnimatedWaterfall() {
         />
       </mesh>
 
-      {/* Particle waterfall */}
-      <instancedMesh ref={waterfallRef} args={[new THREE.SphereGeometry(0.25, 6, 6), undefined, particleData.length]}>
-        <meshStandardMaterial
-          color="#9ce5f5"
+      {/* Particle waterfall (GPU Driven) */}
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[particleData.positions, 3]} />
+          <bufferAttribute attach="attributes-aSpeed" args={[particleData.speeds, 1]} />
+          <bufferAttribute attach="attributes-aOffset" args={[particleData.offsets, 1]} />
+          <bufferAttribute attach="attributes-aScale" args={[particleData.scales, 1]} />
+          <bufferAttribute attach="attributes-aPhase" args={[particleData.phases, 1]} />
+        </bufferGeometry>
+        <shaderMaterial
+          ref={waterfallMatRef}
           transparent
-          opacity={0.7}
-          roughness={0.05}
-          metalness={0.6}
+          opacity={0.8}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          uniforms={{
+            uTime: { value: 0 },
+            uColor: { value: new THREE.Color("#9ce5f5") }
+          }}
+          vertexShader={`
+            uniform float uTime;
+            attribute float aSpeed;
+            attribute float aOffset;
+            attribute float aScale;
+            attribute float aPhase;
+            void main() {
+              vec3 pos = position;
+              // Fall from y=45 to y=-30 (range 75)
+              float currentY = 45.0 - mod(aOffset + uTime * aSpeed, 75.0);
+              pos.y = currentY;
+              // Add subtle sway
+              pos.x += sin(uTime * 1.5 + aPhase) * 0.3;
+              
+              vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+              gl_PointSize = (15.0 * aScale) * (100.0 / -mvPosition.z);
+              gl_Position = projectionMatrix * mvPosition;
+            }
+          `}
+          fragmentShader={`
+            uniform vec3 uColor;
+            void main() {
+              float dist = length(gl_PointCoord - vec2(0.5));
+              if (dist > 0.5) discard;
+              float alpha = (0.5 - dist) * 2.0;
+              gl_FragColor = vec4(uColor, alpha * 0.7);
+            }
+          `}
         />
-      </instancedMesh>
+      </points>
 
-      {/* Splash particles */}
-      <instancedMesh ref={splashRef} args={[new THREE.SphereGeometry(0.3, 4, 4), undefined, splashData.length]}>
-        <meshStandardMaterial
-          color="#ffffff"
+      {/* Splash particles (GPU Driven) */}
+      <points position={[0, -30, 0]}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[splashData.positions, 3]} />
+          <bufferAttribute attach="attributes-aSpeed" args={[splashData.speeds, 1]} />
+          <bufferAttribute attach="attributes-aOffset" args={[splashData.offsets, 1]} />
+        </bufferGeometry>
+        <shaderMaterial
+          ref={splashMatRef}
           transparent
-          opacity={0.5}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          uniforms={{
+            uTime: { value: 0 },
+            uColor: { value: new THREE.Color("#ffffff") }
+          }}
+          vertexShader={`
+            uniform float uTime;
+            attribute float aSpeed;
+            attribute float aOffset;
+            varying float vAlpha;
+            void main() {
+              vec3 pos = position;
+              float currentY = mod(aOffset + uTime * aSpeed, 10.0);
+              pos.y = currentY;
+              vAlpha = 1.0 - (currentY / 10.0);
+              vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+              gl_PointSize = (25.0 * vAlpha) * (100.0 / -mvPosition.z);
+              gl_Position = projectionMatrix * mvPosition;
+            }
+          `}
+          fragmentShader={`
+            uniform vec3 uColor;
+            varying float vAlpha;
+            void main() {
+              float dist = length(gl_PointCoord - vec2(0.5));
+              if (dist > 0.5) discard;
+              float alpha = (0.5 - dist) * 2.0 * vAlpha;
+              gl_FragColor = vec4(uColor, alpha * 0.5);
+            }
+          `}
         />
-      </instancedMesh>
+      </points>
 
       {/* Mist particles */}
       <points ref={mistRef}>
         <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[mistData.positions, 3]}
-          />
+          <bufferAttribute attach="attributes-position" args={[mistData.positions, 3]} />
         </bufferGeometry>
         <pointsMaterial
           size={2.5}

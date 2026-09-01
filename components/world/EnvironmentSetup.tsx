@@ -45,9 +45,9 @@ export const EnvironmentSetup = memo(function EnvironmentSetup() {
       {/* Post-processing */}
       <EffectComposer>
         <Bloom
-          luminanceThreshold={0.9}
+          luminanceThreshold={0.8}
           luminanceSmoothing={0.9}
-          intensity={0.15}
+          intensity={0.4}
         />
         <Vignette eskil={false} offset={0.4} darkness={0.5} />
       </EffectComposer>

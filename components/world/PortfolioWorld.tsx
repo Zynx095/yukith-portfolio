@@ -18,27 +18,39 @@ import { CinematicNarration } from "./CinematicNarration";
 import { DetailPanel, useZoneExplorer } from "./DetailPanel";
 
 function Scene({ onComplete }: { onComplete?: () => void }) {
+  // @ts-ignore
+  const getFlag = (flag) => {
+    if (typeof window === 'undefined') return false;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has(flag)) return true;
+    return window[flag];
+  };
+
   return (
     <>
       <CameraChoreographer onComplete={onComplete} />
-      <EnvironmentSetup />
-      <CinematicNarration />
+      {!getFlag('DEBUG_DISABLE_POSTPROCESSING') && <EnvironmentSetup />}
+      {!getFlag('DEBUG_DISABLE_HTML') && <CinematicNarration />}
 
       {/* World Foundation */}
-      <Terrain />
-      <Mountains />
-      <EnvironmentProps />
-      <Path />
-      <PathLights />
-      <Atmosphere />
-      <Fireflies />
+      {!getFlag('DEBUG_DISABLE_TERRAIN') && (
+        <>
+          <Terrain />
+          <Mountains />
+          <EnvironmentProps />
+          <Path />
+          <PathLights />
+          <Atmosphere />
+          <Fireflies />
+        </>
+      )}
 
       {/* Personal Story & Ecosystem (Family Campsite, River, Waterfall, Swimming Fish) */}
-      <FamilyCampfire />
-      <Ecosystem />
+      {!getFlag('DEBUG_DISABLE_FAMILY') && <FamilyCampfire />}
+      {!getFlag('DEBUG_DISABLE_WATER') && <Ecosystem />}
 
       {/* World Tree — The Central Archive for Projects & Milestones */}
-      <WorldTree />
+      {!getFlag('DEBUG_DISABLE_TREE') && <WorldTree />}
     </>
   );
 }
@@ -66,6 +78,14 @@ export function PortfolioWorld({ onComplete }: { onComplete?: () => void }) {
           shadows
           gl={{ antialias: false, alpha: false }}
           dpr={[1, 1.5]}
+          onCreated={({ gl, scene }) => {
+            if (typeof window !== 'undefined') {
+              // @ts-ignore
+              window.DEBUG_RENDERER = gl;
+              // @ts-ignore
+              window.DEBUG_SCENE = scene;
+            }
+          }}
         >
           <AdaptiveDpr pixelated />
           <Suspense fallback={null}>
