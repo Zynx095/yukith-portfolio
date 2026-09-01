@@ -6,35 +6,25 @@ import { Suspense } from "react";
 import { CameraChoreographer } from "./CameraChoreographer";
 import { EnvironmentSetup } from "./EnvironmentSetup";
 import { WorldTree } from "./WorldTree";
-import { DistantTreeSilhouette } from "./DistantTreeSilhouette";
-import { WorldHUD } from "./WorldHUD";
+import { Ecosystem } from "./Ecosystem";
+import { FamilyCampfire } from "./FamilyCampfire";
 import { InteractionProvider } from "@/hooks/useInteraction";
 import { WorldInteractionLayer } from "./WorldInteractionLayer";
-import { ZoneProximityTracker } from "./InteractionSystem";
 import { Terrain, Mountains, EnvironmentProps, Atmosphere, Fireflies } from "./Terrain";
 import { Path, PathLights } from "./Path";
 import { SocialIcons } from "./SocialIcons";
 import { MusicController } from "./MusicController";
-import { 
-  ZoneChildhood, 
-  ZoneFirstTech, 
-  ZoneUniversity,
-  ZoneAURA,
-  ZoneETTH,
-  ZoneShadowGuard,
-  ZoneSugarAI,
-  ZoneAchievement,
-  ZoneLeadership,
-  ZoneExperience
-} from "./Zones";
+import { CinematicNarration } from "./CinematicNarration";
+import { DetailPanel, useZoneExplorer } from "./DetailPanel";
 
 function Scene({ onComplete }: { onComplete?: () => void }) {
   return (
     <>
       <CameraChoreographer onComplete={onComplete} />
       <EnvironmentSetup />
+      <CinematicNarration />
 
-      {/* World foundation */}
+      {/* World Foundation */}
       <Terrain />
       <Mountains />
       <EnvironmentProps />
@@ -43,40 +33,33 @@ function Scene({ onComplete }: { onComplete?: () => void }) {
       <Atmosphere />
       <Fireflies />
 
-      {/* Background elements */}
-      <DistantTreeSilhouette />
+      {/* Personal Story & Ecosystem (Family Campsite, River, Waterfall, Swimming Fish) */}
+      <FamilyCampfire />
+      <Ecosystem />
 
-      {/* Zone proximity tracker */}
-      <ZoneProximityTracker />
-
-      {/* HUD Layer */}
-      <WorldHUD />
-
-      {/* Story Zones - positioned in the world */}
-      <ZoneChildhood />
-      <ZoneFirstTech />
-      <ZoneUniversity />
-      
-      {/* Project Zones */}
-      <ZoneAURA />
-      <ZoneETTH />
-      <ZoneShadowGuard />
-      <ZoneSugarAI />
-      
-      {/* Narrative Branches & Monuments */}
-      <ZoneAchievement />
-      <ZoneLeadership />
-      <ZoneExperience />
-
-      {/* World Tree — the final destination */}
+      {/* World Tree — The Central Archive for Projects & Milestones */}
       <WorldTree />
+    </>
+  );
+}
+
+function UIOverlay() {
+  const { activeZone, isPanelOpen, closePanel } = useZoneExplorer();
+
+  return (
+    <>
+      <SocialIcons />
+      <MusicController />
+      {isPanelOpen && activeZone && (
+        <DetailPanel zoneId={activeZone} onClose={closePanel} />
+      )}
     </>
   );
 }
 
 export function PortfolioWorld({ onComplete }: { onComplete?: () => void }) {
   return (
-    <div className="fixed inset-0 w-full h-full z-0 bg-[#0E0718]">
+    <div className="fixed inset-0 w-full h-full z-0 bg-[#a1c4fd]">
       <InteractionProvider>
         <Canvas
           camera={{ fov: 55, near: 0.1, far: 1200, position: [0, 3, 15] }}
@@ -86,14 +69,13 @@ export function PortfolioWorld({ onComplete }: { onComplete?: () => void }) {
         >
           <AdaptiveDpr pixelated />
           <Suspense fallback={null}>
-            <ScrollControls pages={40} damping={0.05} distance={1}>
+            <ScrollControls pages={30} damping={0.25} distance={1}>
               <Scene onComplete={onComplete} />
             </ScrollControls>
           </Suspense>
         </Canvas>
         <WorldInteractionLayer />
-        <SocialIcons />
-        <MusicController />
+        <UIOverlay />
       </InteractionProvider>
     </div>
   );

@@ -67,12 +67,12 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
           className="pointer-events-auto max-w-xl w-full"
         >
           <div
-            className="relative bg-[#12091F]/97 rounded-sm border border-[#5533AA]/40 shadow-[0_20px_80px_rgba(0,0,0,0.9),0_0_60_rgba(85,51,170,0.1)] overflow-hidden"
+            className="relative bg-[#1A2A15]/97 rounded-sm border border-[#3A5A35]/40 shadow-[0_20px_80px_rgba(0,0,0,0.9),0_0_40px_rgba(58,90,53,0.15)] overflow-hidden"
             style={{ borderLeft: `3px solid ${accentColor}` }}
           >
             {/* Parchment texture overlay */}
             <div
-              className="absolute inset-0 opacity-[0.03] pointer-events-none"
+              className="absolute inset-0 opacity-[0.04] pointer-events-none"
               style={{
                 backgroundImage:
                   'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E")',
@@ -98,7 +98,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
                 </div>
                 <button
                   onClick={onClose}
-                  className="ml-4 px-3 py-1.5 font-mono text-xs uppercase tracking-widest border border-[#5533AA]/40 text-[#AA99CC] hover:text-[#E3CB8A] hover:border-[#B99755]/50 rounded-sm transition-colors"
+                  className="ml-4 px-3 py-1.5 font-mono text-xs uppercase tracking-widest border border-[#3A5A35] text-[#8BA0B5] hover:text-[#E3CB8A] hover:border-[#3A5A35]/80 rounded-sm transition-colors"
                   aria-label="Close panel"
                 >
                   Close [ESC]
@@ -106,7 +106,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
               </div>
 
               {/* Divider */}
-              <div className="w-full h-px bg-gradient-to-r from-[#5533AA]/30 to-transparent mb-6" />
+              <div className="w-full h-px bg-gradient-to-r from-[#3A5A35]/30 to-transparent mb-6" />
 
               {/* Content */}
               <div className="space-y-6">
@@ -261,7 +261,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-[#0A0510]/70 backdrop-blur-sm z-[-1]"
+          className="fixed inset-0 bg-[#0A1A10]/70 backdrop-blur-sm z-[-1]"
           onClick={onClose}
         />
       </AnimatePresence>

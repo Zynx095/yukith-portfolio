@@ -14,19 +14,7 @@ export function Path() {
       new THREE.Vector3(3, 0, -20),
       new THREE.Vector3(-2, 0, -50),
       new THREE.Vector3(5, 0, -80),
-      new THREE.Vector3(-3, 0, -110),
-      new THREE.Vector3(8, 0, -140),
-      new THREE.Vector3(-5, 0, -170),
-      new THREE.Vector3(2, 0, -200),
-      new THREE.Vector3(-8, 0, -230),
-      new THREE.Vector3(4, 0, -260),
-      new THREE.Vector3(-3, 0, -290),
-      new THREE.Vector3(6, 0, -320),
-      new THREE.Vector3(-2, 0, -350),
-      new THREE.Vector3(0, 0, -380),
-      new THREE.Vector3(-5, 0, -410),
-      new THREE.Vector3(3, 0, -430),
-      new THREE.Vector3(0, 0, -450),
+      // Path ends BEFORE waterfall - no brown path after waterfall
     ];
     return new THREE.CatmullRomCurve3(points);
   }, []);
@@ -69,11 +57,11 @@ export function Path() {
   }, [pathCurve]);
 
   return (
-    <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, -150]} receiveShadow>
+    <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.8, -150]} receiveShadow>
       <meshStandardMaterial
-        color="#4A4540"
-        roughness={0.95}
-        metalness={0.05}
+        color="#C89D7A" // Warm earthy dirt road
+        roughness={1.0}
+        metalness={0.0}
       />
     </mesh>
   );
@@ -88,7 +76,7 @@ export function PathLights() {
       return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
     })();
     
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 12; i++) { // Fewer torches, only before waterfall
       const z = -30 - i * 22;
       const side = i % 2 === 0 ? 6 : -6;
       data.push({ x: side, z, index: i });
