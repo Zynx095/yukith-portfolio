@@ -2,9 +2,7 @@
 
 import { useRef, useState, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
 import * as THREE from "three";
-import { motion, AnimatePresence } from "framer-motion";
 import { useInteractionContext } from "@/hooks/useInteraction";
 import { STORY_ZONES } from "@/src/data/storyZones";
 
@@ -117,13 +115,11 @@ export function ZoneAURA() {
 
   const interactProgress = proximityRef.current;
   const isActive = nearestZone?.zoneId === config.id;
-  const showPrompt = interactProgress > 0.15 && !isPanelOpen;
-  const promptOpacity = Math.min(interactProgress * 2, 1);
 
   return (
     <group position={config.worldPosition as [number, number, number]}>
       <group ref={groupRef} scale={[2.5, 2.5, 2.5]}>
-        <mesh position={[0, 0, 0]}>
+        <mesh position={[0, 0, 0]} onClick={() => openPanel(config.id)}>
           <sphereGeometry args={[0.8, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
           <meshStandardMaterial color="#0D0D0D" roughness={0.3} metalness={0.9} />
         </mesh>
@@ -158,34 +154,6 @@ export function ZoneAURA() {
         <sphereGeometry args={[6, 16, 16]} />
         <meshBasicMaterial color="#00FF64" transparent blending={THREE.AdditiveBlending} depthWrite={false} opacity={0.08} />
       </mesh>
-
-      {/* Interactive prompt — always on top */}
-      <AnimatePresence>
-        {showPrompt && (
-          <Html
-            position={[config.worldPosition[0], config.worldPosition[1] + 4, config.worldPosition[2]]}
-            zIndexRange={[200, 0]}
-            style={{ pointerEvents: "auto", cursor: "pointer", opacity: promptOpacity, transform: "translateZ(0)" }}
-            transform
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: promptOpacity, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ type: "spring", stiffness: 100, damping: 20 }}
-              className="flex flex-col items-center gap-2"
-              onClick={() => openPanel(config.id)}
-            >
-              <div className="px-5 py-3 bg-[#1A0D2E]/95 border border-[#00FF64]/70 rounded-sm backdrop-blur-md shadow-[0_0_30px_rgba(0,255,100,0.3)]">
-                <p className="font-mono text-sm uppercase tracking-[0.2em] text-[#00FF64] text-center font-bold">
-                  <span className="px-2 py-0.5 bg-[#0A1A0A] border border-[#00FF64] rounded text-white text-xs">SPACE</span>{" "}
-                  EXPLORE AURA
-                </p>
-              </div>
-            </motion.div>
-          </Html>
-        )}
-      </AnimatePresence>
     </group>
   );
 }

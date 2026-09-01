@@ -2,9 +2,7 @@
 
 import { useRef, useState, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
 import * as THREE from "three";
-import { motion, AnimatePresence } from "framer-motion";
 import { useInteractionContext } from "@/hooks/useInteraction";
 import { STORY_ZONES } from "@/src/data/storyZones";
 
@@ -42,91 +40,82 @@ function createCRTTexture() {
 export function ZoneFirstTech() {
   const groupRef = useRef<THREE.Group>(null);
   const screenRef = useRef<THREE.Mesh>(null);
-  const glowRef = useRef<THREE.Mesh>(null);
-  const proximityRef = useRef(0);
-  const [renderKey, setRenderKey] = useState(0);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  const { openPanel } = useInteractionContext();
 
   const config = STORY_ZONES.find((z) => z.id === "firsttech")!;
   const crtTexture = useMemo(() => createCRTTexture(), []);
-  const { nearestZone, openPanel, isPanelOpen } = useInteractionContext();
 
   useFrame((state) => {
-    const dist = state.camera.position.distanceTo(new THREE.Vector3(...config.worldPosition));
-    const rawProgress = THREE.MathUtils.clamp(
-      THREE.MathUtils.mapLinear(dist, config.interactDistance, 5, 0, 1),
-      0,
-      1
-    );
-    proximityRef.current = THREE.MathUtils.damp(proximityRef.current, rawProgress, 4, state.clock.getDelta());
-
-    if (Math.abs(proximityRef.current - renderKey / 100) > 0.05 && proximityRef.current > 0.01) {
-      setRenderKey(Math.round(proximityRef.current * 100));
-    }
-
-    if (groupRef.current) {
-      groupRef.current.position.y = config.worldPosition[1] + Math.sin(state.clock.elapsedTime * 0.8) * 0.1;
-    }
-    if (screenRef.current && crtTexture) {
-      const flicker = 0.85 + Math.random() * 0.15;
+    if (screenRef.current) {
+      const flicker = 0.7 + Math.sin(state.clock.elapsedTime * 10) * 0.1 + Math.random() * 0.1;
       (screenRef.current.material as THREE.MeshBasicMaterial).opacity = flicker;
-      crtTexture.offset.x = state.clock.elapsedTime * 0.01;
     }
-    if (glowRef.current) {
-      (glowRef.current.material as THREE.MeshBasicMaterial).opacity = proximityRef.current * 0.3;
+    if (lightRef.current) {
+      lightRef.current.intensity = 2 + Math.sin(state.clock.elapsedTime * 5) * 0.5;
     }
   });
 
-  const interactProgress = proximityRef.current;
-  const showPrompt = interactProgress > 0.15 && !isPanelOpen;
-  const promptOpacity = Math.min(interactProgress * 2, 1);
-
   return (
-    <group position={config.worldPosition as [number, number, number]}>
-      <group ref={groupRef}>
-        <mesh position={[0, 0, -0.3]}>
-          <boxGeometry args={[2, 1.6, 0.8]} />
-          <meshStandardMaterial color="#0A0A0A" roughness={0.9} />
+    <group ref={groupRef} position={config.worldPosition as [number, number, number]}>
+      {/* Workshop shell */}
+      <group position={[0, 0, 0]}>
+        {/* Back wall */}
+        <mesh position={[0, 3, -5]}>
+          <boxGeometry args={[14, 7, 0.4]} />
+          <meshStandardMaterial color="#2A2015" roughness={1} flatShading />
         </mesh>
-        <mesh ref={screenRef} position={[0, 0, 0.1]}>
-          <planeGeometry args={[1.8, 1.3]} />
-          <meshBasicMaterial map={crtTexture} transparent opacity={0.8} />
-        </mesh>
-        <mesh ref={glowRef} position={[0, 0, 0.15]}>
-          <planeGeometry args={[2.5, 2]} />
-          <meshBasicMaterial color="#33FF57" transparent opacity={0} blending={THREE.AdditiveBlending} depthWrite={false} />
-        </mesh>
-        <mesh position={[0, -1, 0.5]} rotation={[-0.1, 0, 0]}>
-          <boxGeometry args={[2.2, 0.05, 0.8]} />
-          <meshStandardMaterial color="#0A0A0A" roughness={0.95} />
-        </mesh>
+        
+        {/* CRT Monitor on workbench */}
+        <group position={[0, 1.5, 0]}>
+          {/* Workbench */}
+          <mesh position={[0, -0.5, 0]}>
+            <boxGeometry args={[5, 0.3, 3]} />
+            <meshStandardMaterial color="#3A2A1A" roughness={0.9} flatShading />
+          </mesh>
+          
+          {/* CRT casing */}
+          <mesh position={[0, 1.5, 0.5]}>
+            <boxGeometry args={[2.5, 2, 2]} />
+            <meshStandardMaterial color="#0A0A0A" roughness={0.5} metalness={0.3} />
+          </mesh>
+          
+          {/* Screen */}
+          <mesh ref={screenRef} position={[0, 1.5, 1.55]} onClick={() => openPanel(config.id)}>
+            <planeGeometry args={[2, 1.5]} />
+            <meshBasicMaterial map={crtTexture} transparent opacity={0.8} />
+          </mesh>
+          
+          {/* Scanlines */}
+          {Array.from({ length: 15 }).map((_, i) => (
+            <mesh key={`scan-${i}`} position={[0, 1.5, 1.56]}>
+              <planeGeometry args={[2, 0.03]} />
+              <meshBasicMaterial color="#00FF44" transparent opacity={0.4} />
+            </mesh>
+          ))}
+        </group>
+        
+        {/* Cables and scraps */}
+        {Array.from({ length: 12 }).map((_, i) => {
+          const angle = (i / 12) * Math.PI * 2;
+          return (
+            <mesh key={`cable-${i}`} position={[Math.cos(angle) * 4, 0.3, Math.sin(angle) * 3]} rotation={[0, angle, 0]}>
+              <torusGeometry args={[0.5, 0.08, 4, 8]} />
+              <meshStandardMaterial color="#2A2A2A" roughness={0.8} />
+            </mesh>
+          );
+        })}
       </group>
-
-      <AnimatePresence>
-        {showPrompt && (
-          <Html
-            position={[config.worldPosition[0], config.worldPosition[1] + 4, config.worldPosition[2]]}
-            zIndexRange={[200, 0]}
-            style={{ pointerEvents: "auto", cursor: "pointer", opacity: promptOpacity, transform: "translateZ(0)" }}
-            transform
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: promptOpacity, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ type: "spring", stiffness: 100, damping: 20 }}
-              className="flex flex-col items-center gap-2"
-              onClick={() => openPanel(config.id)}
-            >
-              <div className="px-5 py-3 bg-[#1A0D2E]/95 border border-[#33FF57]/70 rounded-sm backdrop-blur-md shadow-[0_0_30px_rgba(51,255,87,0.3)]">
-                <p className="font-mono text-sm uppercase tracking-[0.2em] text-[#33FF57] text-center font-bold">
-                  <span className="px-2 py-0.5 bg-[#0A1A0A] border border-[#33FF57] rounded text-white text-xs">SPACE</span>{" "}
-                  EXPLORE SPARK
-                </p>
-              </div>
-            </motion.div>
-          </Html>
-        )}
-      </AnimatePresence>
+      
+      {/* Green screen glow */}
+      <pointLight ref={lightRef} color="#00FF44" intensity={2} distance={15} position={[0, 2, 2]} />
+      
+      {/* Title label */}
+      <mesh position={[0, 4, 3]} onClick={() => openPanel(config.id)}>
+        <planeGeometry args={[6, 1]} />
+        <meshBasicMaterial color="#00FF44" transparent opacity={0.15} />
+      </mesh>
     </group>
   );
 }

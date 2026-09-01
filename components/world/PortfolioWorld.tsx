@@ -13,6 +13,8 @@ import { WorldInteractionLayer } from "./WorldInteractionLayer";
 import { ZoneProximityTracker } from "./InteractionSystem";
 import { Terrain, Mountains, EnvironmentProps, Atmosphere, Fireflies } from "./Terrain";
 import { Path, PathLights } from "./Path";
+import { SocialIcons } from "./SocialIcons";
+import { MusicController } from "./MusicController";
 import { 
   ZoneChildhood, 
   ZoneFirstTech, 
@@ -90,6 +92,8 @@ export function PortfolioWorld({ onComplete }: { onComplete?: () => void }) {
           </Suspense>
         </Canvas>
         <WorldInteractionLayer />
+        <SocialIcons />
+        <MusicController />
       </InteractionProvider>
     </div>
   );
