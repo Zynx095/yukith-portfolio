@@ -236,7 +236,7 @@ export function ArtifactSugarAI({ position }: { position: [number, number, numbe
   });
 
   return (
-    <ArtifactWrapper id="sugar-ai" position={position} title="Sugar AI" subtitle="Neural Intelligence">
+    <ArtifactWrapper id="sugai" position={position} title="Sugar AI" subtitle="Neural Intelligence">
       <group>
         {/* Inner glowing core */}
         <mesh ref={coreRef}>

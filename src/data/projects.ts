@@ -80,7 +80,7 @@ export const PROJECTS: Project[] = [
     ]
   },
   {
-    id: "04",
+    id: "sugai",
     title: "Sugar AI",
     role: "Offline Voice-Controlled Desktop Assistant",
     year: "2025",
