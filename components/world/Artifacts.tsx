@@ -8,7 +8,7 @@ import { useInteractionContext } from "@/hooks/useInteraction";
 
 // ─── SHARED MATERIALS ────────────────────────────────────────────────────────
 const matDarkMetal = new THREE.MeshStandardMaterial({ color: "#1a1a24", roughness: 0.3, metalness: 0.8 });
-const matGold = new THREE.MeshStandardMaterial({ color: "#d4af37", roughness: 0.2, metalness: 1.0 });
+const matGold = new THREE.MeshStandardMaterial({ color: "#d4af37", roughness: 0.18, metalness: 1.0 });
 const matSilver = new THREE.MeshStandardMaterial({ color: "#c0c0c0", roughness: 0.3, metalness: 0.9 });
 const matWood = new THREE.MeshStandardMaterial({ color: "#4a2f1d", roughness: 0.9, metalness: 0.1 });
 
