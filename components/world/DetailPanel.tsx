@@ -242,9 +242,19 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
 }
 
 function getProjectAccent(projectId: string): string {
-  const project = PROJECTS.find((p) => p.id === projectId || p.title.toLowerCase() === projectId);
+  // Check by exact ID match
+  let project = PROJECTS.find((p) => p.id === projectId);
   if (project) return project.accent;
-  return "#B99755";
+
+  // Check by title match (normalize for comparison)
+  const normalizedId = projectId.toLowerCase().replace(/[^a-z0-9]/g, '');
+  project = PROJECTS.find((p) => {
+    const normalizedTitle = p.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return normalizedTitle === normalizedId || p.title.toLowerCase().includes(projectId.toLowerCase());
+  });
+  if (project) return project.accent;
+
+  return "#B995";
 }
 
 export function useZoneExplorer() {
