@@ -42,8 +42,7 @@ export default function AboutScene() {
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Intro & Education */}
-          <div className="lg:col-span-1 space-y-12">
+                    <div className="lg:col-span-1 space-y-12">
             <div className="about-reveal">
               <h3 className="text-2xl font-serif text-[#12351F] mb-4 flex items-center">
                 <span className="text-[#B99755] mr-2 text-xl">✤</span> Background
@@ -55,8 +54,7 @@ export default function AboutScene() {
             </div>
 
             <div className="about-reveal relative">
-              {/* Subtle root branch graphic */}
-              <div className="absolute -left-6 top-0 w-px h-full bg-gradient-to-b from-[#3A2417]/20 via-[#3A2417]/40 to-transparent rounded-full hidden md:block"></div>
+                            <div className="absolute -left-6 top-0 w-px h-full bg-gradient-to-b from-[#3A2417]/20 via-[#3A2417]/40 to-transparent rounded-full hidden md:block"></div>
               
               <h3 className="text-2xl font-serif text-[#12351F] mb-4 flex items-center">
                 <span className="text-[#B99755] mr-2 text-xl">✤</span> Education
@@ -78,11 +76,9 @@ export default function AboutScene() {
             </div>
           </div>
 
-          {/* Skills, Leadership, Certs */}
-          <div className="lg:col-span-2 space-y-12">
+                    <div className="lg:col-span-2 space-y-12">
             <div className="about-reveal relative">
-              {/* Subtle root branch graphic */}
-              <div className="absolute -left-6 top-0 w-px h-full bg-gradient-to-b from-[#3A2417]/20 via-[#3A2417]/40 to-transparent rounded-full hidden md:block"></div>
+                            <div className="absolute -left-6 top-0 w-px h-full bg-gradient-to-b from-[#3A2417]/20 via-[#3A2417]/40 to-transparent rounded-full hidden md:block"></div>
 
               <h3 className="text-2xl font-serif text-[#12351F] mb-6 flex items-center">
                 <span className="text-[#B99755] mr-2 text-xl">✤</span> Skills & Technologies
@@ -90,8 +86,7 @@ export default function AboutScene() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 {skillsData.map((categoryGroup, idx) => (
                   <div key={idx} className="bg-white/40 p-5 rounded border border-[#3A2417]/10 relative overflow-hidden group hover:border-[#12351F]/30 transition-colors">
-                    {/* Decorative leaf ring */}
-                    <div className="absolute -right-8 -bottom-8 w-24 h-24 border border-[#315D39]/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+                                        <div className="absolute -right-8 -bottom-8 w-24 h-24 border border-[#315D39]/10 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
                     
                     <h4 className="font-serif font-bold text-[#51321E] mb-3 capitalize relative z-10">{categoryGroup.title}</h4>
                     <ul className="space-y-2 relative z-10">
@@ -108,8 +103,7 @@ export default function AboutScene() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="about-reveal md:col-span-2 relative">
-                {/* Subtle root branch graphic */}
-                <div className="absolute -left-6 top-0 w-px h-full bg-gradient-to-b from-[#3A2417]/20 via-[#3A2417]/40 to-transparent rounded-full hidden md:block"></div>
+                                <div className="absolute -left-6 top-0 w-px h-full bg-gradient-to-b from-[#3A2417]/20 via-[#3A2417]/40 to-transparent rounded-full hidden md:block"></div>
 
                 <h3 className="text-2xl font-serif text-[#12351F] mb-4 flex items-center">
                   <span className="text-[#B99755] mr-2 text-xl">✤</span> Leadership

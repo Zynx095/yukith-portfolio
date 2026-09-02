@@ -49,8 +49,7 @@ export default function ProjectSugarAI() {
           </div>
 
           <div className="lg:col-span-7 bg-[#15100C] border border-[#3A2417] rounded-xl p-8 shadow-2xl relative overflow-hidden">
-            {/* Subtle organic waveform visualization bg */}
-            <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none">
+                        <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none">
               <div className="w-full h-32 flex items-center justify-center gap-1">
                 {Array.from({ length: 40 }).map((_, i) => (
                   <div 

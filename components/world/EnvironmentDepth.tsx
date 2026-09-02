@@ -12,19 +12,17 @@ export function EnvironmentDepth() {
   const dustRef = useRef<THREE.Points>(null);
   const mistRef = useRef<THREE.Group>(null);
 
-  // Generate floating cosmic dust
   const dustData = useMemo(() => {
     const count = 300;
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     
     for (let i = 0; i < count; i++) {
-      // Spread along the journey path
+
       positions[i * 3] = (Math.random() - 0.5) * 150;
       positions[i * 3 + 1] = Math.random() * 80 - 10;
       positions[i * 3 + 2] = -Math.random() * 500;
-      
-      // Purple/white dust colors
+
       const isPurple = Math.random() > 0.5;
       colors[i * 3] = isPurple ? 0.3 + Math.random() * 0.2 : 0.7 + Math.random() * 0.2;
       colors[i * 3 + 1] = isPurple ? 0.2 + Math.random() * 0.1 : 0.6 + Math.random() * 0.2;
@@ -33,7 +31,6 @@ export function EnvironmentDepth() {
     return { positions, colors, count };
   }, []);
 
-  // Generate floating mist planes
   const mistMeshes = useMemo(() => {
     const meshes = [];
     const count = 15;
@@ -53,8 +50,7 @@ export function EnvironmentDepth() {
 
   useFrame((state) => {
     const time = state.clock.elapsedTime;
-    
-    // Subtle dust drift
+
     if (dustRef.current) {
       dustRef.current.rotation.y = time * 0.005;
       dustRef.current.position.x = Math.sin(time * 0.1) * 2;
@@ -63,8 +59,7 @@ export function EnvironmentDepth() {
 
   return (
     <group>
-      {/* Cosmic dust particles */}
-      <points ref={dustRef}>
+            <points ref={dustRef}>
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
@@ -86,8 +81,7 @@ export function EnvironmentDepth() {
         />
       </points>
 
-      {/* Floating mist planes */}
-      {mistMeshes.map((mist, i) => (
+            {mistMeshes.map((mist, i) => (
         <mesh
           key={`mist-${i}`}
           position={mist.position as [number, number, number]}
@@ -103,8 +97,7 @@ export function EnvironmentDepth() {
         </mesh>
       ))}
 
-      {/* Distant mountain silhouettes (far background) */}
-      <DistantSilhouettes />
+            <DistantSilhouettes />
     </group>
   );
 }
@@ -114,12 +107,11 @@ function DistantSilhouettes() {
 
   useFrame((state) => {
     if (groupRef.current) {
-      // Very slow parallax
+
       groupRef.current.rotation.y = state.clock.elapsedTime * 0.001;
     }
   });
 
-  // Procedural distant mountain/structure silhouettes
   const silhouetteData = useMemo(() => {
     const data = [];
     const count = 20;

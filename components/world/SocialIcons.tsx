@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-// Social data
 const SOCIAL_LINKS = [
   { 
     name: "GitHub", 
@@ -42,8 +41,7 @@ export function SocialIcons() {
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
-      {/* Music & Social Container */}
-      <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
         {SOCIAL_LINKS.map((link, i) => (
           <a
             key={link.name}
@@ -55,8 +53,7 @@ export function SocialIcons() {
           >
             {link.icon}
             
-            {/* Tooltip */}
-            <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-[#0A1A0A]/90 border border-[#3A5A35]/50 rounded text-xs text-[#C8D4C8] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                        <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-[#0A1A0A]/90 border border-[#3A5A35]/50 rounded text-xs text-[#C8D4C8] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
               {link.name}
             </span>
           </a>

@@ -18,7 +18,7 @@ export default function WorkScene() {
     if (!containerRef.current || !headerRef.current) return;
 
     let ctx = gsap.context(() => {
-      // Header fade in
+
       gsap.from(headerRef.current, {
         scrollTrigger: {
           trigger: containerRef.current,
@@ -30,7 +30,6 @@ export default function WorkScene() {
         y: 50,
       });
 
-      // Simple reveal for each project container
       const projects = gsap.utils.toArray('.project-wrapper');
       projects.forEach((proj: any) => {
         gsap.fromTo(proj, 
@@ -53,8 +52,7 @@ export default function WorkScene() {
 
   return (
     <section id="work" ref={containerRef} className="relative w-full bg-[#0D0A08] border-t-2 border-[#1A120D]">
-      {/* Decorative top roots linking from the previous section */}
-      <div className="absolute top-0 left-1/4 w-px h-16 bg-gradient-to-b from-[#3A2417] to-transparent"></div>
+            <div className="absolute top-0 left-1/4 w-px h-16 bg-gradient-to-b from-[#3A2417] to-transparent"></div>
       <div className="absolute top-0 right-1/4 w-px h-24 bg-gradient-to-b from-[#3A2417] to-transparent"></div>
       <div className="absolute top-0 left-1/2 w-px h-32 bg-gradient-to-b from-[#51321E] to-transparent hidden md:block"></div>
 
@@ -68,8 +66,7 @@ export default function WorkScene() {
       </div>
 
       <div className="relative">
-        {/* Central timeline root */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-full bg-[#1A120D] hidden lg:block z-0"></div>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-full bg-[#1A120D] hidden lg:block z-0"></div>
 
       <div className="project-wrapper">
         <ProjectETTH />

@@ -7,8 +7,6 @@ import { useFrame } from "@react-three/fiber";
 export function WorldRoots() {
   const materialRef = useRef<THREE.MeshStandardMaterial>(null);
 
-  // Create a sprawling root spline that follows the general camera journey
-  // but stays grounded and weaves randomly.
   const rootCurve = useMemo(() => {
     const points = [
       new THREE.Vector3(0, -3, 10),         // Start
@@ -52,15 +50,14 @@ export function WorldRoots() {
 
   useFrame((state) => {
     if (materialRef.current) {
-      // Subtle pulsing of the root's emissive
+
       materialRef.current.emissiveIntensity = 0.1 + Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
     }
   });
 
   return (
     <group>
-      {/* Primary Thick Root */}
-      <mesh>
+            <mesh>
         <tubeGeometry args={[rootCurve, 200, 0.4, 8, false]} />
         <meshStandardMaterial 
           ref={materialRef}
@@ -73,8 +70,7 @@ export function WorldRoots() {
         />
       </mesh>
       
-      {/* Secondary Winding Root */}
-      <mesh>
+            <mesh>
         <tubeGeometry args={[secondaryCurve, 150, 0.2, 6, false]} />
         <meshStandardMaterial 
           color="#B8BBC2" 
@@ -86,8 +82,7 @@ export function WorldRoots() {
         />
       </mesh>
 
-      {/* Spores / Ambient Dust along the path */}
-      <group>
+            <group>
         {Array.from({ length: 200 }).map((_, i) => {
           const t = i / 200;
           const pos = rootCurve.getPointAt(t);

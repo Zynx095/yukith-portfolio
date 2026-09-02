@@ -8,7 +8,6 @@ interface GrowthTreeProps {
   growthProgress: number; // 0 to 1
 }
 
-// Pseudo-random generator for consistent seeds
 function mulberry32(a: number) {
   return function() {
     let t = a += 0x6D2B79F5;
@@ -21,8 +20,7 @@ function mulberry32(a: number) {
 export function GrowthTree({ growthProgress }: GrowthTreeProps) {
   const leavesRef = useRef<THREE.InstancedMesh>(null);
   const rand = useMemo(() => mulberry32(12345), []);
-  
-  // Growth stages scale mapping
+
   const trunkScale = Math.max(0, Math.min(1, (growthProgress - 0.3) / 0.2));
   const branchScale = Math.max(0, Math.min(1, (growthProgress - 0.5) / 0.2));
   const leavesScale = Math.max(0, Math.min(1, (growthProgress - 0.7) / 0.15));
@@ -46,8 +44,7 @@ export function GrowthTree({ growthProgress }: GrowthTreeProps) {
       
       const scale = 0.5 + rand() * 0.5;
       const speedOffset = rand() * Math.PI * 2;
-      
-      // Randomly pick one of the green shades
+
       const colorChoices = ["#12351F", "#1D4A2B", "#315D39"];
       const color = new THREE.Color(colorChoices[Math.floor(rand() * colorChoices.length)]);
       
@@ -66,8 +63,7 @@ export function GrowthTree({ growthProgress }: GrowthTreeProps) {
     
     for (let i = 0; i < LEAF_COUNT; i++) {
       const leaf = leafData[i];
-      
-      // Wind movement
+
       const swayX = Math.sin(time * 2 + leaf.speedOffset) * 0.5 * windIntensity;
       const swayY = Math.cos(time * 1.5 + leaf.speedOffset) * 0.5 * windIntensity;
       
@@ -96,24 +92,21 @@ export function GrowthTree({ growthProgress }: GrowthTreeProps) {
   
   return (
     <group>
-      {/* Seed */}
-      {growthProgress < 0.2 && (
+            {growthProgress < 0.2 && (
         <mesh position={[0, 0, 0]}>
           <sphereGeometry args={[0.5 + growthProgress * 2, 16, 16]} />
           <meshStandardMaterial color="#B99755" emissive="#B99755" emissiveIntensity={0.5} />
         </mesh>
       )}
 
-      {/* Trunk */}
-      {growthProgress >= 0.3 && (
+            {growthProgress >= 0.3 && (
         <mesh position={[0, trunkHeight / 2, 0]} castShadow receiveShadow>
           <cylinderGeometry args={[trunkRadius * 0.8, trunkRadius, trunkHeight, 16]} />
           <meshStandardMaterial color="#51321E" roughness={0.9} />
         </mesh>
       )}
 
-      {/* Branches */}
-      {growthProgress >= 0.5 && (
+            {growthProgress >= 0.5 && (
         <group position={[0, 15 * trunkScale, 0]}>
           {[...Array(8)].map((_, i) => {
             const angle = (i / 8) * Math.PI * 2;
@@ -136,16 +129,14 @@ export function GrowthTree({ growthProgress }: GrowthTreeProps) {
         </group>
       )}
 
-      {/* Leaves */}
-      {growthProgress >= 0.7 && (
+            {growthProgress >= 0.7 && (
         <instancedMesh ref={leavesRef} args={[undefined, undefined, LEAF_COUNT]} castShadow>
           <icosahedronGeometry args={[0.8, 0]} />
           <meshStandardMaterial roughness={0.6} />
         </instancedMesh>
       )}
 
-      {/* Golden Spotlight */}
-      {growthProgress >= 0.85 && (
+            {growthProgress >= 0.85 && (
         <spotLight 
           position={[0, 40, 0]} 
           angle={0.5} 

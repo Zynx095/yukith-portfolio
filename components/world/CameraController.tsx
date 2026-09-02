@@ -5,7 +5,6 @@ import { useScroll } from "@react-three/drei";
 import { useMemo, useRef, useEffect, useState } from "react";
 import * as THREE from "three";
 
-// ─── Camera lookAt interpolator ──────────────────────────────────────
 function smoothLookAt(
   current: THREE.Vector3,
   target: THREE.Vector3,
@@ -19,7 +18,6 @@ export function CameraController({ onComplete }: { onComplete?: () => void }) {
   const scroll = useScroll();
   const hasCompleted = useRef(false);
 
-  // Prefers reduced motion
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -29,8 +27,6 @@ export function CameraController({ onComplete }: { onComplete?: () => void }) {
     return () => mediaQuery.removeEventListener("change", listener);
   }, []);
 
-  // Cinematic path — ground-level journey through the dark void
-  // Wider lateral offsets for dramatic reveals
   const curve = useMemo(() => {
     const points = [
       new THREE.Vector3(0, 2, 10),         // Start — intro title
@@ -81,7 +77,6 @@ export function CameraController({ onComplete }: { onComplete?: () => void }) {
 
     const offset = scroll.offset;
 
-    // Check for completion
     if (offset > 0.995 && !hasCompleted.current) {
       hasCompleted.current = true;
       if (onComplete) {
@@ -89,10 +84,8 @@ export function CameraController({ onComplete }: { onComplete?: () => void }) {
       }
     }
 
-    // Evaluate curve position
     curve.getPointAt(offset, cameraPosition.current);
 
-    // Subtle breathing sway (reduced for motion-sickness prevention)
     if (!reducedMotion) {
       const time = state.clock.elapsedTime;
       const swayX = Math.sin(time * 0.25) * 0.1;
@@ -101,25 +94,21 @@ export function CameraController({ onComplete }: { onComplete?: () => void }) {
       cameraPosition.current.y += swayY;
     }
 
-    // LookAt target — further along the curve for anticipation
     const lookAtFraction = Math.min(offset + 0.03, 0.999);
     curve.getPointAt(lookAtFraction, targetLookAt.current);
 
-    // Additional look-at pull toward nearby landmarks
     if (!reducedMotion) {
-      // Pull slightly toward the camera's forward direction
+
       targetLookAt.current.x += state.pointer.x * -1.2;
       targetLookAt.current.y += state.pointer.y * 0.8;
     }
 
-    // Heavy cinematic damping — slow and deliberate
     const dampingFactor = 1.5;
     state.camera.position.lerp(cameraPosition.current, delta * dampingFactor);
 
     lookAtTarget.current.lerp(targetLookAt.current, delta * dampingFactor);
     state.camera.lookAt(lookAtTarget.current);
 
-    // Subtle banking based on tangent direction
     if (!reducedMotion) {
       const tangent = curve.getTangentAt(offset);
       const banking = tangent.x * -0.06;

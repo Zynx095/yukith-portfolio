@@ -11,7 +11,6 @@ import { leadershipData } from "@/src/data/leadership";
 import { experienceData } from "@/src/data/experience";
 import { personalStory } from "@/src/data/personal";
 
-// Replaced parchment texture generator with holographic grid generator
 function createHolographicGrid() {
   if (typeof window === "undefined") return null;
   const size = 64;
@@ -65,8 +64,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
               boxShadow: `0 30px 100px rgba(0,0,0,0.8), 0 0 60px ${accentColor}20, inset 0 0 30px ${accentColor}15`
             }}
           >
-            {/* Holographic grid overlay */}
-            <div
+                        <div
               className="absolute inset-0 pointer-events-none opacity-40 mix-blend-screen"
               style={{
                 backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)`,
@@ -74,14 +72,12 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
               }}
             />
 
-            {/* Corner UI elements */}
-            <div className="absolute top-0 left-0 w-12 h-12 pointer-events-none" style={{ borderTop: `2px solid ${accentColor}`, borderLeft: `2px solid ${accentColor}`, opacity: 0.8 }} />
+                        <div className="absolute top-0 left-0 w-12 h-12 pointer-events-none" style={{ borderTop: `2px solid ${accentColor}`, borderLeft: `2px solid ${accentColor}`, opacity: 0.8 }} />
             <div className="absolute bottom-0 right-0 w-12 h-12 pointer-events-none" style={{ borderBottom: `2px solid ${accentColor}`, borderRight: `2px solid ${accentColor}`, opacity: 0.8 }} />
             <div className="absolute top-0 right-0 w-12 h-12 pointer-events-none" style={{ borderTop: `2px solid ${accentColor}`, opacity: 0.3 }} />
             <div className="absolute bottom-0 left-0 w-12 h-12 pointer-events-none" style={{ borderBottom: `2px solid ${accentColor}`, opacity: 0.3 }} />
 
-            {/* Scanning line effect */}
-            <motion.div 
+                        <motion.div 
               className="absolute left-0 right-0 h-px pointer-events-none"
               style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`, opacity: 0.5 }}
               animate={{ top: ["0%", "100%"] }}
@@ -89,8 +85,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
             />
 
             <div className="relative p-10 md:p-12 z-10">
-              {/* Header */}
-              <div className="flex items-start justify-between mb-8">
+                            <div className="flex items-start justify-between mb-8">
                 <div>
                   <div className="flex items-center gap-3 mb-3">
                     <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }} />
@@ -114,22 +109,18 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
                 </button>
               </div>
 
-              {/* Divider */}
-              <div className="w-full h-px bg-white/5 mb-8 relative">
+                            <div className="w-full h-px bg-white/5 mb-8 relative">
                 <div className="absolute left-0 top-0 h-full w-1/3" style={{ background: `linear-gradient(90deg, ${accentColor}, transparent)` }} />
               </div>
 
-              {/* Content */}
-              <div className="space-y-8 max-h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                {/* Overview */}
-                <section>
+                            <div className="space-y-8 max-h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                                <section>
                   <p className="font-sans font-light text-white/80 text-lg leading-relaxed">
                     {config.description}
                   </p>
                 </section>
 
-                {/* Problem */}
-                {config.problem && (
+                                {config.problem && (
                   <section className="bg-black/20 p-6 rounded-sm border border-white/5">
                     <h3 className="font-mono text-xs uppercase tracking-[0.2em] mb-4 text-white/40">
                       The Problem
@@ -140,8 +131,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
                   </section>
                 )}
 
-                {/* Approach */}
-                {config.approach && (
+                                {config.approach && (
                   <section className="bg-black/20 p-6 rounded-sm border border-white/5">
                     <h3 className="font-mono text-xs uppercase tracking-[0.2em] mb-4 text-white/40">
                       The Approach
@@ -152,8 +142,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
                   </section>
                 )}
 
-                {/* Engineering */}
-                {config.engineering && (
+                                {config.engineering && (
                   <section className="bg-black/20 p-6 rounded-sm border border-white/5">
                     <h3 className="font-mono text-xs uppercase tracking-[0.2em] mb-4 text-white/40">
                       Engineering
@@ -164,8 +153,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
                   </section>
                 )}
 
-                {/* Technology & Features Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {config.technology && config.technology.length > 0 && (
                     <section>
                       <h3 className="font-mono text-[10px] uppercase tracking-[0.3em] mb-4 text-white/40">
@@ -202,8 +190,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
                   )}
                 </div>
 
-                {/* Links */}
-                {config.links && config.links.length > 0 && (
+                                {config.links && config.links.length > 0 && (
                   <section className="pt-6 border-t border-white/5">
                     <div className="flex flex-wrap gap-4">
                       {config.links.map((link) => (
@@ -228,8 +215,7 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
           </div>
         </motion.div>
 
-        {/* Backdrop dim */}
-        <motion.div
+                <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -242,11 +228,10 @@ export function DetailPanel({ zoneId, onClose }: DetailPanelProps) {
 }
 
 function getProjectAccent(projectId: string): string {
-  // Check by exact ID match
+
   let project = PROJECTS.find((p) => p.id === projectId);
   if (project) return project.accent;
 
-  // Check by title match (normalize for comparison)
   const normalizedId = projectId.toLowerCase().replace(/[^a-z0-9]/g, '');
   project = PROJECTS.find((p) => {
     const normalizedTitle = p.title.toLowerCase().replace(/[^a-z0-9]/g, '');

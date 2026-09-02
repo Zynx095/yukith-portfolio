@@ -42,13 +42,12 @@ export default function IntroExperience({ onComplete }: IntroExperienceProps) {
 
   useEffect(() => {
     return scrollYProgress.onChange((latest) => {
-      // Find active zone
+
       const zoneIndex = ZONES.findIndex(z => latest >= z.start && latest <= z.end);
       if (zoneIndex !== -1 && zoneIndex !== activeZone) {
         setActiveZone(zoneIndex);
       }
 
-      // Check for completion
       if (latest > 0.98 && !isTransitioning) {
         setIsTransitioning(true);
         setTimeout(() => {
@@ -60,24 +59,20 @@ export default function IntroExperience({ onComplete }: IntroExperienceProps) {
 
   return (
     <div ref={containerRef} className="relative w-full h-[1400vh] bg-[#0D0A08]">
-      {/* Fixed background canvas */}
-      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
+            <div className="fixed inset-0 w-full h-full z-0 pointer-events-none">
         <StoryCanvas scrollProgress={scrollYProgress} />
       </div>
 
-      {/* Fixed Overlay UI */}
-      <div className="fixed inset-0 z-10 pointer-events-none">
+            <div className="fixed inset-0 z-10 pointer-events-none">
         
-        {/* Progress Bar - Left Edge */}
-        <div className="absolute left-8 top-1/2 -translate-y-1/2 w-[2px] h-1/3 bg-[#15100C] rounded-full overflow-hidden hidden md:block">
+                <div className="absolute left-8 top-1/2 -translate-y-1/2 w-[2px] h-1/3 bg-[#15100C] rounded-full overflow-hidden hidden md:block">
           <motion.div 
             className="w-full bg-[#B99755]"
             style={{ height: indicatorHeight }}
           />
         </div>
 
-        {/* Skip Button - Top Right */}
-        <div className="absolute top-8 right-8 pointer-events-auto">
+                <div className="absolute top-8 right-8 pointer-events-auto">
           <button 
             onClick={onComplete}
             className="text-[#8E826C] hover:text-[#F4F1EA] text-sm uppercase tracking-widest font-mono transition-colors"
@@ -86,8 +81,7 @@ export default function IntroExperience({ onComplete }: IntroExperienceProps) {
           </button>
         </div>
 
-        {/* Subtitles - Top Center */}
-        <div className="absolute top-16 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 text-center">
+                <div className="absolute top-16 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 text-center">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeZone}
@@ -103,8 +97,7 @@ export default function IntroExperience({ onComplete }: IntroExperienceProps) {
           </AnimatePresence>
         </div>
 
-        {/* Whiteout Transition at the end */}
-        <motion.div 
+                <motion.div 
           className="absolute inset-0 bg-[#F4F1EA] pointer-events-none z-50"
           style={{ opacity: whiteoutOpacity }}
         />

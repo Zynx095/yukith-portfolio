@@ -13,11 +13,9 @@ function createNebulaTexture() {
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  // Deep purple base
   ctx.fillStyle = "#12091F";
   ctx.fillRect(0, 0, size, size);
 
-  // Nebula clouds
   const rand = (() => {
     let s = 42;
     return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
@@ -92,7 +90,6 @@ export function CosmicBackground() {
   const nebulaTexture = useMemo(() => createNebulaTexture(), []);
   const starTexture = useMemo(() => createStarTexture(), []);
 
-  // Generate star positions for multiple layers
   const starLayers = useMemo(() => {
     const layers = [];
     const counts = [800, 400, 150];
@@ -118,12 +115,10 @@ export function CosmicBackground() {
   useFrame((state) => {
     const time = state.clock.elapsedTime;
 
-    // Slow nebula rotation
     if (nebulaRef.current) {
       nebulaRef.current.rotation.z = time * 0.003;
     }
 
-    // Subtle star drift
     if (starsFarRef.current) {
       starsFarRef.current.rotation.y = time * 0.002;
       starsFarRef.current.rotation.x = Math.sin(time * 0.001) * 0.02;
@@ -139,8 +134,7 @@ export function CosmicBackground() {
 
   return (
     <group>
-      {/* Nebula backdrop - large plane far behind everything */}
-      <mesh ref={nebulaRef} position={[0, 0, -400]}>
+            <mesh ref={nebulaRef} position={[0, 0, -400]}>
         <planeGeometry args={[800, 600]} />
         <meshBasicMaterial
           map={nebulaTexture}
@@ -150,8 +144,7 @@ export function CosmicBackground() {
         />
       </mesh>
 
-      {/* Secondary nebula layer for depth */}
-      <mesh position={[-100, 50, -350]} rotation={[0, 0, 0.3]}>
+            <mesh position={[-100, 50, -350]} rotation={[0, 0, 0.3]}>
         <planeGeometry args={[400, 300]} />
         <meshBasicMaterial
           map={nebulaTexture}
@@ -161,8 +154,7 @@ export function CosmicBackground() {
         />
       </mesh>
 
-      {/* Star layers */}
-      {starLayers.map((layer, i) => (
+            {starLayers.map((layer, i) => (
         <points
           key={`stars-${i}`}
           ref={i === 0 ? starsFarRef : i === 1 ? starsMidRef : starsNearRef}
@@ -186,8 +178,7 @@ export function CosmicBackground() {
         </points>
       ))}
 
-      {/* Cosmic dust particles */}
-      <CosmicDust />
+            <CosmicDust />
     </group>
   );
 }

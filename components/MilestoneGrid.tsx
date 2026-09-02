@@ -41,8 +41,7 @@ export default function MilestoneGrid() {
       ref={sectionRef} 
       className="bg-[#F4F1EA] text-[#3A2417] py-24 md:py-0 relative overflow-hidden"
     >
-      {/* Background subtle tree rings */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-[#B99755]/5 rounded-full pointer-events-none hidden md:block"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-[#B99755]/5 rounded-full pointer-events-none hidden md:block"></div>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] border border-[#B99755]/5 rounded-full pointer-events-none hidden md:block"></div>
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 md:hidden mb-12">
@@ -67,8 +66,7 @@ export default function MilestoneGrid() {
             key={idx} 
             className="milestone-card shrink-0 w-[85vw] max-w-[320px] md:w-[400px] h-[350px] bg-white/80 backdrop-blur-sm border border-[#B99755]/30 rounded-xl p-8 flex flex-col justify-between shadow-lg relative overflow-hidden group"
           >
-            {/* Tree ring decorative corner */}
-            <div className="absolute -right-16 -top-16 w-32 h-32 rounded-full border-[10px] border-[#B99755]/10 group-hover:scale-110 transition-transform duration-700"></div>
+                        <div className="absolute -right-16 -top-16 w-32 h-32 rounded-full border-[10px] border-[#B99755]/10 group-hover:scale-110 transition-transform duration-700"></div>
             <div className="absolute -right-8 -top-8 w-24 h-24 rounded-full border-[4px] border-[#315D39]/5 group-hover:scale-110 transition-transform duration-500"></div>
             
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#12351F] to-[#B99755] transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>

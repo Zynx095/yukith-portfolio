@@ -8,16 +8,16 @@ export interface StoryZoneConfig {
   title: string;
   subtitle?: string;
   worldPosition: [number, number, number];
-  // Camera timing (scroll offset 0-1)
+
   cameraStart: number;
   cameraFocus: number;
   cameraEnd: number;
-  // Proximity tiers (in world units)
+
   revealDistance: number;   // When landmark becomes noticeable
   activateDistance: number; // When visual effects activate
   interactDistance: number; // When [SPACE] prompt appears
   hideDistance: number;     // When panel closes
-  // Panel content
+
   description: string;
   problem?: string;
   approach?: string;
@@ -25,12 +25,12 @@ export interface StoryZoneConfig {
   features?: string[];
   engineering?: string;
   links?: { label: string; url: string }[];
-  // Interaction
+
   allowInteraction: boolean;
   interactiveLabel?: string;
-  // Reading distance (where panel is optimal)
+
   readingOffset: [number, number, number];
-  // Panel side (left or right of landmark)
+
   panelSide: "left" | "right" | "center";
 }
 

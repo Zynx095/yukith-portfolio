@@ -31,8 +31,7 @@ function Scene({ onComplete }: { onComplete?: () => void }) {
       {!getFlag('DEBUG_DISABLE_POSTPROCESSING') && <EnvironmentSetup />}
       {!getFlag('DEBUG_DISABLE_HTML') && <CinematicNarration />}
 
-      {/* World Foundation */}
-      {!getFlag('DEBUG_DISABLE_TERRAIN') && (
+            {!getFlag('DEBUG_DISABLE_TERRAIN') && (
         <>
           <Terrain />
           <Mountains />
@@ -44,12 +43,10 @@ function Scene({ onComplete }: { onComplete?: () => void }) {
         </>
       )}
 
-      {/* Personal Story & Ecosystem */}
-      {!getFlag('DEBUG_DISABLE_FAMILY') && <FamilyCampfire />}
+            {!getFlag('DEBUG_DISABLE_FAMILY') && <FamilyCampfire />}
       {!getFlag('DEBUG_DISABLE_WATER') && <Ecosystem />}
 
-      {/* World Tree — The Central Archive */}
-      {!getFlag('DEBUG_DISABLE_TREE') && <WorldTree />}
+            {!getFlag('DEBUG_DISABLE_TREE') && <WorldTree />}
     </>
   );
 }

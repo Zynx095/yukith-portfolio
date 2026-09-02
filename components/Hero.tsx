@@ -43,8 +43,7 @@ export default function Hero() {
       ref={containerRef}
       className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[#F4F1EA]"
     >
-      {/* Background Pattern — subtle leaves/canopy motif */}
-      <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" 
+            <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" 
         style={{ 
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5C45 5 55 15 55 30C55 45 45 55 30 55C15 55 5 45 5 30C5 15 15 5 30 5ZM30 10C20 10 10 20 10 30C10 40 20 50 30 50C40 50 50 40 50 30C50 20 40 10 30 10Z' fill='%2312351F' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E")`,
           backgroundSize: '120px 120px',
@@ -100,8 +99,7 @@ export default function Hero() {
         </div>
       </motion.div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-2 animate-bounce opacity-70">
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-2 animate-bounce opacity-70">
         <span className="text-[#3A2417] font-mono text-xs uppercase tracking-widest">Scroll</span>
         <div className="w-[1px] h-12 bg-[#3A2417]"></div>
       </div>

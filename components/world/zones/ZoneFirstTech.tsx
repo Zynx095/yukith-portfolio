@@ -59,36 +59,29 @@ export function ZoneFirstTech() {
 
   return (
     <group ref={groupRef} position={config.worldPosition as [number, number, number]}>
-      {/* Workshop shell */}
-      <group position={[0, 0, 0]}>
-        {/* Back wall */}
-        <mesh position={[0, 3, -5]}>
+            <group position={[0, 0, 0]}>
+                <mesh position={[0, 3, -5]}>
           <boxGeometry args={[14, 7, 0.4]} />
           <meshStandardMaterial color="#2A2015" roughness={1} flatShading />
         </mesh>
         
-        {/* CRT Monitor on workbench */}
-        <group position={[0, 1.5, 0]}>
-          {/* Workbench */}
-          <mesh position={[0, -0.5, 0]}>
+                <group position={[0, 1.5, 0]}>
+                    <mesh position={[0, -0.5, 0]}>
             <boxGeometry args={[5, 0.3, 3]} />
             <meshStandardMaterial color="#3A2A1A" roughness={0.9} flatShading />
           </mesh>
           
-          {/* CRT casing */}
-          <mesh position={[0, 1.5, 0.5]}>
+                    <mesh position={[0, 1.5, 0.5]}>
             <boxGeometry args={[2.5, 2, 2]} />
             <meshStandardMaterial color="#0A0A0A" roughness={0.5} metalness={0.3} />
           </mesh>
           
-          {/* Screen */}
-          <mesh ref={screenRef} position={[0, 1.5, 1.55]} onClick={() => openPanel(config.id)}>
+                    <mesh ref={screenRef} position={[0, 1.5, 1.55]} onClick={() => openPanel(config.id)}>
             <planeGeometry args={[2, 1.5]} />
             <meshBasicMaterial map={crtTexture} transparent opacity={0.8} />
           </mesh>
           
-          {/* Scanlines */}
-          {Array.from({ length: 15 }).map((_, i) => (
+                    {Array.from({ length: 15 }).map((_, i) => (
             <mesh key={`scan-${i}`} position={[0, 1.5, 1.56]}>
               <planeGeometry args={[2, 0.03]} />
               <meshBasicMaterial color="#00FF44" transparent opacity={0.4} />
@@ -96,8 +89,7 @@ export function ZoneFirstTech() {
           ))}
         </group>
         
-        {/* Cables and scraps */}
-        {Array.from({ length: 12 }).map((_, i) => {
+                {Array.from({ length: 12 }).map((_, i) => {
           const angle = (i / 12) * Math.PI * 2;
           return (
             <mesh key={`cable-${i}`} position={[Math.cos(angle) * 4, 0.3, Math.sin(angle) * 3]} rotation={[0, angle, 0]}>
@@ -108,11 +100,9 @@ export function ZoneFirstTech() {
         })}
       </group>
       
-      {/* Green screen glow */}
-      <pointLight ref={lightRef} color="#00FF44" intensity={2} distance={15} position={[0, 2, 2]} />
+            <pointLight ref={lightRef} color="#00FF44" intensity={2} distance={15} position={[0, 2, 2]} />
       
-      {/* Title label */}
-      <mesh position={[0, 4, 3]} onClick={() => openPanel(config.id)}>
+            <mesh position={[0, 4, 3]} onClick={() => openPanel(config.id)}>
         <planeGeometry args={[6, 1]} />
         <meshBasicMaterial color="#00FF44" transparent opacity={0.15} />
       </mesh>

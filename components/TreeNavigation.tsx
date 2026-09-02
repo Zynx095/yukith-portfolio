@@ -43,8 +43,7 @@ export default function TreeNavigation() {
 
   return (
     <>
-      {/* Desktop fixed sidebar */}
-      <nav className="hidden lg:flex fixed left-8 top-1/2 -translate-y-1/2 flex-col items-center z-50 mix-blend-difference" aria-label="Desktop Navigation">
+            <nav className="hidden lg:flex fixed left-8 top-1/2 -translate-y-1/2 flex-col items-center z-50 mix-blend-difference" aria-label="Desktop Navigation">
         <div className="absolute w-[1px] h-full bg-white/20 -z-10" />
         {navNodes.map(({ id, label }) => {
           const isActive = activeSection === id;
@@ -72,8 +71,7 @@ export default function TreeNavigation() {
         })}
       </nav>
 
-      {/* Mobile bottom bar */}
-      <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-[#12351F]/90 backdrop-blur-md border border-[#B99755]/30 rounded-full z-50 flex items-center justify-between px-2 py-2 pb-[env(safe-area-inset-bottom)]" aria-label="Mobile Navigation">
+            <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-[#12351F]/90 backdrop-blur-md border border-[#B99755]/30 rounded-full z-50 flex items-center justify-between px-2 py-2 pb-[env(safe-area-inset-bottom)]" aria-label="Mobile Navigation">
         {navNodes.map(({ id, label }) => {
           const isActive = activeSection === id;
           return (

@@ -10,7 +10,6 @@ import { MotionValue } from "framer-motion";
 import { CameraRig } from "./CameraRig";
 import { GrowthTree } from "../tree/GrowthTree";
 
-// Seeded RNG
 function mulberry32(a: number) {
   return function() {
     let t = a += 0x6D2B79F5;
@@ -50,7 +49,6 @@ function AvatarBillboard() {
   );
 }
 
-// Zone 0: Study
 function ZoneStudy() {
   const lightRef = useRef<THREE.PointLight>(null);
   const particlesRef = useRef<THREE.Points>(null);
@@ -85,23 +83,19 @@ function ZoneStudy() {
 
   return (
     <group position={[2, 0, -15]}>
-      {/* Desk */}
-      <mesh position={[0, 3, 0]}>
+            <mesh position={[0, 3, 0]}>
         <boxGeometry args={[6, 0.2, 3]} />
         <meshStandardMaterial color="#3A2417" />
       </mesh>
-      {/* Legs */}
-      <mesh position={[-2.8, 1.5, -1.3]}><boxGeometry args={[0.2, 3, 0.2]} /><meshStandardMaterial color="#15100C" /></mesh>
+            <mesh position={[-2.8, 1.5, -1.3]}><boxGeometry args={[0.2, 3, 0.2]} /><meshStandardMaterial color="#15100C" /></mesh>
       <mesh position={[2.8, 1.5, -1.3]}><boxGeometry args={[0.2, 3, 0.2]} /><meshStandardMaterial color="#15100C" /></mesh>
       <mesh position={[-2.8, 1.5, 1.3]}><boxGeometry args={[0.2, 3, 0.2]} /><meshStandardMaterial color="#15100C" /></mesh>
       <mesh position={[2.8, 1.5, 1.3]}><boxGeometry args={[0.2, 3, 0.2]} /><meshStandardMaterial color="#15100C" /></mesh>
       
-      {/* Books */}
-      <mesh position={[-1, 3.2, 0]}><boxGeometry args={[0.6, 0.1, 0.8]} /><meshStandardMaterial color="#51321E" /></mesh>
+            <mesh position={[-1, 3.2, 0]}><boxGeometry args={[0.6, 0.1, 0.8]} /><meshStandardMaterial color="#51321E" /></mesh>
       <mesh position={[-1, 3.3, 0.1]} rotation={[0, 0.2, 0]}><boxGeometry args={[0.5, 0.1, 0.7]} /><meshStandardMaterial color="#D8C9A8" /></mesh>
 
-      {/* Candle */}
-      <mesh position={[2, 3.2, -0.5]}>
+            <mesh position={[2, 3.2, -0.5]}>
         <cylinderGeometry args={[0.1, 0.1, 0.4]} />
         <meshStandardMaterial color="#F4F1EA" emissive="#F4F1EA" emissiveIntensity={0.5} />
       </mesh>
@@ -115,7 +109,6 @@ function ZoneStudy() {
   );
 }
 
-// Zone 3: First Computer
 function ZoneComputer() {
   const screenRef = useRef<THREE.MeshStandardMaterial>(null);
   const lightRef = useRef<THREE.PointLight>(null);
@@ -133,19 +126,16 @@ function ZoneComputer() {
 
   return (
     <group position={[-2, 4, -110]}>
-      {/* Monitor Case */}
-      <mesh position={[0, 0, -1]}>
+            <mesh position={[0, 0, -1]}>
         <boxGeometry args={[3, 2.5, 2]} />
         <meshStandardMaterial color="#15100C" />
       </mesh>
-      {/* Screen */}
-      <mesh position={[0, 0, 0.01]}>
+            <mesh position={[0, 0, 0.01]}>
         <planeGeometry args={[2.8, 2.3]} />
         <meshStandardMaterial ref={screenRef} color="#000000" emissive="#315D39" emissiveIntensity={0} />
       </mesh>
       <pointLight ref={lightRef} color="#315D39" distance={15} intensity={0} position={[0, 0, 1]} />
-      {/* Keyboard */}
-      <mesh position={[0, -1.2, 1]}>
+            <mesh position={[0, -1.2, 1]}>
         <boxGeometry args={[3, 0.1, 1]} />
         <meshStandardMaterial color="#15100C" />
       </mesh>
@@ -157,7 +147,7 @@ function ZoneClimax({ scrollProgress }: { scrollProgress: MotionValue<number> })
   const [progress, setProgress] = useState(0);
   
   useFrame(() => {
-    // Climax triggers from 0.8 to 1.0 progress
+
     const p = Math.max(0, Math.min(1, (scrollProgress.get() - 0.8) / 0.2));
     if (Math.abs(progress - p) > 0.001) {
       setProgress(p);
@@ -195,44 +185,37 @@ function Scene({ scrollProgress }: { scrollProgress: MotionValue<number> }) {
       <AvatarBillboard />
       <ZoneStudy />
       
-      {/* Zone 1: Childhood */}
-      <group position={[-3, 0, -45]}>
+            <group position={[-3, 0, -45]}>
         <mesh position={[0, -0.1, 0]} rotation={[-Math.PI/2, 0, 0]}><planeGeometry args={[20, 20]} /><meshStandardMaterial color="#15100C" /></mesh>
         <pointLight color="#E3CB8A" intensity={1} distance={20} position={[0, 5, 0]} />
       </group>
 
-      {/* Zone 2: School */}
-      <group position={[4, 0, -75]}>
+            <group position={[4, 0, -75]}>
         <mesh position={[0, 2, 0]}><boxGeometry args={[1, 1, 1]} /><meshStandardMaterial color="#3A2417" /></mesh>
       </group>
 
       <ZoneComputer />
       
-      {/* Zone 4: Discovery */}
-      <group position={[5, 6, -150]}>
+            <group position={[5, 6, -150]}>
         <mesh><icosahedronGeometry args={[2, 0]} /><meshBasicMaterial color="#315D39" wireframe /></mesh>
       </group>
 
-      {/* Zone 5: University */}
-      <group position={[-4, 5, -190]}>
+            <group position={[-4, 5, -190]}>
         <mesh><sphereGeometry args={[3, 16, 16]} /><meshStandardMaterial color="#B99755" emissive="#B99755" emissiveIntensity={0.5} /></mesh>
       </group>
 
-      {/* Zone 6: Engineering */}
-      <group position={[3, 4, -230]}>
+            <group position={[3, 4, -230]}>
         <mesh><boxGeometry args={[4, 2, 2]} /><meshStandardMaterial color="#1D4A2B" /></mesh>
       </group>
 
-      {/* Zone 7: Professional */}
-      <group position={[-2, 0, -270]}>
+            <group position={[-2, 0, -270]}>
         <mesh position={[0, -0.1, 0]} rotation={[-Math.PI/2, 0, 0]}>
           <planeGeometry args={[40, 40]} />
           <meshStandardMaterial color="#15100C" wireframe />
         </mesh>
       </group>
 
-      {/* Zone 8: Growth */}
-      <group position={[0, 4, -305]}>
+            <group position={[0, 4, -305]}>
         <mesh><cylinderGeometry args={[1, 1, 4, 16]} /><meshStandardMaterial color="#B99755" emissive="#B99755" emissiveIntensity={0.8} /></mesh>
       </group>
 
