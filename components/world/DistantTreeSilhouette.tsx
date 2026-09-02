@@ -40,15 +40,12 @@ export function DistantTreeSilhouette() {
 
     const offset = scroll.offset;
 
-    // Start larger (0.35) so it's visible from the very beginning
-    // Ramp to full size by 0.5
     const scaleTarget = THREE.MathUtils.clamp(
       THREE.MathUtils.mapLinear(offset, 0, 0.5, 0.35, 1.0),
       0.35,
       1.0
     );
 
-    // Stay visible until the real tree fully takes over at 0.8
     const opacityTarget =
       offset < 0.65
         ? 0.9
@@ -67,13 +64,11 @@ export function DistantTreeSilhouette() {
 
   return (
     <group ref={groupRef} position={[0, -3, -450]} scale={0.35}>
-      {/* Trunk */}
-      <mesh geometry={trunkGeometry}>
+            <mesh geometry={trunkGeometry}>
         <meshBasicMaterial ref={materialRef} color="#C8CBD0" transparent depthWrite={false} />
       </mesh>
 
-      {/* Canopy cloud silhouette */}
-      {canopySpheres.map((s, i) => (
+            {canopySpheres.map((s, i) => (
         <mesh
           key={`canopy-${i}`}
           geometry={canopyGeometries[i]}

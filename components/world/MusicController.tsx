@@ -6,9 +6,8 @@ interface MusicControllerProps {
   isPlaying?: boolean;
 }
 
-// Check if audio directory exists (would need server-side check or hardcoded list)
 const AVAILABLE_AUDIO_FILES: string[] = [
-  // Add actual audio files here when they are added to /public/audio/
+
 ];
 
 export function MusicController({ isPlaying: initialPlaying = false }: MusicControllerProps) {
@@ -20,7 +19,7 @@ export function MusicController({ isPlaying: initialPlaying = false }: MusicCont
   const hasInteracted = useRef(false);
 
   useEffect(() => {
-    // Only create audio if we have a valid file
+
     if (AVAILABLE_AUDIO_FILES.length > 0) {
       const audio = new Audio(AVAILABLE_AUDIO_FILES[0]);
       audio.loop = true;
@@ -62,7 +61,6 @@ export function MusicController({ isPlaying: initialPlaying = false }: MusicCont
     setIsMuted(!isMuted);
   };
 
-  // If no audio available, show disabled/grayed out controls
   if (!hasAudio) {
     return (
       <div className="fixed bottom-4 left-4 z-50 flex items-center gap-2 opacity-50" title="No audio file available">
@@ -81,8 +79,7 @@ export function MusicController({ isPlaying: initialPlaying = false }: MusicCont
 
   return (
     <div className="fixed bottom-4 left-4 z-50 flex items-center gap-2">
-      {/* Play/Pause button */}
-      <button
+            <button
         onClick={togglePlay}
         className="w-10 h-10 rounded-full bg-[#1A2A15]/80 border border-[#3A5A35]/50 flex items-center justify-center text-[#C8D4C8] hover:bg-[#2A4A25]/90 hover:text-[#E3CB8A] hover:border-[#E3CB8A]/50 transition-all duration-300 hover:scale-110"
         aria-label={isPlaying ? "Pause music" : "Play music"}
@@ -98,8 +95,7 @@ export function MusicController({ isPlaying: initialPlaying = false }: MusicCont
         )}
       </button>
 
-      {/* Volume slider */}
-      <input
+            <input
         type="range"
         min="0"
         max="1"
@@ -110,8 +106,7 @@ export function MusicController({ isPlaying: initialPlaying = false }: MusicCont
         aria-label="Volume"
       />
 
-      {/* Mute button */}
-      <button
+            <button
         onClick={toggleMute}
         className="w-8 h-8 rounded-full bg-[#1A2A15]/60 border border-[#3A5A35]/30 flex items-center justify-center text-[#C8D4C8] hover:bg-[#2A4A25]/60 hover:text-[#E3CB8A] transition-all duration-300"
         aria-label={isMuted ? "Unmute music" : "Mute music"}

@@ -18,7 +18,7 @@ export default function ExperienceLoader({ onComplete }: ExperienceLoaderProps) 
     const animate = (time: number) => {
       const elapsed = time - start;
       const t = Math.min(elapsed / duration, 1);
-      // easeInOut cubic
+
       const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       setProgress(ease * 100);
       
@@ -46,8 +46,7 @@ export default function ExperienceLoader({ onComplete }: ExperienceLoaderProps) 
       transition={{ duration: 1 }}
     >
       <div className="flex flex-col items-center justify-center w-full max-w-md px-8 relative h-64">
-        {/* YUKITH Text */}
-        <motion.div 
+                <motion.div 
           className="font-serif text-5xl md:text-7xl text-[#F4F1EA] tracking-[0.3em] mb-8 overflow-hidden flex"
           initial="hidden"
           animate="visible"
@@ -60,16 +59,14 @@ export default function ExperienceLoader({ onComplete }: ExperienceLoaderProps) 
           ))}
         </motion.div>
 
-        {/* Progress Line */}
-        <div className="w-full h-[1px] bg-[#15100C] relative overflow-hidden">
+                <div className="w-full h-[1px] bg-[#15100C] relative overflow-hidden">
           <motion.div 
             className="absolute top-0 left-0 h-full bg-[#B99755]"
             style={{ width: `${progress}%` }}
           />
         </div>
 
-        {/* Loading Text / Enter Button Container */}
-        <div className="mt-8 h-16 flex items-center justify-center w-full">
+                <div className="mt-8 h-16 flex items-center justify-center w-full">
           <AnimatePresence mode="wait">
             {!showEnter ? (
               <motion.div

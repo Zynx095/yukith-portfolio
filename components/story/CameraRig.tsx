@@ -66,28 +66,22 @@ export function CameraRig({ scrollProgress }: CameraRigProps) {
 
   useFrame((state, delta) => {
     const progress = Math.max(0, Math.min(1, scrollProgress.get()));
-    
-    // Evaluate position on spline
+
     const point = curve.getPointAt(progress);
     const lookAtPoint = curve.getPointAt(Math.min(1, progress + 0.05));
-    
-    // Spring-damped lerp for position (factor 0.05 as requested)
+
     currentPosition.lerp(point, 0.05);
     camera.position.copy(currentPosition);
-    
-    // Spring-damped lerp for lookAt
+
     currentLookAt.lerp(lookAtPoint, 0.05);
     camera.lookAt(currentLookAt);
-    
-    // Breathing sway and banking
+
     if (!reducedMotion) {
       const time = state.clock.getElapsedTime();
-      
-      // Sway
+
       camera.position.x += Math.sin(time * 0.5) * 0.1;
       camera.position.y += Math.cos(time * 0.4) * 0.1;
-      
-      // Banking (based on curve derivative)
+
       const tangent = curve.getTangentAt(progress);
       const bankAngle = tangent.x * -0.5; // Rotate based on X direction
       camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, bankAngle, 0.05);

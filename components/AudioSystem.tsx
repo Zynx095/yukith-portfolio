@@ -17,7 +17,7 @@ export default function AudioSystem({ chapter = 'ambient', showOverlay = false, 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Only set up if we actually decided on audio
+
     if (!audioRef.current) {
       audioRef.current = new Audio();
       audioRef.current.loop = true;
@@ -33,8 +33,7 @@ export default function AudioSystem({ chapter = 'ambient', showOverlay = false, 
 
   useEffect(() => {
     if (!audioRef.current || isMuted || !hasInteracted) return;
-    
-    // Switch track based on chapter
+
     const playTrack = async () => {
       try {
         if (audioRef.current) {
@@ -42,7 +41,7 @@ export default function AudioSystem({ chapter = 'ambient', showOverlay = false, 
           await audioRef.current.play();
         }
       } catch (e) {
-        // Silently fail if audio doesn't exist or browser blocks
+
       }
     };
     

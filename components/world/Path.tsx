@@ -14,7 +14,7 @@ export function Path() {
       new THREE.Vector3(3, 0, -20),
       new THREE.Vector3(-2, 0, -50),
       new THREE.Vector3(5, 0, -80),
-      // Path ends BEFORE waterfall - no brown path after waterfall
+
     ];
     return new THREE.CatmullRomCurve3(points);
   }, []);
@@ -67,7 +67,6 @@ export function Path() {
   );
 }
 
-// Lighting torches/lanterns along the path
 export function PathLights() {
   const lights = useMemo(() => {
     const data = [];
@@ -88,20 +87,17 @@ export function PathLights() {
     <group>
       {lights.map((light) => (
         <group key={`torch-${light.index}`} position={[light.x, -2, light.z]}>
-          {/* Torch pole */}
-          <mesh castShadow>
+                    <mesh castShadow>
             <cylinderGeometry args={[0.1, 0.15, 3.5, 5]} />
             <meshStandardMaterial color="#5A4A35" roughness={0.9} />
           </mesh>
           
-          {/* Flame */}
-          <mesh position={[0, 1.8, 0]}>
+                    <mesh position={[0, 1.8, 0]}>
             <sphereGeometry args={[0.35, 8, 8]} />
             <meshBasicMaterial color="#FFAA44" transparent opacity={0.9} />
           </mesh>
           
-          {/* Light */}
-          <pointLight
+                    <pointLight
             color="#FFAA44"
             intensity={2.5}
             distance={18}

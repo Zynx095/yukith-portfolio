@@ -31,8 +31,7 @@ export default function ExperienceNode() {
 
   return (
     <section id="experience" ref={containerRef} className="py-24 px-6 md:px-12 bg-[#12351F] text-[#F4F1EA] relative overflow-hidden">
-      {/* Background roots */}
-      <div className="absolute -left-[10%] top-0 w-1/2 h-full opacity-10 pointer-events-none">
+            <div className="absolute -left-[10%] top-0 w-1/2 h-full opacity-10 pointer-events-none">
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full text-[#B99755]" fill="none" stroke="currentColor" strokeWidth="0.5">
           <path d="M50 0 C 40 20, 60 40, 50 60 C 40 80, 60 100, 50 120" />
           <path d="M50 20 C 30 40, 70 60, 40 80" />
@@ -46,12 +45,10 @@ export default function ExperienceNode() {
           <span className="opacity-50 font-light text-3xl">〰</span>
         </h2>
 
-        {/* The central root timeline */}
-        <div className="space-y-12 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-1 before:bg-gradient-to-b before:from-[#B99755] before:via-[#3A2417] before:to-[#12351F] before:rounded-full">
+                <div className="space-y-12 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-1 before:bg-gradient-to-b before:from-[#B99755] before:via-[#3A2417] before:to-[#12351F] before:rounded-full">
           
           <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active exp-card">
-            {/* Tree ring marker */}
-            <div className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-[#B99755] bg-[#3A2417] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-lg z-10 ml-0 md:ml-auto md:mr-auto relative">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-[#B99755] bg-[#3A2417] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-lg z-10 ml-0 md:ml-auto md:mr-auto relative">
               <div className="absolute inset-2 rounded-full border border-[#B99755]/50"></div>
               <div className="absolute inset-3 rounded-full border border-[#B99755]/30"></div>
               <span className="text-xs text-[#B99755]">◈</span>
@@ -67,8 +64,7 @@ export default function ExperienceNode() {
           </div>
 
           <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active exp-card">
-            {/* Tree ring marker */}
-            <div className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-[#315D39] bg-[#1A120D] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-lg z-10 ml-0 md:ml-auto md:mr-auto relative">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full border-2 border-[#315D39] bg-[#1A120D] shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-lg z-10 ml-0 md:ml-auto md:mr-auto relative">
               <div className="absolute inset-2 rounded-full border border-[#315D39]/50"></div>
               <div className="absolute inset-3 rounded-full border border-[#315D39]/30"></div>
               <span className="text-xs text-[#315D39]">◈</span>

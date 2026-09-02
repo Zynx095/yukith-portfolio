@@ -33,11 +33,9 @@ export default function ProjectAURA() {
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
 
-    // Update crosshair pos directly via ref
     crosshairRef.current.style.left = `${x}%`;
     crosshairRef.current.style.top = `${y}%`;
 
-    // State machine logic
     const distanceToCenter = Math.sqrt(Math.pow(x - 50, 2) + Math.pow(y - 50, 2));
     
     let newState: 'NORMAL' | 'OBSERVED' | 'SUSPICIOUS' = 'NORMAL';
@@ -84,8 +82,7 @@ export default function ProjectAURA() {
           <div className="absolute left-1/2 top-0 w-px h-full bg-current opacity-50" />
         </div>
         
-        {/* Detection Zones */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-dashed border-[#B99755]/30 rounded-full pointer-events-none" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-dashed border-[#B99755]/30 rounded-full pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-[#ff4b4b]/30 rounded-full bg-[#ff4b4b]/5 pointer-events-none" />
       </div>
 

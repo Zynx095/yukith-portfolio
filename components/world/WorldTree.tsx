@@ -8,7 +8,6 @@ import { ArtifactAURA, ArtifactETTH, ArtifactShadowGuard, ArtifactSugarAI, Artif
 import { PROJECTS } from "@/src/data/projects";
 import { personalStory } from "@/src/data/personal";
 
-// ─── Seeded PRNG ──────────────────────────────────────────────────────────────
 function seededRandom(seed: number) {
   let s = seed;
   return () => {
@@ -17,7 +16,6 @@ function seededRandom(seed: number) {
   };
 }
 
-// ─── Noise function for bark displacement ──────────────────────────────────────
 function makeNoiseShader() {
   return `
     vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -73,29 +71,25 @@ function makeNoiseShader() {
   `;
 }
 
-// ─── Bark shader modifier ──────────────────────────────────────────────────────
 function applyBarkShader(shader: any) {
   const noise = makeNoiseShader();
   
   shader.vertexShader = noise + "\n" + shader.vertexShader;
-  
-  // Add varying declaration
+
   shader.vertexShader = "varying float vBarkDisplacement;\n" + shader.vertexShader;
   
   shader.vertexShader = shader.vertexShader.replace(
     "#include <begin_vertex>",
     `
     vec3 transformed = vec3(position);
-    
-    // Multi-octave bark noise for grooves and ridges
+
     float barkNoise = snoise(vec3(position.x * 0.15, position.y * 0.02, position.z * 0.15));
     float microNoise = snoise(vec3(position.x * 0.8, position.y * 0.1, position.z * 0.8));
     float detailNoise = snoise(vec3(position.x * 3.0, position.y * 0.5, position.z * 3.0));
     
     float totalDisplacement = (barkNoise * 1.2) + (microNoise * 0.3) + (detailNoise * 0.1);
     vBarkDisplacement = totalDisplacement;
-    
-    // Displace along normal for bark texture
+
     transformed += normal * totalDisplacement;
     `
   );
@@ -113,8 +107,7 @@ function applyBarkShader(shader: any) {
     
     float barkLevel = smoothstep(-1.0, 1.0, vBarkDisplacement);
     vec3 barkColor = mix(silverShadow, ivoryBase, barkLevel);
-    
-    // Add subtle warmth on ridges
+
     if (barkLevel > 0.5) {
       float ridgeFactor = (barkLevel - 0.5) * 2.0;
       barkColor = mix(barkColor, warmHighlight, ridgeFactor * 0.3);
@@ -125,12 +118,9 @@ function applyBarkShader(shader: any) {
   );
 }
 
-// ─── Realistic Leaf Geometry ──────────────────────────────────────────────────
-// Creates actual leaf shapes instead of balls
 function createLeafGeometry(width: number, length: number): THREE.BufferGeometry {
   const shape = new THREE.Shape();
-  
-  // Teardrop/oval leaf shape
+
   shape.moveTo(0, 0);
   shape.bezierCurveTo(width * 0.5, length * 0.2, width * 0.6, length * 0.6, 0, length);
   shape.bezierCurveTo(-width * 0.6, length * 0.6, -width * 0.5, length * 0.2, 0, 0);
@@ -143,15 +133,13 @@ function createLeafGeometry(width: number, length: number): THREE.BufferGeometry
   
   const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
   geometry.center();
-  
-  // Add slight curve to leaf
+
   const posAttr = geometry.attributes.position;
   for (let i = 0; i < posAttr.count; i++) {
     const x = posAttr.getX(i);
     const y = posAttr.getY(i);
     const z = posAttr.getZ(i);
-    
-    // Curve along length
+
     const curve = Math.sin((y / length + 0.5) * Math.PI) * 0.15;
     posAttr.setZ(i, z + curve);
   }
@@ -160,7 +148,6 @@ function createLeafGeometry(width: number, length: number): THREE.BufferGeometry
   return geometry;
 }
 
-// ─── Leaf Cluster (group of leaves) ────────────────────────────────────────────
 interface LeafCluster {
   leaves: Array<{
     position: THREE.Vector3;
@@ -193,8 +180,7 @@ function createLeafCluster(position: THREE.Vector3, count: number, rng: () => nu
     );
     
     const scale = 0.6 + rng() * 0.8;
-    
-    // Natural green variation
+
     const greenVar = 0.2 + rng() * 0.5;
     const color = new THREE.Color(
       0.02 + rng() * 0.08,
@@ -208,7 +194,6 @@ function createLeafCluster(position: THREE.Vector3, count: number, rng: () => nu
   return { leaves };
 }
 
-// ─── Branch creation helper ────────────────────────────────────────────────────
 function createBranch(
   start: THREE.Vector3,
   end: THREE.Vector3,
@@ -218,7 +203,7 @@ function createBranch(
   curveTension: number = 0.5,
   rng: () => number
 ): THREE.TubeGeometry {
-  // Create curved path between start and end
+
   const mid = new THREE.Vector3().lerpVectors(start, end, 0.5);
   mid.x += (rng() - 0.5) * baseRadius * 0.5;
   mid.y += (rng() - 0.5) * (end.y - start.y) * 0.1;
@@ -228,7 +213,6 @@ function createBranch(
   return new THREE.TubeGeometry(curve, segments, baseRadius, 8, false);
 }
 
-// ─── Primary Branch Generator ──────────────────────────────────────────────────
 function generatePrimaryBranches(height: number, count: number, rng: () => number): Array<{
   start: THREE.Vector3;
   end: THREE.Vector3;
@@ -251,7 +235,6 @@ function generatePrimaryBranches(height: number, count: number, rng: () => numbe
       Math.sin(angle) * 12
     );
 
-    // BRANCHES SOAR ACROSS ENTIRE SKY - MASSIVE reach
     const reach = 120 + rng() * 200; // 120-320 units reach - EXTREMELY LONG
     const endHeight = startHeight + 20 + rng() * 50; // Higher elevation
 
@@ -269,7 +252,6 @@ function generatePrimaryBranches(height: number, count: number, rng: () => numbe
   return branches;
 }
 
-// ─── Secondary Branch Generator ────────────────────────────────────────────────
 function generateSecondaryBranches(
   primaryEndpoints: THREE.Vector3[],
   countPerEndpoint: number,
@@ -296,7 +278,6 @@ function generateSecondaryBranches(
         endpoint.z * (1 - heightRatio) + endpoint.x * 0.4 * Math.sin(angle)
       );
 
-      // Secondary branches also extend far
       const reach = 40 + rng() * 80;
       const end = new THREE.Vector3(
         start.x + Math.cos(angle) * reach,
@@ -313,7 +294,6 @@ function generateSecondaryBranches(
   return branches;
 }
 
-// ─── Foliage Placement ─────────────────────────────────────────────────────────
 interface FoliagePlacement {
   position: THREE.Vector3;
   rotation: THREE.Euler;
@@ -347,7 +327,6 @@ function placeFoliage(
 
       const scale = 0.5 + rng() * 1.5;
 
-      // DENSE DARK VIBRANT GREEN - deep forest colors
       const greenIntensity = 0.3 + rng() * 0.6;
       const color = new THREE.Color(
         0.02 + rng() * 0.05,
@@ -368,28 +347,23 @@ function placeFoliage(
   return placements;
 }
 
-
-
-// ─── Main World Tree Component ─────────────────────────────────────────────────
 export function WorldTree() {
   const treeGroupRef = useRef<THREE.Group>(null);
   const foliageRef = useRef<THREE.InstancedMesh>(null);
 
-  // Animation for gentle tree sway
   useFrame((state) => {
     if (treeGroupRef.current) {
       const time = state.clock.elapsedTime;
-      // Very subtle overall sway
+
       treeGroupRef.current.rotation.z = Math.sin(time * 0.1) * 0.003;
     }
     if (foliageRef.current) {
       const time = state.clock.elapsedTime;
-      // Subtle canopy drift
+
       foliageRef.current.rotation.y = Math.sin(time * 0.05) * 0.02;
     }
   });
 
-  // Create leaf geometry once
   const leafGeometry = useMemo(() => {
     return createLeafGeometry(1, 2);
   }, []);
@@ -397,13 +371,11 @@ export function WorldTree() {
   const treeStructure = useMemo(() => {
     const rng = seededRandom(12345);
 
-    // ─── TRUNK CONFIGURATION ────────────────────────────────────────────────
     const trunkHeight = 220; // Increased to ensure the cavity is tall enough
     const trunkBaseRadius = 35; // Increased to create a massive hollow interior
     const trunkTopRadius = 12;
     const trunkStrands = 7;
 
-    // Build multi-strand twisting trunk
     const trunkGeos: THREE.BufferGeometry[] = [];
     
     for (let s = 0; s < trunkStrands; s++) {
@@ -434,7 +406,6 @@ export function WorldTree() {
       trunkGeos.push(new THREE.TubeGeometry(curve, 40, radius, 10, false));
     }
 
-    // ─── BUTTRESS ROOTS ─────────────────────────────────────────────────────
     const rootGeos: THREE.BufferGeometry[] = [];
     const numRoots = 12;
     
@@ -454,7 +425,6 @@ export function WorldTree() {
       rootGeos.push(new THREE.TubeGeometry(rootCurve, 20, rootRadius, 8, false));
     }
 
-    // ─── PRIMARY BRANCHES ──────────────────────────────────────────────────
     const primaryBranches = generatePrimaryBranches(trunkHeight, 24, rng); // FEWER but elegant branches
     const primaryGeos: THREE.BufferGeometry[] = [];
     const primaryEndpoints: THREE.Vector3[] = [];
@@ -464,7 +434,6 @@ export function WorldTree() {
       primaryEndpoints.push(branch.end);
     }
 
-    // ─── SECONDARY BRANCHES ────────────────────────────────────────────────
     const secondaryBranches = generateSecondaryBranches(primaryEndpoints, 10, rng); // FEWER secondary
     const secondaryGeos: THREE.BufferGeometry[] = [];
     const secondaryEndpoints: THREE.Vector3[] = [];
@@ -474,7 +443,6 @@ export function WorldTree() {
       secondaryEndpoints.push(branch.end);
     }
 
-    // ─── TERTIARY BRANCHES (fine detail) ────────────────────────────────────
     const tertiaryEndpoints: THREE.Vector3[] = [];
     for (const ep of secondaryEndpoints) {
       for (let i = 0; i < 5; i++) { // FEWER tertiary branches
@@ -487,12 +455,9 @@ export function WorldTree() {
       }
     }
 
-    // ─── FOLIAGE PLACEMENT ──────────────────────────────────────────────────
     const allEndpoints = [...primaryEndpoints, ...secondaryEndpoints, ...tertiaryEndpoints];
     const foliagePlacements = placeFoliage(allEndpoints, rng, 15); // MORE DENSE foliage clusters
 
-    // ─── HOLLOW INTERIOR WALLS ──────────────────────────────────────────────
-    // Create inner bark surface for the hollow trunk
     const interiorSegments = 40;
     const interiorHeight = trunkHeight * 0.85;
     const interiorRadius = trunkBaseRadius * 0.4; // Radius of the hollow cavity
@@ -510,28 +475,23 @@ export function WorldTree() {
       for (let i = 0; i < numRadialSegments; i++) {
         const angle = (i / numRadialSegments) * Math.PI * 2;
         const nextAngle = ((i + 1) / numRadialSegments) * Math.PI * 2;
-        
-        // Add some irregularity
+
         const irregularity = 0.85 + rng() * 0.3;
         const r1 = radiusAtY * irregularity;
         const r2 = radiusAtY * (0.85 + rng() * 0.3);
-        
-        // Current vertex
+
         const x1 = Math.cos(angle) * r1;
         const z1 = Math.sin(angle) * r1;
         interiorPositions.push(x1, currentY, z1);
-        
-        // Normal pointing inward
+
         interiorNormals.push(-Math.cos(angle), 0.1, -Math.sin(angle));
-        
-        // Next vertex
+
         const x2 = Math.cos(nextAngle) * r2;
         const z2 = Math.sin(nextAngle) * r2;
         interiorPositions.push(x2, currentY, z2);
         interiorNormals.push(-Math.cos(nextAngle), 0.1, -Math.sin(nextAngle));
       }
-      
-      // Indices for this row
+
       for (let i = 0; i < numRadialSegments * 2; i += 2) {
         const base = (y * numRadialSegments + i) * 2;
         const nextBase = ((y + 1) * numRadialSegments + i) * 2;
@@ -557,7 +517,6 @@ export function WorldTree() {
     };
   }, []);
 
-  // Initialize instanced mesh with leaf geometry
   useEffect(() => {
     if (!foliageRef.current) return;
 
@@ -566,7 +525,7 @@ export function WorldTree() {
     let instanceIndex = 0;
 
     foliagePlacements.forEach((foliage) => {
-      // Create multiple leaf instances per placement
+
       for (let i = 0; i < foliage.leafCount && instanceIndex < foliageRef.current!.count; i++) {
         const offset = new THREE.Vector3(
           (Math.random() - 0.5) * 2,
@@ -578,7 +537,7 @@ export function WorldTree() {
         dummy.rotation.copy(foliage.rotation);
         dummy.rotation.x += (Math.random() - 0.5) * 0.5;
         dummy.rotation.z += (Math.random() - 0.5) * 0.5;
-        // Increase scale to compensate for lower instance count, keeping volumetric feel
+
         dummy.scale.setScalar(foliage.scale * (1.2 + Math.random() * 0.8));
         dummy.updateMatrix();
 
@@ -616,41 +575,34 @@ export function WorldTree() {
 
   return (
     <group ref={treeGroupRef} position={[0, 0, -450]}>
-      {/* ─── MASSIVE TWISTING TRUNK ─────────────────────────────────────────── */}
-      {treeStructure.trunkGeo && (
+            {treeStructure.trunkGeo && (
         <mesh geometry={treeStructure.trunkGeo} material={trunkMaterial} castShadow receiveShadow />
       )}
 
-      {/* ─── BUTTRESS ROOTS ─────────────────────────────────────────────────── */}
-      {treeStructure.rootGeo && (
+            {treeStructure.rootGeo && (
         <mesh geometry={treeStructure.rootGeo} material={barkMaterial} castShadow receiveShadow />
       )}
 
-      {/* ─── PRIMARY BRANCHES ───────────────────────────────────────────────── */}
-      {treeStructure.primaryGeo && (
+            {treeStructure.primaryGeo && (
         <mesh geometry={treeStructure.primaryGeo} castShadow receiveShadow>
           <meshStandardMaterial color="#6b4423" roughness={0.85} />
         </mesh>
       )}
 
-      {/* ─── SECONDARY BRANCHES ─────────────────────────────────────────────── */}
-      {treeStructure.secondaryGeo && (
+            {treeStructure.secondaryGeo && (
         <mesh geometry={treeStructure.secondaryGeo} castShadow receiveShadow>
           <meshStandardMaterial color="#7a5230" roughness={0.8} />
         </mesh>
       )}
 
-      {/* ─── HOLLOW INTERIOR WALLS ──────────────────────────────────────────── */}
-      {treeStructure.interiorGeo && (
+            {treeStructure.interiorGeo && (
         <mesh geometry={treeStructure.interiorGeo} material={trunkMaterial} receiveShadow />
       )}
 
-      {/* ─── TREE-INTERNAL LIGHTING ─────────────────────────────────────────── */}
-      <pointLight position={[0, 90, 0]} color="#fff5cc" intensity={12} distance={150} />
+            <pointLight position={[0, 90, 0]} color="#fff5cc" intensity={12} distance={150} />
       <pointLight position={[0, 150, 0]} color="#fff8e7" intensity={8} distance={120} />
 
-      {/* ─── PROJECT ARCHIVE NODES (inside trunk) ───────────────────────────── */}
-      <group position={[0, 20, 0]}>
+            <group position={[0, 20, 0]}>
         <ArtifactAURA position={[-5, 70, 0]} />
         <ArtifactETTH position={[5, 95, 0]} />
         <ArtifactShadowGuard position={[-5, 120, 0]} />

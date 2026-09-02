@@ -7,17 +7,13 @@ import { Environment } from "@react-three/drei";
 export const EnvironmentSetup = memo(function EnvironmentSetup() {
   return (
     <>
-      {/* Sky background - atmospheric blue */}
-      <color attach="background" args={["#4a6a8a"]} />
+            <color attach="background" args={["#4a6a8a"]} />
 
-      {/* Atmospheric fog */}
-      <fog attach="fog" args={["#4a6a8a", 80, 600]} />
+            <fog attach="fog" args={["#4a6a8a", 80, 600]} />
 
-      {/* Ambient light - soft fill */}
-      <ambientLight color="#8ab4d4" intensity={0.35} />
+            <ambientLight color="#8ab4d4" intensity={0.35} />
 
-      {/* Directional sunlight - warm but controlled */}
-      <directionalLight
+            <directionalLight
         color="#ffeedd"
         position={[80, 120, -40]}
         intensity={0.8}
@@ -32,18 +28,15 @@ export const EnvironmentSetup = memo(function EnvironmentSetup() {
         shadow-camera-near={1}
       />
 
-      {/* Hemisphere light - sky to ground gradient */}
-      <hemisphereLight
+            <hemisphereLight
         color="#8ab4d4"
         groundColor="#3a5a3a"
         intensity={0.5}
       />
 
-      {/* Environment reflections */}
-      <Environment preset="forest" />
+            <Environment preset="forest" />
 
-      {/* Post-processing */}
-      <EffectComposer>
+            <EffectComposer>
         <Bloom
           luminanceThreshold={0.8}
           luminanceSmoothing={0.9}

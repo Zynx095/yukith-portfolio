@@ -52,7 +52,6 @@ export function ZoneProximityTracker() {
       };
     });
 
-    // Notify subscribers (this updates InteractionProvider's nearestZone)
     const proxData = proximityStates.map(s => ({
       zoneId: s.zoneId,
       distance: camPos.distanceTo(new THREE.Vector3(...s.config.worldPosition)),
@@ -82,7 +81,6 @@ export function getNearestInteractiveZone(): string | null {
   for (const state of proximityStates) {
     if (!state.config.allowInteraction) continue;
 
-    // Score based on being in the right scroll range AND close enough
     const inRange = state.interactProgress > 0.1;
     const score = state.interactProgress;
 

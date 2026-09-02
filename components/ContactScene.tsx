@@ -33,8 +33,7 @@ export default function ContactScene() {
 
   return (
     <section id="contact" ref={sectionRef} className="relative py-32 px-6 md:px-12 bg-[#12351F] text-[#F4F1EA] overflow-hidden">
-      {/* Background Roots — massive tree roots reaching down */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full text-[#B99755]" fill="none" stroke="currentColor" strokeWidth="1">
           <path d="M20 0 C 30 50, 10 70, 0 100" />
           <path d="M50 0 C 60 40, 40 60, 30 100" />
@@ -42,8 +41,7 @@ export default function ContactScene() {
         </svg>
       </div>
 
-      {/* Background Text */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15vw] font-serif font-black text-white/[0.03] select-none pointer-events-none whitespace-nowrap">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15vw] font-serif font-black text-white/[0.03] select-none pointer-events-none whitespace-nowrap">
         CONNECT
       </div>
 
