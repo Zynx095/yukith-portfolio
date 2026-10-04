@@ -25,7 +25,9 @@ export default function TreeNavigation() {
           if (entry.isIntersecting) setActiveSection(entry.target.id);
         });
       },
-      { threshold: 0.3 }
+      // A section is current while it crosses the middle of the viewport —
+      // works for sections of any height (Work spans many screens).
+      { rootMargin: "-45% 0px -54% 0px", threshold: 0 }
     );
     navNodes.forEach(({ id }) => {
       const el = document.getElementById(id);
