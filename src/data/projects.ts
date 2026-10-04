@@ -257,3 +257,5 @@ export const PROJECTS: Project[] = [
     isPlaceholder: true,
   },
 ];
+
+export const projectById = (id: string) => PROJECTS.find((p) => p.id === id);
