@@ -110,6 +110,15 @@ export default function WorkScene() {
           visual={<ProjectGallery images={projectById('street-hierarchy')!.gallery!} title="STREET HIERARCHY" accent={projectById('street-hierarchy')!.accent} />}
         />
       </div>
+
+      <div className="project-wrapper">
+        <ProjectShowcase
+          id="trc"
+          eyebrow="[ Client website · live ]"
+          flip
+          visual={<ProjectGallery images={projectById('trc')!.gallery!} title="T R Constructions" accent={projectById('trc')!.accent} />}
+        />
+      </div>
       
       </div>
     </section>
