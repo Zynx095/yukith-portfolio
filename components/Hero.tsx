@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from 'react';
-import { useScroll, useTransform, motion } from 'framer-motion';
+import { useMotionValue, motion } from 'framer-motion';
 import { gsap } from 'gsap';
 import { profileData } from '@/src/data/profile';
 import { socialData } from '@/src/data/social';
@@ -11,14 +11,27 @@ export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end start"]
-  });
-
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
-
+  // Parallax out as the hero scrolls away: measured from the hero's own box,
+  // so it stays right however tall the journey above it is.
+  const y = useMotionValue("0%");
+  const opacity = useMotionValue(1);
+  useEffect(() => {
+    const update = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height)));
+      y.set(`${p * 50}%`);
+      opacity.set(1 - Math.min(1, p / 0.8));
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [y, opacity]);
 
   useEffect(() => {
     if (!textRef.current) return;
