@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`scroll-smooth ${inter.variable} ${spaceMono.variable} ${playfair.variable}`}>
+    <html lang="en" className={`${inter.variable} ${spaceMono.variable} ${playfair.variable}`}>
       <body className="overflow-x-hidden bg-[#0D0A08] text-[#F4F1EA] antialiased">
         {children}
         <Analytics />
