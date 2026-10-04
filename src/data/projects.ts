@@ -37,7 +37,7 @@ export interface Project {
 
 export const PROJECTS: Project[] = [
   {
-    id: "01",
+    id: "etth",
     title: "ETTH",
     role: "Encrypted Traffic Threat Hunter",
     year: "2026",
@@ -62,7 +62,7 @@ export const PROJECTS: Project[] = [
     ],
   },
   {
-    id: "02",
+    id: "aura",
     title: "AURA",
     role: "Autonomous Unified Recognition Assistant",
     year: "2026",
@@ -84,7 +84,7 @@ export const PROJECTS: Project[] = [
     ],
   },
   {
-    id: "03",
+    id: "shadowguard",
     title: "ShadowGuard",
     role: "Enterprise AI Data Protection System",
     year: "2026",
@@ -104,7 +104,7 @@ export const PROJECTS: Project[] = [
     ],
   },
   {
-    id: "sugai",
+    id: "sugarai",
     title: "Sugar AI",
     role: "Offline Voice-Controlled Desktop Assistant",
     year: "2025",
@@ -120,7 +120,7 @@ export const PROJECTS: Project[] = [
     ],
   },
   {
-    id: "05",
+    id: "stp-bot",
     title: "STP BOT",
     role: "",
     year: "",
@@ -130,7 +130,7 @@ export const PROJECTS: Project[] = [
     isPlaceholder: true,
   },
   {
-    id: "06",
+    id: "edith-ar",
     title: "EDITH AR",
     role: "",
     year: "",
@@ -140,7 +140,7 @@ export const PROJECTS: Project[] = [
     isPlaceholder: true,
   },
   {
-    id: "07",
+    id: "nids-engine",
     title: "NIDS ENGINE",
     role: "",
     year: "",
