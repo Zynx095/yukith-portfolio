@@ -8,6 +8,7 @@ export interface SocialLink {
 export const socialData: SocialLink[] = [
   { platform: "GitHub", url: "https://github.com/Zynx095", handle: "Zynx095" },
   { platform: "LinkedIn", url: "https://www.linkedin.com/in/yukith-joseph", handle: "yukith-joseph" },
+  { platform: "Instagram", url: "https://www.instagram.com/yuxith_pov/", handle: "@yuxith_pov" },
   { platform: "Email", url: "mailto:yukithj@gmail.com", handle: "yukithj@gmail.com" },
   { platform: "Resume", url: "/resume.pdf" },
 ];
