@@ -19,6 +19,7 @@ export default function Hero() {
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
+
   useEffect(() => {
     if (!textRef.current) return;
     
@@ -84,15 +85,16 @@ export default function Hero() {
           </Link>
           
           <div className="flex flex-wrap gap-3">
-            {Object.entries(socialData).map(([key, data]: [string, any]) => (
-              <a 
-                key={key}
-                href={key === 'resume' ? '/resume.pdf' : data.url}
-                target={key === 'resume' ? undefined : "_blank"}
+            {socialData.map((s) => (
+              <a
+                key={s.platform}
+                href={s.url}
+                target={s.url.startsWith("http") || s.url.endsWith(".pdf") ? "_blank" : undefined}
                 rel="noopener noreferrer"
+                aria-label={s.handle ? `${s.platform} — ${s.handle}` : s.platform}
                 className="px-6 py-4 min-w-[44px] min-h-[44px] border border-[#3A2417]/30 text-[#3A2417] hover:border-[#12351F] hover:text-[#12351F] font-sans rounded transition-colors flex items-center justify-center"
               >
-                {data.label}
+                {s.platform}
               </a>
             ))}
           </div>
