@@ -79,17 +79,18 @@ export default function ContactScene() {
         </div>
 
         <div className="flex flex-wrap justify-center gap-4 w-full contact-reveal">
-          {Object.entries(socialData).map(([key, data]: [string, any]) => (
-            <a 
-              key={key}
-              href={key === 'resume' ? '/resume.pdf' : data.url}
-              target={key === 'resume' ? undefined : "_blank"}
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto px-8 py-4 min-h-[48px] bg-transparent border-2 border-[#B99755] text-[#B99755] hover:bg-[#B99755] hover:text-[#12351F] font-sans font-bold rounded-lg transition-all flex items-center justify-center"
-            >
-              {data.label}
-            </a>
-          ))}
+          {socialData.map((s) => (
+              <a
+                key={s.platform}
+                href={s.url}
+                target={s.url.startsWith("http") || s.url.endsWith(".pdf") ? "_blank" : undefined}
+                rel="noopener noreferrer"
+                aria-label={s.handle ? `${s.platform} — ${s.handle}` : s.platform}
+                className="w-full sm:w-auto px-8 py-4 min-h-[48px] bg-transparent border-2 border-[#B99755] text-[#B99755] hover:bg-[#B99755] hover:text-[#12351F] font-sans font-bold rounded-lg transition-all flex items-center justify-center"
+              >
+                {s.platform}
+              </a>
+            ))}
         </div>
       </div>
     </section>
