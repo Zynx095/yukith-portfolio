@@ -3,9 +3,12 @@
 import { useEffect, useRef } from 'react';
 import { useMotionValue, motion } from 'framer-motion';
 import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { profileData } from '@/src/data/profile';
 import { socialData } from '@/src/data/social';
 import Link from 'next/link';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,18 +39,24 @@ export default function Hero() {
   useEffect(() => {
     if (!textRef.current) return;
     
+    // Reveal when the visitor actually arrives (the journey sits above the hero).
     const elements = textRef.current.children;
-    gsap.fromTo(elements, 
+    const tween = gsap.fromTo(
+      elements,
       { y: 50, opacity: 0 },
-      { 
-        y: 0, 
-        opacity: 1, 
-        stagger: 0.1, 
-        duration: 1, 
+      {
+        y: 0,
+        opacity: 1,
+        stagger: 0.1,
+        duration: 1,
         ease: "power3.out",
-        delay: 0.2
+        scrollTrigger: { trigger: containerRef.current, start: "top 70%", once: true },
       }
     );
+    return () => {
+      tween.scrollTrigger?.kill();
+      tween.kill();
+    };
   }, []);
 
   return (
