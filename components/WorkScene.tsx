@@ -74,19 +74,19 @@ export default function WorkScene() {
       <div className="relative">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-full bg-[#1A120D] hidden lg:block z-0"></div>
 
-      <div className="project-wrapper">
+      <div className="project-wrapper" id="project-etth">
         <ProjectETTH />
       </div>
 
-      <div className="project-wrapper">
+      <div className="project-wrapper" id="project-aura">
         <ProjectAURA />
       </div>
 
-      <div className="project-wrapper">
+      <div className="project-wrapper" id="project-shadowguard">
         <ProjectShadowGuard />
       </div>
 
-      <div className="project-wrapper">
+      <div className="project-wrapper" id="project-sugarai">
         <ProjectSugarAI />
       </div>
       
