@@ -1,13 +1,37 @@
+/**
+ * Projects — the single source of truth for every project shown in the
+ * World Tree archive and the portfolio's Work section.
+ *
+ * Rules: every claim here comes from the project's own repository README,
+ * its live site, or information Yukith provided. Never add metrics, users,
+ * results or features that are not stated there.
+ */
+
+export interface ProjectImage {
+  src: string;
+  alt: string;
+}
+
 export interface Project {
+  /** URL-safe id, also used by the 3D archive and the sigil (logo) registry. */
   id: string;
   title: string;
+  /** What it is, in one line. */
   role: string;
   year: string;
   tags: string[];
   accent: string;
+  /** Short description (one or two sentences). */
   desc: string;
+  /** Longer description for the detail panel. */
+  summary?: string;
+  /** Verified features / facts, phrased for display. */
   verifiedFeatures?: string[];
+  /** Honest status label where the README states one. */
+  status?: string;
   github?: string;
+  live?: string;
+  gallery?: ProjectImage[];
   isPlaceholder?: boolean;
 }
 
@@ -34,8 +58,8 @@ export const PROJECTS: Project[] = [
       "five experimental configurations",
       "46/46 passing unit tests",
       "dataset/capture-environment confounding documented",
-      "generalization claims appropriately scoped"
-    ]
+      "generalization claims appropriately scoped",
+    ],
   },
   {
     id: "02",
@@ -56,8 +80,8 @@ export const PROJECTS: Project[] = [
       "polygon-based zone intrusion engine",
       "incident generation",
       "evidence snapshots",
-      "Next.js live detection dashboard"
-    ]
+      "Next.js live detection dashboard",
+    ],
   },
   {
     id: "03",
@@ -76,8 +100,8 @@ export const PROJECTS: Project[] = [
       "system hardening",
       "breach-response workflow",
       "shutdown protocols",
-      "insider-threat monitoring"
-    ]
+      "insider-threat monitoring",
+    ],
   },
   {
     id: "sugai",
@@ -92,8 +116,8 @@ export const PROJECTS: Project[] = [
       "on-device speech/language processing",
       "user data remains local",
       "multithreaded transcription/inference/playback pipeline",
-      "responsive voice interaction"
-    ]
+      "responsive voice interaction",
+    ],
   },
   {
     id: "05",
@@ -103,7 +127,7 @@ export const PROJECTS: Project[] = [
     tags: [],
     accent: "#67e8f9",
     desc: "",
-    isPlaceholder: true
+    isPlaceholder: true,
   },
   {
     id: "06",
@@ -113,7 +137,7 @@ export const PROJECTS: Project[] = [
     tags: [],
     accent: "#818cf8",
     desc: "",
-    isPlaceholder: true
+    isPlaceholder: true,
   },
   {
     id: "07",
@@ -123,6 +147,6 @@ export const PROJECTS: Project[] = [
     tags: [],
     accent: "#c4b5fd",
     desc: "",
-    isPlaceholder: true
-  }
+    isPlaceholder: true,
+  },
 ];
