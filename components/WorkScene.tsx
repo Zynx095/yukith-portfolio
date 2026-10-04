@@ -7,6 +7,7 @@ import ProjectETTH from './projects/ProjectETTH';
 import ProjectAURA from './projects/ProjectAURA';
 import ProjectShadowGuard from './projects/ProjectShadowGuard';
 import ProjectSugarAI from './projects/ProjectSugarAI';
+import { WorkIndex } from './work/WorkIndex';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -62,8 +63,13 @@ export default function WorkScene() {
           <span className="text-[#B99755] font-mono text-sm tracking-widest uppercase">Branches</span>
           <div className="h-[1px] w-12 bg-[#315D39]/50"></div>
         </div>
-        <h2 className="text-5xl md:text-7xl font-serif text-[#E3CB8A] mb-8 text-center">Selected Works</h2>
+        <h2 className="text-5xl md:text-7xl font-serif text-[#E3CB8A] mb-6 text-center">Selected Works</h2>
+        <p className="mx-auto max-w-2xl text-center font-sans text-base leading-relaxed text-[#D8C9A8]/75">
+          Security systems, applied AI, a Roblox game and a client website — every one built end to end. Pick a branch, or keep scrolling through all of them.
+        </p>
       </div>
+
+      <WorkIndex />
 
       <div className="relative">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-full bg-[#1A120D] hidden lg:block z-0"></div>
@@ -71,15 +77,15 @@ export default function WorkScene() {
       <div className="project-wrapper">
         <ProjectETTH />
       </div>
-      
+
       <div className="project-wrapper">
         <ProjectAURA />
       </div>
-      
+
       <div className="project-wrapper">
         <ProjectShadowGuard />
       </div>
-      
+
       <div className="project-wrapper">
         <ProjectSugarAI />
       </div>
