@@ -7,6 +7,12 @@ import ProjectETTH from './projects/ProjectETTH';
 import ProjectAURA from './projects/ProjectAURA';
 import ProjectShadowGuard from './projects/ProjectShadowGuard';
 import ProjectSugarAI from './projects/ProjectSugarAI';
+import { WorkIndex } from './work/WorkIndex';
+import { ProjectShowcase } from './work/ProjectShowcase';
+import { ProjectGallery } from './work/ProjectGallery';
+import { QShieldVisual } from './work/QShieldVisual';
+import { JivaVisual } from './work/JivaVisual';
+import { projectById } from '@/src/data/projects';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -62,26 +68,56 @@ export default function WorkScene() {
           <span className="text-[#B99755] font-mono text-sm tracking-widest uppercase">Branches</span>
           <div className="h-[1px] w-12 bg-[#315D39]/50"></div>
         </div>
-        <h2 className="text-5xl md:text-7xl font-serif text-[#E3CB8A] mb-8 text-center">Selected Works</h2>
+        <h2 className="text-5xl md:text-7xl font-serif text-[#E3CB8A] mb-6 text-center">Selected Works</h2>
+        <p className="mx-auto max-w-2xl text-center font-sans text-base leading-relaxed text-[#D8C9A8]/75">
+          Security systems, applied AI, a Roblox game and a client website — every one built end to end. Pick a branch, or keep scrolling through all of them.
+        </p>
       </div>
+
+      <WorkIndex />
 
       <div className="relative">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-full bg-[#1A120D] hidden lg:block z-0"></div>
 
-      <div className="project-wrapper">
+      <div className="project-wrapper" id="project-etth">
         <ProjectETTH />
       </div>
-      
-      <div className="project-wrapper">
+
+      <div className="project-wrapper" id="project-aura">
         <ProjectAURA />
       </div>
-      
-      <div className="project-wrapper">
+
+      <div className="project-wrapper" id="project-shadowguard">
         <ProjectShadowGuard />
       </div>
-      
-      <div className="project-wrapper">
+
+      <div className="project-wrapper" id="project-sugarai">
         <ProjectSugarAI />
+      </div>
+
+      <div className="project-wrapper">
+        <ProjectShowcase id="qshield" eyebrow="[ Post-quantum device trust ]" visual={<QShieldVisual accent={projectById('qshield')!.accent} />} />
+      </div>
+
+      <div className="project-wrapper">
+        <ProjectShowcase id="jiva" eyebrow="[ Emergency coordination ]" flip visual={<JivaVisual accent={projectById('jiva')!.accent} />} />
+      </div>
+
+      <div className="project-wrapper">
+        <ProjectShowcase
+          id="street-hierarchy"
+          eyebrow="[ Roblox game · Luau ]"
+          visual={<ProjectGallery images={projectById('street-hierarchy')!.gallery!} title="STREET HIERARCHY" accent={projectById('street-hierarchy')!.accent} />}
+        />
+      </div>
+
+      <div className="project-wrapper">
+        <ProjectShowcase
+          id="trc"
+          eyebrow="[ Client website · live ]"
+          flip
+          visual={<ProjectGallery images={projectById('trc')!.gallery!} title="T R Constructions" accent={projectById('trc')!.accent} />}
+        />
       </div>
       
       </div>

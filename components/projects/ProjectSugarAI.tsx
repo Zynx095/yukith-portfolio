@@ -56,8 +56,8 @@ export default function ProjectSugarAI() {
                     key={i} 
                     className="w-2 bg-[#B99755] rounded-full"
                     style={{ 
-                      height: `${20 + Math.sin(i * 0.5) * 40 + Math.cos(i * 0.2) * 20}%`,
-                      opacity: 0.5 + Math.sin(i * 0.3) * 0.5
+                      height: `${(20 + Math.sin(i * 0.5) * 40 + Math.cos(i * 0.2) * 20).toFixed(2)}%`,
+                      opacity: +(0.5 + Math.sin(i * 0.3) * 0.5).toFixed(3)
                     }}
                   />
                 ))}

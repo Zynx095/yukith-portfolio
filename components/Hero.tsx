@@ -1,39 +1,62 @@
 "use client";
 
 import { useEffect, useRef } from 'react';
-import { useScroll, useTransform, motion } from 'framer-motion';
+import { useMotionValue, motion } from 'framer-motion';
 import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { profileData } from '@/src/data/profile';
 import { socialData } from '@/src/data/social';
 import Link from 'next/link';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end start"]
-  });
-
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  // Parallax out as the hero scrolls away: measured from the hero's own box,
+  // so it stays right however tall the journey above it is.
+  const y = useMotionValue("0%");
+  const opacity = useMotionValue(1);
+  useEffect(() => {
+    const update = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, -r.top / Math.max(1, r.height)));
+      y.set(`${p * 50}%`);
+      opacity.set(1 - Math.min(1, p / 0.8));
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [y, opacity]);
 
   useEffect(() => {
     if (!textRef.current) return;
     
+    // Reveal when the visitor actually arrives (the journey sits above the hero).
     const elements = textRef.current.children;
-    gsap.fromTo(elements, 
+    const tween = gsap.fromTo(
+      elements,
       { y: 50, opacity: 0 },
-      { 
-        y: 0, 
-        opacity: 1, 
-        stagger: 0.1, 
-        duration: 1, 
+      {
+        y: 0,
+        opacity: 1,
+        stagger: 0.1,
+        duration: 1,
         ease: "power3.out",
-        delay: 0.2
+        scrollTrigger: { trigger: containerRef.current, start: "top 70%", once: true },
       }
     );
+    return () => {
+      tween.scrollTrigger?.kill();
+      tween.kill();
+    };
   }, []);
 
   return (
@@ -84,15 +107,16 @@ export default function Hero() {
           </Link>
           
           <div className="flex flex-wrap gap-3">
-            {Object.entries(socialData).map(([key, data]: [string, any]) => (
-              <a 
-                key={key}
-                href={key === 'resume' ? '/resume.pdf' : data.url}
-                target={key === 'resume' ? undefined : "_blank"}
+            {socialData.map((s) => (
+              <a
+                key={s.platform}
+                href={s.url}
+                target={s.url.startsWith("http") || s.url.endsWith(".pdf") ? "_blank" : undefined}
                 rel="noopener noreferrer"
+                aria-label={s.handle ? `${s.platform} — ${s.handle}` : s.platform}
                 className="px-6 py-4 min-w-[44px] min-h-[44px] border border-[#3A2417]/30 text-[#3A2417] hover:border-[#12351F] hover:text-[#12351F] font-sans rounded transition-colors flex items-center justify-center"
               >
-                {data.label}
+                {s.platform}
               </a>
             ))}
           </div>

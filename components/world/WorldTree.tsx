@@ -1,616 +1,476 @@
 "use client";
 
-import React, { useRef, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import * as BufferGeometryUtils from "three/addons/utils/BufferGeometryUtils.js";
-import { ArtifactAURA, ArtifactETTH, ArtifactShadowGuard, ArtifactSugarAI, ArtifactAchievements, ArtifactLeadership, ArtifactExperience } from "./Artifacts";
-import { PROJECTS } from "@/src/data/projects";
-import { personalStory } from "@/src/data/personal";
+import { useWorldResources } from "./WorldResources";
+import { buildHallFloor, generateWorldTree, type LeafAnchor } from "@/lib/world/tree";
+import { TREE, TREE_GROUND } from "@/lib/world/layout";
+import { createBarkMaterial, createFoliageDepthMaterial, createFoliageMaterial, sharedUniforms } from "@/lib/world/materials";
+import { buildLeafMass, mergeGeometries } from "@/lib/world/geometry";
+import { createRng, range } from "@/lib/world/noise";
+import { frame } from "@/lib/world/store";
 
-function seededRandom(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
+/**
+ * The World Tree: a braid of great stems in deeply furrowed bark with golden
+ * sap-light in its fissures, carrying a vast luminous crown — volumetric
+ * leaf masses, a haze of light inside the canopy, glints among the leaves,
+ * a halo across the sky behind it, and golden leaves forever drifting down.
+ */
 
-function makeNoiseShader() {
-  return `
-    vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-    vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-    vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-    vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-    float snoise(vec3 v) { 
-      const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
-      const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
-      vec3 i  = floor(v + dot(v, C.yyy) );
-      vec3 x0 = v - i + dot(i, C.xxx) ;
-      vec3 g = step(x0.yzx, x0.xyz);
-      vec3 l = 1.0 - g;
-      vec3 i1 = min( g.xyz, l.zxy );
-      vec3 i2 = max( g.xyz, l.zxy );
-      vec3 x1 = x0 - i1 + C.xxx;
-      vec3 x2 = x0 - i2 + C.yyy;
-      vec3 x3 = x0 - D.yyy;
-      i = mod289(i);
-      vec4 p = permute( permute( permute( 
-                 i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
-               + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) 
-               + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
-      float n_ = 0.142857142857;
-      vec3  ns = n_ * D.wyz - D.xzx;
-      vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-      vec4 x_ = floor(j * ns.z);
-      vec4 y_ = floor(j - 7.0 * x_ );
-      vec4 x = x_ *ns.x + ns.yyyy;
-      vec4 y = y_ *ns.x + ns.yyyy;
-      vec4 h = 1.0 - abs(x) - abs(y);
-      vec4 b0 = vec4( x.xy, y.xy );
-      vec4 b1 = vec4( x.zw, y.zw );
-      vec4 s0 = floor(b0)*2.0 + 1.0;
-      vec4 s1 = floor(b1)*2.0 + 1.0;
-      vec4 sh = -step(h, vec4(0.0));
-      vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
-      vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
-      vec3 p0 = vec3(a0.xy,h.x);
-      vec3 p1 = vec3(a0.zw,h.y);
-      vec3 p2 = vec3(a1.xy,h.z);
-      vec3 p3 = vec3(a1.zw,h.w);
-      vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-      p0 *= norm.x;
-      p1 *= norm.y;
-      p2 *= norm.z;
-      p3 *= norm.w;
-      vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-      m = m * m;
-      return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), 
-                                    dot(p2,x2), dot(p3,x3) ) );
-    }
-  `;
-}
+const GOLD_TINTS = ["#e09a22", "#f0b02e", "#c9811a", "#ffc43f", "#d8901f", "#b56d12", "#f5ba38", "#ffd05a"];
 
-function applyBarkShader(shader: any) {
-  const noise = makeNoiseShader();
-  
-  shader.vertexShader = noise + "\n" + shader.vertexShader;
+/** Leaf-mass radius as a fraction of an anchor's scale. */
+const MASS_RADIUS = 0.6;
 
-  shader.vertexShader = "varying float vBarkDisplacement;\n" + shader.vertexShader;
-  
-  shader.vertexShader = shader.vertexShader.replace(
-    "#include <begin_vertex>",
-    `
-    vec3 transformed = vec3(position);
-
-    float barkNoise = snoise(vec3(position.x * 0.15, position.y * 0.02, position.z * 0.15));
-    float microNoise = snoise(vec3(position.x * 0.8, position.y * 0.1, position.z * 0.8));
-    float detailNoise = snoise(vec3(position.x * 3.0, position.y * 0.5, position.z * 3.0));
-    
-    float totalDisplacement = (barkNoise * 1.2) + (microNoise * 0.3) + (detailNoise * 0.1);
-    vBarkDisplacement = totalDisplacement;
-
-    transformed += normal * totalDisplacement;
-    `
+/** Huge soft glow behind the crown, always facing the camera. */
+function CrownHalo() {
+  const ref = useRef<THREE.Mesh>(null);
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        fog: false,
+        uniforms: { uOpacity: { value: 1 }, uTime: sharedUniforms.uTime },
+        vertexShader: /* glsl */ `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          uniform float uOpacity, uTime;
+          varying vec2 vUv;
+          void main() {
+            vec2 p = vUv * 2.0 - 1.0;
+            p.y *= 1.25;
+            float d = length(p);
+            // Faint, slowly turning rays of light radiating from the crown.
+            float a = atan(p.y, p.x);
+            float rays = (0.5 + 0.5 * sin(a * 11.0 + uTime * 0.04)) * (0.5 + 0.5 * sin(a * 7.0 - uTime * 0.027 + 1.7));
+            float fall = max(0.0, 1.0 - d);
+            float glow = pow(fall, 2.0) * (0.34 + 0.3 * rays) + pow(fall, 5.0) * 0.6;
+            gl_FragColor = vec4(vec3(1.0, 0.64, 0.24) * glow * uOpacity, 1.0);
+          }
+        `,
+      }),
+    []
   );
-  
-  shader.fragmentShader = "varying float vBarkDisplacement;\n" + shader.fragmentShader;
-  
-  shader.fragmentShader = shader.fragmentShader.replace(
-    "#include <color_fragment>",
-    `
-    #include <color_fragment>
-    
-    vec3 ivoryBase = vec3(0.35, 0.22, 0.12); // Rich dark brown
-    vec3 silverShadow = vec3(0.12, 0.08, 0.05); // Deep shadow brown
-    vec3 warmHighlight = vec3(0.48, 0.32, 0.18); // Lighter warm brown
-    
-    float barkLevel = smoothstep(-1.0, 1.0, vBarkDisplacement);
-    vec3 barkColor = mix(silverShadow, ivoryBase, barkLevel);
-
-    if (barkLevel > 0.5) {
-      float ridgeFactor = (barkLevel - 0.5) * 2.0;
-      barkColor = mix(barkColor, warmHighlight, ridgeFactor * 0.3);
-    }
-    
-    diffuseColor.rgb = barkColor;
-    `
+  useEffect(() => () => material.dispose(), [material]);
+  useFrame(({ camera }) => {
+    if (!ref.current) return;
+    ref.current.quaternion.copy(camera.quaternion);
+    material.uniforms.uOpacity.value = 1.0 * (1 - frame.interior);
+    ref.current.visible = frame.interior < 0.99;
+  });
+  return (
+    <mesh ref={ref} material={material} position={[0, 480, -80]} renderOrder={-500} frustumCulled={false}>
+      <planeGeometry args={[1900, 1900]} />
+    </mesh>
   );
 }
 
-function createLeafGeometry(width: number, length: number): THREE.BufferGeometry {
-  const shape = new THREE.Shape();
-
-  shape.moveTo(0, 0);
-  shape.bezierCurveTo(width * 0.5, length * 0.2, width * 0.6, length * 0.6, 0, length);
-  shape.bezierCurveTo(-width * 0.6, length * 0.6, -width * 0.5, length * 0.2, 0, 0);
-  
-  const extrudeSettings = {
-    steps: 1,
-    depth: 0.02,
-    bevelEnabled: false
-  };
-  
-  const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  geometry.center();
-
-  const posAttr = geometry.attributes.position;
-  for (let i = 0; i < posAttr.count; i++) {
-    const x = posAttr.getX(i);
-    const y = posAttr.getY(i);
-    const z = posAttr.getZ(i);
-
-    const curve = Math.sin((y / length + 0.5) * Math.PI) * 0.15;
-    posAttr.setZ(i, z + curve);
-  }
-  geometry.computeVertexNormals();
-  
-  return geometry;
-}
-
-interface LeafCluster {
-  leaves: Array<{
-    position: THREE.Vector3;
-    rotation: THREE.Euler;
-    scale: number;
-    color: THREE.Color;
-    geometry: THREE.BufferGeometry;
-  }>;
-}
-
-function createLeafCluster(position: THREE.Vector3, count: number, rng: () => number): LeafCluster {
-  const leaves = [];
-  const baseWidth = 0.8 + rng() * 0.6;
-  const baseLength = 1.5 + rng() * 1.0;
-  const geometry = createLeafGeometry(baseWidth, baseLength);
-  
-  for (let i = 0; i < count; i++) {
-    const offset = new THREE.Vector3(
-      (rng() - 0.5) * 4,
-      (rng() - 0.5) * 3,
-      (rng() - 0.5) * 4
-    );
-    
-    const leafPos = new THREE.Vector3().copy(position).add(offset);
-    
-    const rotation = new THREE.Euler(
-      (rng() - 0.5) * 0.8,
-      rng() * Math.PI * 2,
-      (rng() - 0.5) * 0.5
-    );
-    
-    const scale = 0.6 + rng() * 0.8;
-
-    const greenVar = 0.2 + rng() * 0.5;
-    const color = new THREE.Color(
-      0.02 + rng() * 0.08,
-      greenVar,
-      0.01 + rng() * 0.05
-    );
-    
-    leaves.push({ position: leafPos, rotation, scale, color, geometry });
-  }
-  
-  return { leaves };
-}
-
-function createBranch(
-  start: THREE.Vector3,
-  end: THREE.Vector3,
-  segments: number = 32,
-  baseRadius: number,
-  tipRadius: number,
-  curveTension: number = 0.5,
-  rng: () => number
-): THREE.TubeGeometry {
-
-  const mid = new THREE.Vector3().lerpVectors(start, end, 0.5);
-  mid.x += (rng() - 0.5) * baseRadius * 0.5;
-  mid.y += (rng() - 0.5) * (end.y - start.y) * 0.1;
-  mid.z += (rng() - 0.5) * baseRadius * 0.5;
-  
-  const curve = new THREE.CatmullRomCurve3([start, mid, end]);
-  return new THREE.TubeGeometry(curve, segments, baseRadius, 8, false);
-}
-
-function generatePrimaryBranches(height: number, count: number, rng: () => number): Array<{
-  start: THREE.Vector3;
-  end: THREE.Vector3;
-  radius: number;
-}> {
-  const branches: Array<{
-    start: THREE.Vector3;
-    end: THREE.Vector3;
-    radius: number;
-  }> = [];
-
-  for (let i = 0; i < count; i++) {
-    const angle = (i / count) * Math.PI * 2 + rng() * 0.3;
-    const heightRatio = 0.3 + rng() * 0.5; // Start between 30-80% up trunk
-    const startHeight = height * heightRatio;
-
-    const start = new THREE.Vector3(
-      Math.cos(angle) * 12,
-      startHeight,
-      Math.sin(angle) * 12
-    );
-
-    const reach = 120 + rng() * 200; // 120-320 units reach - EXTREMELY LONG
-    const endHeight = startHeight + 20 + rng() * 50; // Higher elevation
-
-    const end = new THREE.Vector3(
-      Math.cos(angle) * reach,
-      endHeight,
-      Math.sin(angle) * reach
-    );
-
-    const radius = 3 + rng() * 3; // THINNER primary branches
-
-    branches.push({ start, end, radius });
-  }
-
-  return branches;
-}
-
-function generateSecondaryBranches(
-  primaryEndpoints: THREE.Vector3[],
-  countPerEndpoint: number,
-  rng: () => number
-): Array<{
-  start: THREE.Vector3;
-  end: THREE.Vector3;
-  radius: number;
-}> {
-  const branches: Array<{
-    start: THREE.Vector3;
-    end: THREE.Vector3;
-    radius: number;
-  }> = [];
-
-  for (const endpoint of primaryEndpoints) {
-    for (let i = 0; i < countPerEndpoint; i++) {
-      const angle = Math.atan2(endpoint.z, endpoint.x) + (rng() - 0.5) * Math.PI * 0.8;
-      const heightRatio = 0.15 + rng() * 0.35;
-
-      const start = new THREE.Vector3(
-        endpoint.x * (1 - heightRatio) + endpoint.x * 0.4 * Math.cos(angle),
-        endpoint.y + 8 + rng() * 12,
-        endpoint.z * (1 - heightRatio) + endpoint.x * 0.4 * Math.sin(angle)
-      );
-
-      const reach = 40 + rng() * 80;
-      const end = new THREE.Vector3(
-        start.x + Math.cos(angle) * reach,
-        start.y + 12 + rng() * 25,
-        start.z + Math.sin(angle) * reach
-      );
-
-      const radius = 1.5 + rng() * 2.5;
-
-      branches.push({ start, end, radius });
+/** Golden leaves drifting down around the crown and through the air near the camera. GPU-animated. */
+function FallingLeaves() {
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        fog: false,
+        uniforms: {
+          uTime: sharedUniforms.uTime,
+          uCamera: { value: new THREE.Vector3() },
+          uFade: { value: 0 },
+          uScale: { value: 1000 },
+        },
+        vertexShader: /* glsl */ `
+          uniform float uTime;
+          uniform vec3 uCamera;
+          uniform float uScale;
+          attribute vec4 aSeed;
+          varying float vAlpha;
+          varying float vSpin;
+          void main() {
+            // Each leaf lives in a box that wraps around the camera, so the air is never empty.
+            vec3 box = vec3(140.0, 90.0, 140.0);
+            vec3 p = position;
+            float fall = uTime * (2.2 + aSeed.x * 2.4);
+            p.y -= fall;
+            p.x += sin(uTime * (0.5 + aSeed.y) + aSeed.z * 6.28) * 3.5;
+            p.z += cos(uTime * (0.4 + aSeed.x) + aSeed.w * 6.28) * 3.5;
+            vec3 rel = mod(p - uCamera + box * 0.5, box) - box * 0.5;
+            vec3 world = uCamera + rel;
+            vec4 mv = modelViewMatrix * vec4(world, 1.0);
+            float dist = -mv.z;
+            gl_PointSize = clamp((0.09 + aSeed.w * 0.08) * uScale / max(dist, 1.0), 1.0, 15.0);
+            vAlpha = smoothstep(70.0, 25.0, length(rel)) * smoothstep(1.5, 6.0, dist);
+            vSpin = uTime * (1.0 + aSeed.y * 2.0) + aSeed.z * 6.28;
+            gl_Position = projectionMatrix * mv;
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          uniform float uFade;
+          varying float vAlpha;
+          varying float vSpin;
+          void main() {
+            vec2 c = gl_PointCoord * 2.0 - 1.0;
+            float s = sin(vSpin), co = cos(vSpin);
+            c = mat2(co, -s, s, co) * c;
+            c.x *= 1.9 + 0.8 * sin(vSpin * 0.7); // leaf turning edge-on as it tumbles
+            float leaf = smoothstep(1.0, 0.55, length(c));
+            if (leaf < 0.01) discard;
+            gl_FragColor = vec4(vec3(1.0, 0.58, 0.16) * 1.15, leaf * vAlpha * uFade);
+          }
+        `,
+      }),
+    []
+  );
+  const geometry = useMemo(() => {
+    const rng = createRng(2027);
+    const count = 900;
+    const pos = new Float32Array(count * 3);
+    const seed = new Float32Array(count * 4);
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = (rng() - 0.5) * 140;
+      pos[i * 3 + 1] = (rng() - 0.5) * 90;
+      pos[i * 3 + 2] = (rng() - 0.5) * 140;
+      for (let k = 0; k < 4; k++) seed[i * 4 + k] = rng();
     }
-  }
-
-  return branches;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute("aSeed", new THREE.BufferAttribute(seed, 4));
+    return g;
+  }, []);
+  useEffect(
+    () => () => {
+      geometry.dispose();
+      material.dispose();
+    },
+    [geometry, material]
+  );
+  useFrame(({ camera, gl }) => {
+    material.uniforms.uCamera.value.copy(camera.position);
+    const fov = ((camera as THREE.PerspectiveCamera).fov * Math.PI) / 180;
+    material.uniforms.uScale.value = gl.domElement.height / (2 * Math.tan(fov / 2));
+    // Leaves appear once the tree dominates the view, and stay out of the hollow.
+    material.uniforms.uFade.value = THREE.MathUtils.smoothstep(frame.progress, 0.27, 0.36) * (1 - frame.interior);
+  });
+  return <points geometry={geometry} material={material} frustumCulled={false} />;
 }
 
-interface FoliagePlacement {
-  position: THREE.Vector3;
-  rotation: THREE.Euler;
-  scale: number;
-  color: THREE.Color;
-  leafCount: number;
-}
+export { FallingLeaves };
 
-function placeFoliage(
-  branchEndpoints: THREE.Vector3[],
-  rng: () => number,
-  countPerEndpoint: number = 20 // VERY DENSE
-): FoliagePlacement[] {
-  const placements: FoliagePlacement[] = [];
+/**
+ * Light living inside the crown: large soft billboards of golden haze set
+ * among the leaf masses (occluded by the leaves in front of them, so the
+ * glow seems to come from within), plus thousands of twinkling glints on
+ * the skin of the canopy. Both fade away once the camera is inside the trunk.
+ */
+function CrownLight({ anchors }: { anchors: LeafAnchor[] }) {
+  const haze = useMemo(() => {
+    const rng = createRng(4040);
+    const plane = new THREE.PlaneGeometry(1, 1);
+    const geo = new THREE.InstancedBufferGeometry();
+    geo.index = plane.index;
+    geo.setAttribute("position", plane.getAttribute("position"));
+    geo.setAttribute("uv", plane.getAttribute("uv"));
+    const picks = anchors.filter((_, i) => i % 2 === 0);
+    const offset = new Float32Array(picks.length * 3);
+    const size = new Float32Array(picks.length);
+    const seed = new Float32Array(picks.length);
+    picks.forEach((a, i) => {
+      offset[i * 3] = a.position.x + range(rng, -10, 10);
+      offset[i * 3 + 1] = a.position.y + range(rng, -4, 12);
+      offset[i * 3 + 2] = a.position.z + range(rng, -10, 10);
+      size[i] = a.scale * range(rng, 2.4, 3.6);
+      seed[i] = rng();
+    });
+    geo.setAttribute("aOffset", new THREE.InstancedBufferAttribute(offset, 3));
+    geo.setAttribute("aSize", new THREE.InstancedBufferAttribute(size, 1));
+    geo.setAttribute("aSeed", new THREE.InstancedBufferAttribute(seed, 1));
+    geo.instanceCount = picks.length;
+    const mat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: { uTime: sharedUniforms.uTime, uIntensity: { value: 0.16 } },
+      vertexShader: /* glsl */ `
+        uniform float uTime;
+        attribute vec3 aOffset;
+        attribute float aSize, aSeed;
+        varying vec2 vUv;
+        varying float vFade;
+        void main() {
+          vUv = uv;
+          vec3 center = (modelMatrix * vec4(aOffset, 1.0)).xyz;
+          vec3 right = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
+          vec3 up = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+          float s = aSize * (1.0 + 0.07 * sin(uTime * 0.3 + aSeed * 6.283));
+          vec3 world = center + (right * position.x + up * position.y) * s;
+          // Never let a sprite fill the screen when the camera passes close.
+          vFade = smoothstep(aSize * 0.45, aSize * 1.5, distance(cameraPosition, center));
+          gl_Position = projectionMatrix * viewMatrix * vec4(world, 1.0);
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform float uIntensity;
+        varying vec2 vUv;
+        varying float vFade;
+        void main() {
+          float d = length(vUv * 2.0 - 1.0);
+          float g = pow(max(0.0, 1.0 - d), 2.6);
+          gl_FragColor = vec4(vec3(1.0, 0.62, 0.2) * g * uIntensity * vFade, 1.0);
+        }
+      `,
+    });
+    plane.dispose();
+    return { geo, mat };
+  }, [anchors]);
 
-  for (const endpoint of branchEndpoints) {
-    for (let i = 0; i < countPerEndpoint; i++) {
-      const offset = new THREE.Vector3(
-        (rng() - 0.5) * 20,
-        (rng() - 0.5) * 15,
-        (rng() - 0.5) * 20
-      );
-
-      const position = new THREE.Vector3().copy(endpoint).add(offset);
-
-      const rotation = new THREE.Euler(
-        (rng() - 0.5) * 1.2,
-        rng() * Math.PI * 2,
-        (rng() - 0.5) * 0.8
-      );
-
-      const scale = 0.5 + rng() * 1.5;
-
-      const greenIntensity = 0.3 + rng() * 0.6;
-      const color = new THREE.Color(
-        0.02 + rng() * 0.05,
-        greenIntensity,
-        0.01 + rng() * 0.03
-      );
-
-      placements.push({
-        position,
-        rotation,
-        scale,
-        color,
-        leafCount: 2 + Math.floor(rng() * 4), // 2-5 leaves per cluster
-      });
+  const glints = useMemo(() => {
+    const rng = createRng(5151);
+    const count = 5200;
+    const pos = new Float32Array(count * 3);
+    const seed = new Float32Array(count);
+    const dir = new THREE.Vector3();
+    for (let i = 0; i < count; i++) {
+      const a = anchors[Math.floor(rng() * anchors.length)];
+      const u = rng() * 2 - 1;
+      const t = rng() * Math.PI * 2;
+      const ring = Math.sqrt(1 - u * u);
+      dir.set(Math.cos(t) * ring, u * 0.85, Math.sin(t) * ring);
+      const r = a.scale * MASS_RADIUS * range(rng, 0.85, 1.12);
+      pos[i * 3] = a.position.x + dir.x * r;
+      pos[i * 3 + 1] = a.position.y + dir.y * r;
+      pos[i * 3 + 2] = a.position.z + dir.z * r;
+      seed[i] = rng();
     }
-  }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("aSeed", new THREE.BufferAttribute(seed, 1));
+    const mat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: { uTime: sharedUniforms.uTime, uScale: { value: 1000 }, uFade: { value: 1 } },
+      vertexShader: /* glsl */ `
+        uniform float uTime, uScale;
+        attribute float aSeed;
+        varying float vTwinkle;
+        void main() {
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          vTwinkle = pow(0.5 + 0.5 * sin(uTime * (0.5 + aSeed * 1.3) + aSeed * 61.0), 8.0);
+          gl_PointSize = clamp((0.7 + aSeed * 0.9) * uScale / -mv.z * (0.5 + vTwinkle), 1.0, 7.0);
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        uniform float uFade;
+        varying float vTwinkle;
+        void main() {
+          float d = length(gl_PointCoord - 0.5);
+          float a = smoothstep(0.5, 0.0, d);
+          gl_FragColor = vec4(vec3(1.0, 0.8, 0.45) * a * (0.25 + vTwinkle * 2.6) * uFade, 1.0);
+        }
+      `,
+    });
+    return { geo, mat };
+  }, [anchors]);
 
-  return placements;
+  useEffect(
+    () => () => {
+      haze.geo.dispose();
+      haze.mat.dispose();
+      glints.geo.dispose();
+      glints.mat.dispose();
+    },
+    [haze, glints]
+  );
+
+  const group = useRef<THREE.Group>(null);
+  useFrame(({ camera, gl }) => {
+    const outside = 1 - frame.interior;
+    if (group.current) group.current.visible = outside > 0.01;
+    haze.mat.uniforms.uIntensity.value = 0.16 * outside;
+    const fov = ((camera as THREE.PerspectiveCamera).fov * Math.PI) / 180;
+    glints.mat.uniforms.uScale.value = gl.domElement.height / (2 * Math.tan(fov / 2));
+    glints.mat.uniforms.uFade.value = outside;
+  });
+
+  return (
+    <group ref={group}>
+      <mesh geometry={haze.geo} material={haze.mat} frustumCulled={false} renderOrder={5} />
+      <points geometry={glints.geo} material={glints.mat} frustumCulled={false} renderOrder={6} />
+    </group>
+  );
 }
 
 export function WorldTree() {
-  const treeGroupRef = useRef<THREE.Group>(null);
-  const foliageRef = useRef<THREE.InstancedMesh>(null);
+  const { textures, interiorEnv } = useWorldResources();
+  const data = useMemo(() => generateWorldTree(), []);
 
-  useFrame((state) => {
-    if (treeGroupRef.current) {
-      const time = state.clock.elapsedTime;
+  const materials = useMemo(() => {
+    const ground = TREE_GROUND;
+    const outer = createBarkMaterial(textures, {
+      deep: "#24170e",
+      mid: "#56391f",
+      ridge: "#8a6a49",
+      moss: "#4b5a2a",
+      mossAmount: 0.45,
+      ground,
+      glow: 1.8,
+      glowColor: "#ffae3a",
+      glowFrom: ground + 30,
+      glowTo: ground + 300,
+      detail: 2.7,
+    });
+    const limbs = createBarkMaterial(textures, {
+      deep: "#2a190d",
+      mid: "#5f3f22",
+      ridge: "#9b774f",
+      moss: "#4b5a2a",
+      mossAmount: 0.25,
+      ground,
+      glow: 3.2,
+      glowColor: "#ffb847",
+      glowFrom: ground + 150,
+      glowTo: ground + 360,
+    });
+    const inner = createBarkMaterial(textures, {
+      surface: "wood",
+      deep: "#1a0d06",
+      mid: "#4a2915",
+      ridge: "#7d5232",
+      moss: "#4b4524",
+      mossAmount: 0.08,
+      ground,
+      envMap: interiorEnv,
+      envMapIntensity: 1.2,
+      glow: 1.9,
+      glowColor: "#ffb547",
+      glowFrom: ground - 5,
+      glowTo: ground + 60,
+      glowEdge: 0.86,
+      detail: 2.2,
+    });
+    const innerRoots = createBarkMaterial(textures, {
+      deep: "#1d0e06",
+      mid: "#5e331a",
+      ridge: "#a1683c",
+      moss: "#55502a",
+      mossAmount: 0.12,
+      ground,
+      envMap: interiorEnv,
+      envMapIntensity: 1.2,
+      glow: 1.6,
+      glowColor: "#ffb547",
+      glowFrom: ground - 5,
+      glowTo: ground + 60,
+      glowEdge: 0.9,
+    });
+    const floor = createBarkMaterial(textures, {
+      deep: "#140b06",
+      mid: "#2f1d10",
+      ridge: "#5b3b22",
+      moss: "#3a3518",
+      mossAmount: 0.15,
+      ground,
+      envMap: interiorEnv,
+      envMapIntensity: 1.0,
+      glow: 1.4,
+      glowColor: "#ffb547",
+      glowFrom: ground - 5,
+      glowTo: ground + 8,
+      glowEdge: 0.9,
+      detail: 3.3,
+    });
+    const canopy = createFoliageMaterial(textures, { cell: 3, wind: 0.16, translucency: 1.3, selfGlow: 1.6, vertexColors: true });
+    const canopyDepth = createFoliageDepthMaterial(textures, { cell: 3, wind: 0.16 });
+    return { outer, limbs, inner, innerRoots, floor, canopy, canopyDepth };
+  }, [textures, interiorEnv]);
 
-      treeGroupRef.current.rotation.z = Math.sin(time * 0.1) * 0.003;
-    }
-    if (foliageRef.current) {
-      const time = state.clock.elapsedTime;
+  const merged = useMemo(
+    () => ({
+      roots: mergeGeometries(data.roots),
+      limbs: mergeGeometries(data.branches[0]),
+      branches: mergeGeometries([...data.branches[1], ...data.branches[2]]),
+      interior: mergeGeometries(data.interior),
+      floor: buildHallFloor(),
+    }),
+    [data]
+  );
 
-      foliageRef.current.rotation.y = Math.sin(time * 0.05) * 0.02;
-    }
+  const clump = useMemo(() => buildLeafMass(56, 3, 0.25), []);
+  const canopyRef = useRef<THREE.InstancedMesh>(null);
+  useEffect(() => {
+    const mesh = canopyRef.current;
+    if (!mesh) return;
+    const rng = createRng(77);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const e = new THREE.Euler();
+    const color = new THREE.Color();
+    data.anchors.forEach((a, i) => {
+      // Masses stay upright (their flattening is vertical); only spin and a slight lean vary.
+      e.set(range(rng, -0.25, 0.25), rng() * Math.PI * 2, range(rng, -0.25, 0.25));
+      q.setFromEuler(e);
+      const s = a.scale * MASS_RADIUS;
+      m.compose(a.position, q, new THREE.Vector3(s, s * 0.86, s));
+      mesh.setMatrixAt(i, m);
+      color.set(GOLD_TINTS[Math.floor(a.tint * GOLD_TINTS.length) % GOLD_TINTS.length]);
+      mesh.setColorAt(i, color);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.computeBoundingSphere();
+  }, [data]);
+
+  useEffect(
+    () => () => {
+      Object.values(merged).forEach((g) => g.dispose());
+      [data.outerShell, data.innerShell, data.crownRim, data.tunnel].forEach((g) => g.dispose());
+      clump.dispose();
+      Object.values(materials).forEach((mat) => mat.dispose());
+    },
+    [merged, data, clump, materials]
+  );
+
+  // Draw only what can be seen: the hollow from inside, the exterior from outside.
+  const outsideRef = useRef<THREE.Group>(null);
+  const insideRef = useRef<THREE.Group>(null);
+  useFrame(() => {
+    if (outsideRef.current) outsideRef.current.visible = frame.interior < 0.995;
+    if (insideRef.current) insideRef.current.visible = frame.progress > 0.43;
   });
 
-  const leafGeometry = useMemo(() => {
-    return createLeafGeometry(1, 2);
-  }, []);
-
-  const treeStructure = useMemo(() => {
-    const rng = seededRandom(12345);
-
-    const trunkHeight = 220; // Increased to ensure the cavity is tall enough
-    const trunkBaseRadius = 35; // Increased to create a massive hollow interior
-    const trunkTopRadius = 12;
-    const trunkStrands = 7;
-
-    const trunkGeos: THREE.BufferGeometry[] = [];
-    
-    for (let s = 0; s < trunkStrands; s++) {
-      const strandAngle = (s / trunkStrands) * Math.PI * 2;
-      const strandOffset = new THREE.Vector3(
-        Math.cos(strandAngle) * trunkBaseRadius * 0.6,
-        0,
-        Math.sin(strandAngle) * trunkBaseRadius * 0.6
-      );
-
-      const curvePoints: THREE.Vector3[] = [];
-      const segments = 30;
-      
-      for (let y = 0; y <= trunkHeight; y += trunkHeight / segments) {
-        const progress = y / trunkHeight;
-        const radius = trunkBaseRadius * (1 - progress * 0.6) * (0.7 + rng() * 0.3);
-        const twist = y * 0.02 + strandAngle;
-        
-        curvePoints.push(new THREE.Vector3(
-          strandOffset.x + Math.cos(twist) * radius * 0.3,
-          y,
-          strandOffset.z + Math.sin(twist) * radius * 0.3
-        ));
-      }
-
-      const curve = new THREE.CatmullRomCurve3(curvePoints);
-      const radius = trunkBaseRadius * 0.35 * (1 - rng() * 0.15); // Thinner strands
-      trunkGeos.push(new THREE.TubeGeometry(curve, 40, radius, 10, false));
-    }
-
-    const rootGeos: THREE.BufferGeometry[] = [];
-    const numRoots = 12;
-    
-    for (let r = 0; r < numRoots; r++) {
-      const angle = (r / numRoots) * Math.PI * 2 + rng() * 0.2;
-      const spread = 15 + rng() * 20;
-      
-      const points: THREE.Vector3[] = [
-        new THREE.Vector3(Math.cos(angle) * 20, 0, Math.sin(angle) * 20),
-        new THREE.Vector3(Math.cos(angle) * (20 + spread * 0.3), 8, Math.sin(angle) * (20 + spread * 0.3)),
-        new THREE.Vector3(Math.cos(angle) * (20 + spread * 0.7), -2, Math.sin(angle) * (20 + spread * 0.7)),
-        new THREE.Vector3(Math.cos(angle) * spread, -8, Math.sin(angle) * spread),
-      ];
-      
-      const rootCurve = new THREE.CatmullRomCurve3(points);
-      const rootRadius = 3 + rng() * 3;
-      rootGeos.push(new THREE.TubeGeometry(rootCurve, 20, rootRadius, 8, false));
-    }
-
-    const primaryBranches = generatePrimaryBranches(trunkHeight, 24, rng); // FEWER but elegant branches
-    const primaryGeos: THREE.BufferGeometry[] = [];
-    const primaryEndpoints: THREE.Vector3[] = [];
-
-    for (const branch of primaryBranches) {
-      primaryGeos.push(createBranch(branch.start, branch.end, 32, branch.radius * 0.7, branch.radius * 0.25, 0.5, rng));
-      primaryEndpoints.push(branch.end);
-    }
-
-    const secondaryBranches = generateSecondaryBranches(primaryEndpoints, 10, rng); // FEWER secondary
-    const secondaryGeos: THREE.BufferGeometry[] = [];
-    const secondaryEndpoints: THREE.Vector3[] = [];
-
-    for (const branch of secondaryBranches) {
-      secondaryGeos.push(createBranch(branch.start, branch.end, 24, branch.radius * 0.6, branch.radius * 0.2, 0.5, rng));
-      secondaryEndpoints.push(branch.end);
-    }
-
-    const tertiaryEndpoints: THREE.Vector3[] = [];
-    for (const ep of secondaryEndpoints) {
-      for (let i = 0; i < 5; i++) { // FEWER tertiary branches
-        const offset = new THREE.Vector3(
-          (rng() - 0.5) * 10,
-          5 + rng() * 10,
-          (rng() - 0.5) * 10
-        );
-        tertiaryEndpoints.push(new THREE.Vector3().copy(ep).add(offset));
-      }
-    }
-
-    const allEndpoints = [...primaryEndpoints, ...secondaryEndpoints, ...tertiaryEndpoints];
-    const foliagePlacements = placeFoliage(allEndpoints, rng, 15); // MORE DENSE foliage clusters
-
-    const interiorSegments = 40;
-    const interiorHeight = trunkHeight * 0.85;
-    const interiorRadius = trunkBaseRadius * 0.4; // Radius of the hollow cavity
-    
-    const interiorPositions: number[] = [];
-    const interiorNormals: number[] = [];
-    const interiorIndices: number[] = [];
-    
-    for (let y = 0; y <= interiorSegments; y++) {
-      const progress = y / interiorSegments;
-      const currentY = progress * interiorHeight;
-      const radiusAtY = interiorRadius * (1 - progress * 0.25);
-      
-      const numRadialSegments = 20;
-      for (let i = 0; i < numRadialSegments; i++) {
-        const angle = (i / numRadialSegments) * Math.PI * 2;
-        const nextAngle = ((i + 1) / numRadialSegments) * Math.PI * 2;
-
-        const irregularity = 0.85 + rng() * 0.3;
-        const r1 = radiusAtY * irregularity;
-        const r2 = radiusAtY * (0.85 + rng() * 0.3);
-
-        const x1 = Math.cos(angle) * r1;
-        const z1 = Math.sin(angle) * r1;
-        interiorPositions.push(x1, currentY, z1);
-
-        interiorNormals.push(-Math.cos(angle), 0.1, -Math.sin(angle));
-
-        const x2 = Math.cos(nextAngle) * r2;
-        const z2 = Math.sin(nextAngle) * r2;
-        interiorPositions.push(x2, currentY, z2);
-        interiorNormals.push(-Math.cos(nextAngle), 0.1, -Math.sin(nextAngle));
-      }
-
-      for (let i = 0; i < numRadialSegments * 2; i += 2) {
-        const base = (y * numRadialSegments + i) * 2;
-        const nextBase = ((y + 1) * numRadialSegments + i) * 2;
-        interiorIndices.push(base, nextBase, base + 1);
-        interiorIndices.push(base + 1, nextBase, nextBase + 1);
-      }
-    }
-    
-    const interiorGeo = new THREE.BufferGeometry();
-    interiorGeo.setAttribute('position', new THREE.Float32BufferAttribute(interiorPositions, 3));
-    interiorGeo.setAttribute('normal', new THREE.Float32BufferAttribute(interiorNormals, 3));
-    interiorGeo.setIndex(interiorIndices);
-    interiorGeo.computeVertexNormals();
-
-    return {
-      trunkGeo: BufferGeometryUtils.mergeGeometries(trunkGeos),
-      rootGeo: BufferGeometryUtils.mergeGeometries(rootGeos),
-      primaryGeo: BufferGeometryUtils.mergeGeometries(primaryGeos),
-      secondaryGeo: BufferGeometryUtils.mergeGeometries(secondaryGeos),
-      interiorGeo,
-      foliagePlacements,
-      primaryEndpoints,
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!foliageRef.current) return;
-
-    const { foliagePlacements } = treeStructure;
-    const dummy = new THREE.Object3D();
-    let instanceIndex = 0;
-
-    foliagePlacements.forEach((foliage) => {
-
-      for (let i = 0; i < foliage.leafCount && instanceIndex < foliageRef.current!.count; i++) {
-        const offset = new THREE.Vector3(
-          (Math.random() - 0.5) * 2,
-          (Math.random() - 0.5) * 1.5,
-          (Math.random() - 0.5) * 2
-        );
-
-        dummy.position.copy(foliage.position).add(offset);
-        dummy.rotation.copy(foliage.rotation);
-        dummy.rotation.x += (Math.random() - 0.5) * 0.5;
-        dummy.rotation.z += (Math.random() - 0.5) * 0.5;
-
-        dummy.scale.setScalar(foliage.scale * (1.2 + Math.random() * 0.8));
-        dummy.updateMatrix();
-
-        foliageRef.current!.setMatrixAt(instanceIndex, dummy.matrix);
-        foliageRef.current!.setColorAt(instanceIndex, foliage.color);
-        instanceIndex++;
-      }
-    });
-
-    foliageRef.current.instanceMatrix.needsUpdate = true;
-    foliageRef.current.instanceColor!.needsUpdate = true;
-  }, [treeStructure]);
-
-  const barkMaterial = useMemo(() => {
-    const mat = new THREE.MeshStandardMaterial({
-      color: "#5c3a21", // Base rich brown
-      roughness: 0.85,
-      metalness: 0.02,
-      side: THREE.DoubleSide,
-    });
-    mat.onBeforeCompile = applyBarkShader;
-    return mat;
-  }, []);
-
-  const trunkMaterial = useMemo(() => {
-    const mat = new THREE.MeshStandardMaterial({
-      color: "#3d2515", // Darker inner brown
-      roughness: 0.9,
-      metalness: 0.0,
-      side: THREE.DoubleSide, // Essential for rendering the hollow interior
-    });
-    mat.onBeforeCompile = applyBarkShader;
-    return mat;
-  }, []);
-
   return (
-    <group ref={treeGroupRef} position={[0, 0, -450]}>
-            {treeStructure.trunkGeo && (
-        <mesh geometry={treeStructure.trunkGeo} material={trunkMaterial} castShadow receiveShadow />
-      )}
-
-            {treeStructure.rootGeo && (
-        <mesh geometry={treeStructure.rootGeo} material={barkMaterial} castShadow receiveShadow />
-      )}
-
-            {treeStructure.primaryGeo && (
-        <mesh geometry={treeStructure.primaryGeo} castShadow receiveShadow>
-          <meshStandardMaterial color="#6b4423" roughness={0.85} />
-        </mesh>
-      )}
-
-            {treeStructure.secondaryGeo && (
-        <mesh geometry={treeStructure.secondaryGeo} castShadow receiveShadow>
-          <meshStandardMaterial color="#7a5230" roughness={0.8} />
-        </mesh>
-      )}
-
-            {treeStructure.interiorGeo && (
-        <mesh geometry={treeStructure.interiorGeo} material={trunkMaterial} receiveShadow />
-      )}
-
-            <pointLight position={[0, 90, 0]} color="#fff5cc" intensity={12} distance={150} />
-      <pointLight position={[0, 150, 0]} color="#fff8e7" intensity={8} distance={120} />
-
-            <group position={[0, 20, 0]}>
-        <ArtifactAURA position={[-5, 70, 0]} />
-        <ArtifactETTH position={[5, 95, 0]} />
-        <ArtifactShadowGuard position={[-5, 120, 0]} />
-        <ArtifactSugarAI position={[5, 145, 0]} />
-        <ArtifactAchievements position={[-4, 170, 0]} />
-        <ArtifactLeadership position={[4, 195, 0]} />
-        <ArtifactExperience position={[0, 220, 0]} />
+    <group position={[TREE.x, TREE_GROUND, TREE.z]}>
+      <group ref={outsideRef}>
+        <mesh geometry={data.outerShell} material={materials.outer} castShadow receiveShadow />
+        <mesh geometry={merged.roots} material={materials.outer} castShadow receiveShadow />
+        <mesh geometry={data.tunnel} material={materials.outer} receiveShadow />
+        <mesh geometry={merged.limbs} material={materials.limbs} castShadow receiveShadow />
+        <mesh geometry={merged.branches} material={materials.limbs} castShadow />
+        <instancedMesh
+          ref={canopyRef}
+          args={[clump, materials.canopy, data.anchors.length]}
+          customDepthMaterial={materials.canopyDepth}
+          castShadow
+        />
       </group>
+      <group ref={insideRef}>
+        <mesh geometry={data.innerShell} material={materials.inner} receiveShadow />
+        <mesh geometry={data.crownRim} material={materials.inner} />
+        <mesh geometry={merged.interior} material={materials.innerRoots} />
+        <mesh geometry={merged.floor} material={materials.floor} receiveShadow />
+      </group>
+      <CrownHalo />
+      <CrownLight anchors={data.anchors} />
     </group>
   );
 }

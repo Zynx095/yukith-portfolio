@@ -1,4 +1,10 @@
 # YUKITH PORTFOLIO — CODEX HANDOFF
+
+> **READ `REBUILD_HANDOFF.md` FIRST.** The 3D world was rebuilt in October 2026. That file
+> records the audit, the baseline measurements and the design decisions behind the new
+> architecture (`lib/world/*`, `components/world/*`, `components/ui/*`). The architecture
+> described below is the *old* one, which the rebuild replaced.
+
 ## Current State Snapshot — August 2026
 
 IMPORTANT:

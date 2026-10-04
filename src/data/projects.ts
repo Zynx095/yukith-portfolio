@@ -1,22 +1,49 @@
+/**
+ * Projects — the single source of truth for every project shown in the
+ * World Tree archive and the portfolio's Work section.
+ *
+ * Rules: every claim here comes from the project's own repository README,
+ * its live site, or information Yukith provided. Never add metrics, users,
+ * results or features that are not stated there.
+ */
+
+export interface ProjectImage {
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+}
+
 export interface Project {
+  /** URL-safe id, also used by the 3D archive and the sigil (logo) registry. */
   id: string;
   title: string;
+  /** What it is, in one line. */
   role: string;
   year: string;
   tags: string[];
   accent: string;
+  /** Short description (one or two sentences). */
   desc: string;
+  /** Longer description for the detail panel. */
+  summary?: string;
+  /** Verified features / facts, phrased for display. */
   verifiedFeatures?: string[];
+  /** Honest status label where the README states one. */
+  status?: string;
   github?: string;
+  live?: string;
+  gallery?: ProjectImage[];
   isPlaceholder?: boolean;
 }
 
 export const PROJECTS: Project[] = [
   {
-    id: "01",
+    id: "etth",
     title: "ETTH",
     role: "Encrypted Traffic Threat Hunter",
     year: "2026",
+    github: "https://github.com/Zynx095/encrypted-traffic-threat-hunter",
     tags: ["Python", "scikit-learn", "dpkt/Scapy", "PCAP Analysis"],
     accent: "#00d4ff",
     desc: "Machine learning pipeline for encrypted traffic analysis and threat detection without payload decryption.",
@@ -34,14 +61,15 @@ export const PROJECTS: Project[] = [
       "five experimental configurations",
       "46/46 passing unit tests",
       "dataset/capture-environment confounding documented",
-      "generalization claims appropriately scoped"
-    ]
+      "generalization claims appropriately scoped",
+    ],
   },
   {
-    id: "02",
+    id: "aura",
     title: "AURA",
     role: "Autonomous Unified Recognition Assistant",
     year: "2026",
+    github: "https://github.com/Zynx095/AURA",
     tags: ["Next.js", "FastAPI", "YOLOv8", "WebSockets", "SQLite"],
     accent: "#7dd3fc",
     desc: "Real-time AI surveillance platform utilizing computer vision for tracking and behavioral analysis.",
@@ -56,14 +84,15 @@ export const PROJECTS: Project[] = [
       "polygon-based zone intrusion engine",
       "incident generation",
       "evidence snapshots",
-      "Next.js live detection dashboard"
-    ]
+      "Next.js live detection dashboard",
+    ],
   },
   {
-    id: "03",
+    id: "shadowguard",
     title: "ShadowGuard",
     role: "Enterprise AI Data Protection System",
     year: "2026",
+    github: "https://github.com/Zynx095/shadowguard",
     tags: ["Cybersecurity", "Access Control", "DLP"],
     accent: "#a5b4fc",
     desc: "Defensive architecture concept/prototype for enterprise data protection, anomaly detection, and insider-threat monitoring.",
@@ -76,14 +105,15 @@ export const PROJECTS: Project[] = [
       "system hardening",
       "breach-response workflow",
       "shutdown protocols",
-      "insider-threat monitoring"
-    ]
+      "insider-threat monitoring",
+    ],
   },
   {
-    id: "sugai",
+    id: "sugarai",
     title: "Sugar AI",
     role: "Offline Voice-Controlled Desktop Assistant",
     year: "2025",
+    github: "https://github.com/Zynx095/SUGAR-AI",
     tags: ["Python", "Whisper AI", "Ollama", "MeloTTS", "CustomTkinter"],
     accent: "#93c5fd",
     desc: "Fully offline desktop assistant running local speech processing and LLM pipelines.",
@@ -92,37 +122,142 @@ export const PROJECTS: Project[] = [
       "on-device speech/language processing",
       "user data remains local",
       "multithreaded transcription/inference/playback pipeline",
-      "responsive voice interaction"
-    ]
+      "responsive voice interaction",
+    ],
   },
   {
-    id: "05",
+    id: "qshield",
+    title: "Q-SHIELD",
+    role: "Continuous device trust with post-quantum-signed evidence",
+    year: "2026",
+    github: "https://github.com/Zynx095/Q-shield",
+    status: "Hackathon prototype",
+    tags: ["Python", "FastAPI", "SQLite", "OpenCV", "YOLO11n", "ML-KEM / ML-DSA"],
+    accent: "#a78bfa",
+    desc: "Authentication answers “who are you” once. Q-SHIELD keeps asking “can I still trust you”, using post-quantum-signed evidence.",
+    summary:
+      "Q-SHIELD keeps scoring every device from independent evidence — cryptographic identity, the physical tamper switch, sensor ranges, configuration integrity, network liveness and signed camera observations. When the evidence turns against a device it is quarantined at the gateway, every decision is recorded in a signed evidence chain, and the device only returns after a verified, operator-started recovery rebuilds its trust. Built as a working prototype for a hackathon; device telemetry is simulated and the ESP32 firmware is a skeleton.",
+    verifiedFeatures: [
+      "explainable trust engine: six weighted evidence factors with hysteresis",
+      "quarantine enforcement at the gateway, with operator-started verified recovery",
+      "evidence chain: SHA-256 linked and ML-DSA-65 (FIPS 204) signed",
+      "signed camera observations over an ML-KEM-768 (FIPS 203) session",
+      "PQC checked against NIST ACVP test vectors",
+      "vision service: OpenCV + YOLO11n with camera-tamper checks (covered, frozen, turned)",
+      "digital twin of expected vs self-reported device state",
+      "security command-center dashboard with a presentation mode",
+    ],
+  },
+  {
+    id: "jiva",
+    title: "JIVA",
+    role: "Privacy-preserving, real-time healthcare coordination",
+    year: "2026",
+    github: "https://github.com/Zynx095/Jiva",
+    status: "Phase 6 (frozen) · decision authority in shadow mode",
+    tags: ["TypeScript", "Express", "Socket.IO", "Zod", "MapLibre", "AWS CDK"],
+    accent: "#f47c7c",
+    desc: "Ambulances, hospitals and patients on one event-driven mesh — without exposing a single hospital database.",
+    summary:
+      "In an emergency, the nearest hospital is often not the right one. JIVA's rule is simple: never assume a bed is open. Public data says what a hospital can do; only a live, time-bounded acceptance from that hospital says it will — everything else stays UNKNOWN. Every fact is an event on a central bus, state engines project Patient, Hospital and Ambulance state, and four role-scoped apps update live.",
+    verifiedFeatures: [
+      "event-driven core: state engines project every event into live state",
+      "Hospital Acceptance Protocol with automatic re-routing on rejection or timeout",
+      "every derived value carries confidence and provenance",
+      "Care Feasibility Engine running in shadow mode only",
+      "provider-agnostic routing: Valhalla, OSRM or a labelled synthetic fallback",
+      "AI sidecar for handoff briefs, with no routing authority",
+      "four role-scoped apps (Management, Ambulance, Hospital, Patient) over Socket.IO",
+      "local-first; AWS architecture modelled in CDK (not deployed)",
+      "20 adversarial failure scenarios passing",
+    ],
+  },
+  {
+    id: "street-hierarchy",
+    title: "STREET HIERARCHY",
+    role: "Roblox grind / clicker / RPG simulator",
+    year: "2026",
+    github: "https://github.com/Zynx095/Robloxgame",
+    status: "Playable alpha",
+    tags: ["Luau", "Roblox Studio", "Rojo", "Server-authoritative"],
+    accent: "#ff7a45",
+    desc: "Start as a nobody. Click your way to the top of the hierarchy. A Roblox game built end to end in Luau, from the economy curve to the VFX.",
+    summary:
+      "An unofficial, fan-made grind / clicker / RPG simulator inspired by the power hierarchy of the Lookism webtoon. Every click is +1 Power: fight your way up a ladder of fighters, earn Trophies, upgrade Fists, hatch pets, roll Auras and Rebirth for permanent multipliers — until the final boss falls and the game turns into the Brainrot Dimension. Every fighter, pet and aura is an original, data-driven creation.",
+    verifiedFeatures: [
+      "72 scripts · ~13.5K lines of typed Luau",
+      "server-authoritative: clicks batched every 0.2 s through token-bucket rate limits",
+      "8 zones, each with its own lighting mood, music and boss arena",
+      "34 data-driven R15 fighters with telegraphed NPC AI",
+      "49 pets across 8 eggs, 17 auras and 12 fist tiers",
+      "rebirth prestige economy balanced with a pacing simulator",
+      "31-step story quest chain that doubles as the tutorial",
+      "session-locked data service with autosave",
+      "mobile-ready: mouse, touch, keyboard and gamepad",
+    ],
+    gallery: [
+      { src: "/projects/street-hierarchy/starter-street.webp", width: 1148, height: 793, alt: "Zone 1, Starter Street" },
+      { src: "/projects/street-hierarchy/combat.webp", width: 1148, height: 793, alt: "Combat: walk up to a fighter and TRAIN becomes PUNCH" },
+      { src: "/projects/street-hierarchy/pets-and-aura.webp", width: 1148, height: 793, alt: "Pets following the player with aura effects" },
+      { src: "/projects/street-hierarchy/brainrot-dimension.webp", width: 1148, height: 793, alt: "The Brainrot Dimension" },
+    ],
+  },
+  {
+    id: "trc",
+    title: "T R Constructions",
+    role: "Website for a Bengaluru civil & building contractor",
+    year: "2026",
+    github: "https://github.com/Zynx095/TRCStructures-website",
+    live: "https://trcstructures.vercel.app",
+    tags: ["Next.js 16", "TypeScript", "Tailwind CSS v4", "GSAP", "React Three Fiber"],
+    accent: "#e8a317",
+    desc: "Production website for T R Constructions, a civil and building contractor executing structure, block work, finishes, interiors and water-tank works across Karnataka and Andhra Pradesh.",
+    summary:
+      "A production site built around the company's own work: a hero where the TRC mark assembles in 3D, a ground-to-finish sequence told through real sites, a sump/overhead-tank model, and a horizontal project gallery. The TRC mark is drawn from structure — a beam on a column, a braced frame and a channel section.",
+    verifiedFeatures: [
+      "Next.js 16 App Router, TypeScript and Tailwind CSS v4",
+      "GSAP motion: hero TRC assembly, ground-to-finish sequence, horizontal project gallery",
+      "React Three Fiber scenes that load only on capable desktops, with SVG fallbacks",
+      "typed content layer for projects, services, affiliations and testimonials",
+      "static CSP and security headers; rate-limited enquiry endpoint with honeypot",
+      "reduced-motion support: pins and transforms are skipped",
+    ],
+    gallery: [
+      { src: "/projects/trc/home.webp", width: 1280, height: 800, alt: "Home page with the 3D TRC mark" },
+      { src: "/projects/trc/ground-to-finish.webp", width: 1280, height: 800, alt: "Ground-to-finish sequence" },
+      { src: "/projects/trc/sump-oht-model.webp", width: 1280, height: 800, alt: "Interactive sump and overhead-tank model" },
+    ],
+  },
+  {
+    id: "stp-bot",
     title: "STP BOT",
     role: "",
     year: "",
     tags: [],
     accent: "#67e8f9",
     desc: "",
-    isPlaceholder: true
+    isPlaceholder: true,
   },
   {
-    id: "06",
+    id: "edith-ar",
     title: "EDITH AR",
     role: "",
     year: "",
     tags: [],
     accent: "#818cf8",
     desc: "",
-    isPlaceholder: true
+    isPlaceholder: true,
   },
   {
-    id: "07",
+    id: "nids-engine",
     title: "NIDS ENGINE",
     role: "",
     year: "",
     tags: [],
     accent: "#c4b5fd",
     desc: "",
-    isPlaceholder: true
-  }
+    isPlaceholder: true,
+  },
 ];
+
+export const projectById = (id: string) => PROJECTS.find((p) => p.id === id);
