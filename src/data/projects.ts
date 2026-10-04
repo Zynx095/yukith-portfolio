@@ -201,6 +201,32 @@ export const PROJECTS: Project[] = [
     ],
   },
   {
+    id: "trc",
+    title: "T R Constructions",
+    role: "Website for a Bengaluru civil & building contractor",
+    year: "2026",
+    github: "https://github.com/Zynx095/TRCStructures-website",
+    live: "https://trcstructures.vercel.app",
+    tags: ["Next.js 16", "TypeScript", "Tailwind CSS v4", "GSAP", "React Three Fiber"],
+    accent: "#e8a317",
+    desc: "Production website for T R Constructions, a civil and building contractor executing structure, block work, finishes, interiors and water-tank works across Karnataka and Andhra Pradesh.",
+    summary:
+      "A production site built around the company's own work: a hero where the TRC mark assembles in 3D, a ground-to-finish sequence told through real sites, a sump/overhead-tank model, and a horizontal project gallery. The TRC mark is drawn from structure — a beam on a column, a braced frame and a channel section.",
+    verifiedFeatures: [
+      "Next.js 16 App Router, TypeScript and Tailwind CSS v4",
+      "GSAP motion: hero TRC assembly, ground-to-finish sequence, horizontal project gallery",
+      "React Three Fiber scenes that load only on capable desktops, with SVG fallbacks",
+      "typed content layer for projects, services, affiliations and testimonials",
+      "static CSP and security headers; rate-limited enquiry endpoint with honeypot",
+      "reduced-motion support: pins and transforms are skipped",
+    ],
+    gallery: [
+      { src: "/projects/trc/home.webp", alt: "Home page with the 3D TRC mark" },
+      { src: "/projects/trc/ground-to-finish.webp", alt: "Ground-to-finish sequence" },
+      { src: "/projects/trc/sump-oht-model.webp", alt: "Interactive sump and overhead-tank model" },
+    ],
+  },
+  {
     id: "stp-bot",
     title: "STP BOT",
     role: "",
