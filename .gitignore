@@ -3,3 +3,6 @@ node_modules/
 .next/
 node_modules/
 node_modules/
+
+.handoff/
+tsconfig.tsbuildinfo
