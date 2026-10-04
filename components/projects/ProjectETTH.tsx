@@ -4,6 +4,7 @@ import React, { useRef, useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { PROJECTS } from '@/src/data/projects';
+import { Github } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -90,6 +91,18 @@ export default function ProjectETTH() {
               ))}
             </ul>
           </div>
+
+          {project.github && (
+            <a
+              href={project.github}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-[#15100C] hover:bg-[#3A2417] border border-[#51321E] text-[#E3CB8A] rounded transition-colors min-h-[44px]"
+            >
+              <Github size={20} />
+              <span className="font-mono text-sm">View Repository</span>
+            </a>
+          )}
         </div>
 
         <div ref={pipelineRef} className="relative z-10 flex flex-col items-center justify-center space-y-4 md:space-y-8 font-mono text-sm md:text-base">
