@@ -25,7 +25,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${spaceMono.variable} ${playfair.variable}`}>
       <body className="overflow-x-hidden bg-[#0D0A08] text-[#F4F1EA] antialiased">
         {children}
-        <Analytics />
+        {/* Vercel Web Analytics only exists on Vercel deployments. */}
+        {process.env.VERCEL && <Analytics />}
       </body>
     </html>
   );
