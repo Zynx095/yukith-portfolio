@@ -8,6 +8,9 @@ import ProjectAURA from './projects/ProjectAURA';
 import ProjectShadowGuard from './projects/ProjectShadowGuard';
 import ProjectSugarAI from './projects/ProjectSugarAI';
 import { WorkIndex } from './work/WorkIndex';
+import { ProjectShowcase } from './work/ProjectShowcase';
+import { QShieldVisual } from './work/QShieldVisual';
+import { projectById } from '@/src/data/projects';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -88,6 +91,10 @@ export default function WorkScene() {
 
       <div className="project-wrapper" id="project-sugarai">
         <ProjectSugarAI />
+      </div>
+
+      <div className="project-wrapper">
+        <ProjectShowcase id="qshield" eyebrow="[ Post-quantum device trust ]" visual={<QShieldVisual accent={projectById('qshield')!.accent} />} />
       </div>
       
       </div>
