@@ -10,6 +10,8 @@
 export interface ProjectImage {
   src: string;
   alt: string;
+  width?: number;
+  height?: number;
 }
 
 export interface Project {
@@ -194,10 +196,10 @@ export const PROJECTS: Project[] = [
       "mobile-ready: mouse, touch, keyboard and gamepad",
     ],
     gallery: [
-      { src: "/projects/street-hierarchy/starter-street.webp", alt: "Zone 1, Starter Street" },
-      { src: "/projects/street-hierarchy/combat.webp", alt: "Combat: walk up to a fighter and TRAIN becomes PUNCH" },
-      { src: "/projects/street-hierarchy/pets-and-aura.webp", alt: "Pets following the player with aura effects" },
-      { src: "/projects/street-hierarchy/brainrot-dimension.webp", alt: "The Brainrot Dimension" },
+      { src: "/projects/street-hierarchy/starter-street.webp", width: 1148, height: 793, alt: "Zone 1, Starter Street" },
+      { src: "/projects/street-hierarchy/combat.webp", width: 1148, height: 793, alt: "Combat: walk up to a fighter and TRAIN becomes PUNCH" },
+      { src: "/projects/street-hierarchy/pets-and-aura.webp", width: 1148, height: 793, alt: "Pets following the player with aura effects" },
+      { src: "/projects/street-hierarchy/brainrot-dimension.webp", width: 1148, height: 793, alt: "The Brainrot Dimension" },
     ],
   },
   {
@@ -221,9 +223,9 @@ export const PROJECTS: Project[] = [
       "reduced-motion support: pins and transforms are skipped",
     ],
     gallery: [
-      { src: "/projects/trc/home.webp", alt: "Home page with the 3D TRC mark" },
-      { src: "/projects/trc/ground-to-finish.webp", alt: "Ground-to-finish sequence" },
-      { src: "/projects/trc/sump-oht-model.webp", alt: "Interactive sump and overhead-tank model" },
+      { src: "/projects/trc/home.webp", width: 1280, height: 800, alt: "Home page with the 3D TRC mark" },
+      { src: "/projects/trc/ground-to-finish.webp", width: 1280, height: 800, alt: "Ground-to-finish sequence" },
+      { src: "/projects/trc/sump-oht-model.webp", width: 1280, height: 800, alt: "Interactive sump and overhead-tank model" },
     ],
   },
   {
