@@ -9,6 +9,7 @@ import ProjectShadowGuard from './projects/ProjectShadowGuard';
 import ProjectSugarAI from './projects/ProjectSugarAI';
 import { WorkIndex } from './work/WorkIndex';
 import { ProjectShowcase } from './work/ProjectShowcase';
+import { ProjectGallery } from './work/ProjectGallery';
 import { QShieldVisual } from './work/QShieldVisual';
 import { JivaVisual } from './work/JivaVisual';
 import { projectById } from '@/src/data/projects';
@@ -100,6 +101,14 @@ export default function WorkScene() {
 
       <div className="project-wrapper">
         <ProjectShowcase id="jiva" eyebrow="[ Emergency coordination ]" flip visual={<JivaVisual accent={projectById('jiva')!.accent} />} />
+      </div>
+
+      <div className="project-wrapper">
+        <ProjectShowcase
+          id="street-hierarchy"
+          eyebrow="[ Roblox game · Luau ]"
+          visual={<ProjectGallery images={projectById('street-hierarchy')!.gallery!} title="STREET HIERARCHY" accent={projectById('street-hierarchy')!.accent} />}
+        />
       </div>
       
       </div>
