@@ -1,28 +1,27 @@
-"use client";
-
-import dynamic from "next/dynamic";
 import { SmoothScrollProvider } from "@/components/providers/smooth-scroll";
-import { LoadingVeil } from "@/components/ui/LoadingVeil";
-import MainPortfolio from "@/components/MainPortfolio";
-import { JOURNEY_VH } from "@/lib/world/constants";
-
-// The 3D world is client-only and loads in its own chunk behind the veil.
-const PortfolioWorld = dynamic(() => import("@/components/world/PortfolioWorld"), {
-  ssr: false,
-  loading: () => <LoadingVeil visible />,
-});
+import { Experience } from "@/components/experience/Experience";
+import { Portfolio } from "@/components/portfolio/Portfolio";
+import { RecordPanel } from "@/components/record/RecordPanel";
+import { IndexOverlay } from "@/components/index/IndexOverlay";
+import { TopBar } from "@/components/shared/TopBar";
 
 /**
- * One continuous page: scrolling first carries the visitor through the World
- * Tree journey (a fixed canvas driven by this spacer's scroll range), and the
- * portfolio follows directly beneath it — scroll back up to return to the tree.
+ * One continuous page. A skip link and the persistent bar come first; then the
+ * World Tree journey (a fixed canvas driven by the scroll range of #journey);
+ * then the written portfolio, rendered on the server so it is readable before
+ * — and without — any JavaScript or WebGL.
  */
 export default function Home() {
   return (
     <SmoothScrollProvider>
-      <PortfolioWorld />
-      <div id="journey" style={{ height: `${JOURNEY_VH * 100}vh` }} aria-hidden="true" />
-      <MainPortfolio />
+      <a href="#record" className="sr-only-focusable fixed left-4 top-20 z-50 rounded-full bg-paper px-4 py-2 text-sm font-medium text-ink">
+        Skip the 3D journey and go to the portfolio
+      </a>
+      <TopBar />
+      <Experience />
+      <Portfolio />
+      <RecordPanel />
+      <IndexOverlay />
     </SmoothScrollProvider>
   );
 }

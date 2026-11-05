@@ -24,7 +24,7 @@ const height = Number(args.height || 1080);
 fs.mkdirSync(outDir, { recursive: true });
 
 const browser = await puppeteer.launch({
-  executablePath: process.env.CHROME_PATH || "C:/Users/Yukith M Joseph/.cache/puppeteer/chrome/win64-152.0.7977.54/chrome-win64/chrome.exe",
+  executablePath: process.env.CHROME_PATH || "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
   headless: true,
   args: ["--ignore-gpu-blocklist", "--use-angle=d3d11", `--window-size=${width},${height}`],
   defaultViewport: { width, height, deviceScaleFactor: Number(args.dpr || 1), isMobile: args.mobile === "true", hasTouch: args.mobile === "true" },

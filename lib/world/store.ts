@@ -1,15 +1,15 @@
 import { useSyncExternalStore } from "react";
-import type { ArtifactId } from "./archive";
 
 /**
- * Journey state.
+ * Shared state for the experience.
  *
  * `frame` holds values that change every frame (scroll progress, velocity,
- * focus blend). It is a plain mutable object read inside `useFrame` and DOM
- * updaters — never React state, so scrolling causes no React re-renders.
+ * focus blend, projected label position). It is a plain mutable object read
+ * inside `useFrame` and rAF-driven DOM updaters — never React state, so
+ * scrolling causes no React re-renders.
  *
- * `ui` holds coarse, discrete state (current chapter, focused artifact, open
- * panel …) that React components subscribe to through `useUi`.
+ * `ui` holds coarse, discrete state (chapter, focused relic, open record,
+ * index, sound …) that components subscribe to through `useUi`.
  */
 
 export type FocusPhase = "moving" | "focusing" | "focused";
@@ -26,45 +26,60 @@ export const frame = {
   idle: 10,
   /** Last non-zero scroll direction (-1 back, +1 forward). */
   direction: 1,
-  /** 0..1 blend of the camera towards the focused artifact's framing. */
+  /** 0..1 blend of the camera towards the focused relic's framing. */
   focusWeight: 0,
-  /** 0..1 how far the camera is inside the World Tree (drives lighting/exposure). */
+  /** 0..1 how far inside the World Tree the camera is. */
   interior: 0,
-  /** 0..1 transition into the portfolio at the end of the journey. */
-  outro: 0,
-  /** Screen position (CSS px) of the relic nearest the camera's focus, for its DOM label. */
+  /** 0..1 daylight → dusk → night, driven by the journey. */
+  dusk: 0,
+  /** Screen position (CSS px) and projected radius of the relic in focus, for its DOM label. */
   focusX: 0,
   focusY: 0,
-  /** Projected radius (CSS px) of that relic, so its label sits beside it. */
   focusR: 0,
   focusVisible: false,
-  /** 0..1 how near the camera is to the current relic's framing (label prominence). */
+  /** 0..1 how near the camera is to the relic's framing (label prominence). */
   focusNear: 0,
+  /** Screen position of Bella (for the "throw a stick" hint). */
+  petX: 0,
+  petY: 0,
+  petVisible: false,
 };
 
 export interface UiState {
+  /** The 3D world has compiled and drawn its first frame. */
   ready: boolean;
+  /** Real asset loading progress, 0..1. */
+  loaded: number;
+  /** WebGL could not start; the HTML portfolio stands alone. */
+  noWebgl: boolean;
   chapter: number;
-  focusId: ArtifactId | null;
+  focusId: string | null;
   focusPhase: FocusPhase;
-  hoverId: ArtifactId | null;
-  openId: ArtifactId | null;
+  hoverId: string | null;
+  /** Project record open in the panel. */
+  openId: string | null;
+  indexOpen: boolean;
   /** World is (at least partly) visible — false once the portfolio covers it. */
   inWorld: boolean;
   quality: QualityTier;
+  sound: boolean;
 }
 
 type Listener = () => void;
 
 const initial: UiState = {
   ready: false,
+  loaded: 0,
+  noWebgl: false,
   chapter: 0,
   focusId: null,
   focusPhase: "moving",
   hoverId: null,
   openId: null,
+  indexOpen: false,
   inWorld: true,
   quality: "high",
+  sound: false,
 };
 
 let state: UiState = initial;
@@ -102,5 +117,7 @@ export function useUi<T>(selector: (s: UiState) => T): T {
   );
 }
 
-export const openArtifact = (id: ArtifactId) => ui.set({ openId: id });
-export const closeArtifact = () => ui.set({ openId: null });
+export const openRecord = (id: string) => ui.set({ openId: id, indexOpen: false });
+export const closeRecord = () => ui.set({ openId: null });
+export const openIndex = () => ui.set({ indexOpen: true });
+export const closeIndex = () => ui.set({ indexOpen: false });

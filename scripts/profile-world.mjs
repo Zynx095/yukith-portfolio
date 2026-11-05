@@ -37,7 +37,7 @@ if (args.uncapped) chromeArgs.push("--disable-gpu-vsync", "--disable-frame-rate-
 const browser = await puppeteer.launch({
   executablePath: args.browser === "edge"
     ? "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"
-    : (process.env.CHROME_PATH || "C:/Users/Yukith M Joseph/.cache/puppeteer/chrome/win64-152.0.7977.54/chrome-win64/chrome.exe"),
+    : (process.env.CHROME_PATH || "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"),
   headless: args.headful ? false : true,
   args: chromeArgs,
   defaultViewport: { width, height, deviceScaleFactor: Number(args.dpr || 1) },

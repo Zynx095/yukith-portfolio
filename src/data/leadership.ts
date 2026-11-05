@@ -1,44 +1,22 @@
-export interface LeadershipRole {
-  eventOrClub: string;
+/** Leadership and community roles — current resume plus the owner's brief. */
+
+export interface Role {
   role: string;
+  organisation: string;
   period: string;
-  organization?: string;
-  verifiedDetails?: string[];
+  details?: string[];
 }
 
-export const leadershipData: LeadershipRole[] = [
+export const leadership: Role[] = [
   {
-    eventOrClub: "InTech Club",
-    role: "Social Media Head",
-    period: "June 2026 – Present"
-  },
-  {
-    eventOrClub: "InnovateX Tech Fest",
     role: "Organiser",
-    organization: "Presidency University",
-    period: "2024–Present",
-    verifiedDetails: [
-      "10 simultaneous technical events",
-      "approximately 280 participants",
-      "60–70 teams",
-      "₹10,000 prize distribution",
-      "record-keeping",
-      "World Record recognition"
-    ]
+    organisation: "InnovateX Tech Fest, Presidency University",
+    period: "2024 – present",
+    details: ["10 concurrent technical events", "≈ 280 participants across 60–70 teams", "World Record recognition"],
   },
-  {
-    eventOrClub: "Build Club",
-    role: "Event Head",
-    period: "2024–Present"
-  },
-  {
-    eventOrClub: "One-O-One Club",
-    role: "Core Coordinator",
-    period: "2024–Present"
-  },
-  {
-    eventOrClub: "Informatica Club",
-    role: "Event Head",
-    period: "2024–Present"
-  }
+  { role: "Student Coordinator", organisation: "30-hour AWS Innovation Challenge, Presidency University", period: "2026" },
+  { role: "Social Media Head", organisation: "InTech Club", period: "Jun 2026 – present", details: ["Content and reach across LinkedIn and Instagram"] },
+  { role: "Event Head", organisation: "Build Club", period: "2024 – present" },
+  { role: "Core Coordinator", organisation: "One-O-One Club", period: "2024 – present" },
+  { role: "Event Head", organisation: "Informatica Club", period: "2024 – present" },
 ];

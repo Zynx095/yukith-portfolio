@@ -1,5 +1,5 @@
 import { getLenis } from "@/components/providers/smooth-scroll";
-import { JOURNEY_VH } from "./constants";
+import { JOURNEY_VH } from "./chapters";
 
 /**
  * The journey is driven by the page's own scroll position: a tall spacer

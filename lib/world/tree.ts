@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { SimplexNoise, clamp, createRng, lerp, range, smoothstep } from "./noise";
 import { buildTube, resampleCurve } from "./geometry";
 import { TREE_ENTRANCE_ANGLE } from "./layout";
-import type { ArtifactId } from "./archive";
+type ArtifactId = string;
 
 /**
  * The World Tree generator — an Erdtree-scale colossus.

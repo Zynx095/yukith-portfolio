@@ -1,16 +1,20 @@
-import type { Metadata } from "next";
-import { Inter, Space_Mono, Playfair_Display } from "next/font/google";
-import "./globals.css";
+import type { Metadata, Viewport } from "next";
+import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const spaceMono = Space_Mono({ weight: ["400", "700"], subsets: ["latin"], variable: "--font-space-mono" });
-const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces", axes: ["opsz", "SOFT"], display: "swap" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", weight: ["400", "500"], display: "swap" });
+
+const description =
+  "Yukith M Joseph — Computer Science & Engineering (Networks) student at Presidency University, Bengaluru. Security systems, applied AI and hardware, archived inside an ancient World Tree.";
 
 export const metadata: Metadata = {
-  title: "Yukith M Joseph | The World Tree",
-  description:
-    "Network security, applied AI, games and websites by Yukith M Joseph — explore them as relics inside a golden World Tree, then read the full portfolio.",
+  metadataBase: new URL("https://www.yukithjoseph.me"),
+  title: "Yukith M Joseph — The World Tree",
+  description,
+  openGraph: { title: "Yukith M Joseph — The World Tree", description, type: "website" },
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
@@ -20,10 +24,12 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = { themeColor: "#0f0d0b", colorScheme: "dark" };
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceMono.variable} ${playfair.variable}`}>
-      <body className="overflow-x-hidden bg-[#0D0A08] text-[#F4F1EA] antialiased">
+    <html lang="en" className={`${fraunces.variable} ${inter.variable} ${jetbrains.variable}`}>
+      <body>
         {children}
         {/* Vercel Web Analytics only exists on Vercel deployments. */}
         {process.env.VERCEL && <Analytics />}
