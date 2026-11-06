@@ -43,7 +43,7 @@ export function entryById(id: string): Entry | undefined {
   const r = RANKS.find((x) => x.id === id);
   if (r) return { id, kind: "rank", kicker: r.game, title: r.rank, subtitle: r.note, status: "As reported by Yukith", action: "More" };
   const t = TOURNAMENTS.find((x) => x.id === id);
-  if (t) return { id, kind: "tournament", kicker: `${t.level} · ${t.game}`, title: t.title, line: t.result, status: "As reported by Yukith", action: "More" };
+  if (t) return { id, kind: "tournament", kicker: `${t.level ?? "Tournament"} · ${t.game}`, title: t.title, line: t.result, status: "As reported by Yukith", action: "More" };
   const f = familyById(id);
   if (f) return { id, kind: "family", kicker: "Home · a scene, not a portrait", title: f.title, line: f.line, action: "More" };
   const m = memoryById(id);
