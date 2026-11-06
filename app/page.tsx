@@ -5,6 +5,8 @@ import { RecordPanel } from "@/components/record/RecordPanel";
 import { IndexOverlay } from "@/components/index/IndexOverlay";
 import { TopBar } from "@/components/shared/TopBar";
 import { ViewController } from "@/components/view/ViewController";
+import { DiscoveryToast } from "@/components/view/DiscoveryToast";
+import { AimHost } from "@/components/aim/AimHost";
 
 /**
  * One page, two presentations (lib/view.ts):
@@ -31,6 +33,8 @@ export default function Home() {
       <Portfolio />
       <RecordPanel />
       <IndexOverlay />
+      <AimHost />
+      <DiscoveryToast />
     </SmoothScrollProvider>
   );
 }

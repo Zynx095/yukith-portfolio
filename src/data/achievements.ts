@@ -19,10 +19,10 @@ export const achievements: Achievement[] = [
   // later solo submission to the ACM SRM Student Chapter's PromptWars event (see projects.ts).
   // The resume gives no year; it first appears on the October 2026 resume, so no year is shown.
   { title: "Prompt Wars", result: "Top 15 of 180 teams", organiser: "Presidency University", year: "", tier: "placement" },
-  { title: "Fetch-A-Thon 3.0", result: "Built WARDEN", organiser: "Fetch.ai", year: "2026", tier: "participation" },
+  { title: "Fetch-A-Thon 3.0", result: "Built WARDEN", organiser: "GDG · Fetch.ai", year: "2026", tier: "participation" },
   { title: "Qiskit Fall Fest", result: "Built WATERWEAVE", organiser: "IIIT Kottayam", year: "2026", tier: "participation" },
   { title: "Odoo × NMIT Hackathon", result: "Participant", year: "2026", tier: "participation" },
-  // The resume's "2026" belongs to the Odoo × NMIT entry; ISAKA is undated.
-  { title: "ISAKA Hackathon", result: "Participant", year: "", tier: "participation" },
+  // The resume's "2026" belongs to the Odoo × NMIT entry; this one is undated. The resume spells it "ISAKA".
+  { title: "ISACA Cybersecurity × AI Hackathon", result: "Participant", year: "", tier: "participation" },
   { title: "Microsoft Azure AI Fundamentals", result: "AI-900 certification", organiser: "Microsoft", year: "", tier: "certification" },
 ];

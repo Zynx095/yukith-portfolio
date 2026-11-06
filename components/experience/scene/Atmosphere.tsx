@@ -10,6 +10,8 @@ import { shared } from "@/lib/world/materials";
 import { frame } from "@/lib/world/store";
 import { CAMP, TREE, TREE_ENTRANCE_ANGLE } from "@/lib/world/layout";
 import { cavityAt, spine } from "@/lib/world/tree";
+import { ARENA_SPOTS, L, exhibitById } from "@/lib/world/regions";
+import { ui } from "@/lib/world/store";
 import { HALL_CENTER, hallAxis } from "@/lib/world/archive";
 import { FOCUS_STOPS, RINGS } from "@/lib/world/journey";
 import { RING_STAGES } from "@/lib/world/rings";
@@ -62,7 +64,7 @@ function PostFX({ msaa }: { msaa: number }) {
 
 export function Atmosphere() {
   const { scene, gl, camera } = useThree();
-  const { interiorEnv, quality } = useWorld();
+  const { interiorEnv, arenaEnv, quality } = useWorld();
   const sky = useMemo(() => createSkyMaterial(), []);
   const state = useMemo(() => createSkyState(), []);
   const skyRef = useRef<THREE.Mesh>(null);
@@ -150,7 +152,8 @@ export function Atmosphere() {
       if (scene.environment === prev.texture) scene.environment = next.texture;
       prev.dispose();
     }
-    const wantEnv = inside > 0.5 ? interiorEnv : env.target.texture;
+    const pocket = frame.pocket > 0.5;
+    const wantEnv = pocket ? arenaEnv : inside > 0.5 ? interiorEnv : env.target.texture;
     if (scene.environment !== wantEnv) scene.environment = wantEnv;
     // Inside, the hollow brightens towards the open crown as the camera climbs.
     const climb = THREE.MathUtils.smoothstep(p, 0.8, 0.93);
@@ -161,6 +164,13 @@ export function Atmosphere() {
     fog.density = THREE.MathUtils.lerp(state.fogDensity, INTERIOR_FOG.density, inside);
     tmp.fogCol.copy(state.fog).lerp(INTERIOR_FOG.color, inside);
     fog.color.copy(tmp.fogCol);
+    if (pocket) {
+      // The arena: a sealed, cool hall lit by its own fixtures.
+      scene.environmentIntensity = 1.7;
+      gl.toneMappingExposure = 1.5;
+      fog.density = 0.012;
+      fog.color.set("#0b0d11");
+    }
 
     const sun = sunRef.current;
     if (sun) {
@@ -175,6 +185,7 @@ export function Atmosphere() {
         sun.intensity = 0.95 * moon;
       }
       sun.intensity *= 1 - inside * 0.97;
+      if (pocket) sun.intensity = 0;
       const extent = shadowExtent(p);
       if (shadows && extent !== tmp.extent) {
         tmp.extent = extent;
@@ -208,7 +219,19 @@ export function Atmosphere() {
     const t = shared.uTime.value;
     // Campfire outside (it brightens as the day fades); the heart node inside.
     const fire = fireRef.current;
-    if (fire) {
+    if (fire && pocket) {
+      // Arena: a cool key over the stage.
+      fire.position.copy(ARENA_SPOTS.stage).add(tmp.lx.set(0, 9, 4));
+      fire.color.set("#dfe7ff");
+      fire.intensity = 260;
+      fire.distance = 46;
+    } else if (fire && frame.region === "library") {
+      // Library: the reading lamp.
+      fire.position.copy(L(-1.6, 2.1, 0.4));
+      fire.color.set("#ffb46a");
+      fire.intensity = 26 * (0.96 + 0.04 * Math.sin(t * 2.3));
+      fire.distance = 16;
+    } else if (fire) {
       if (inside < 0.5 && p < 0.33) {
         fire.position.copy(CAMPFIRE);
         fire.color.set("#ff8a3d");
@@ -239,7 +262,18 @@ export function Atmosphere() {
         nearRing = i;
       }
     });
-    if (key && ringDist < 0.035 && inside > 0.5) {
+    const focusEx = frame.region ? exhibitById(ui.get().focusId ?? "") : undefined;
+    if (key && frame.region && focusEx) {
+      // In a region, the key light picks out the exhibit in focus.
+      tmp.fwd.copy(camera.position).sub(focusEx.center).setY(0).normalize();
+      key.position.copy(focusEx.center).addScaledVector(tmp.fwd, 2.2 + focusEx.radius);
+      key.position.y += 2.4;
+      key.color.set(frame.region === "library" ? "#ffd7a1" : frame.region === "arena" ? "#ffffff" : "#fff1dc");
+      key.distance = 10 + focusEx.radius * 4;
+      key.intensity = (frame.region === "district" ? 30 : 46) * frame.focusNear;
+    } else if (key && frame.region) {
+      key.intensity = 0;
+    } else if (key && ringDist < 0.035 && inside > 0.5) {
       const r = RINGS[nearRing];
       const c = cavityAt(r.localY);
       hallAxis(r.localY - 2.5, tmp.focus);

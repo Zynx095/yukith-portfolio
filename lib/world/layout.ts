@@ -252,6 +252,9 @@ export function terrainNormal(x: number, z: number, out = new THREE.Vector3()) {
 }
 
 /** Areas that must stay clear of trees, rocks and grass clumps. */
+/** The hackathon district's clearing: kept free of trees, rocks and grass. */
+export const DISTRICT_SITE = { x: 122, z: -500, r: 46 };
+
 export function isReserved(x: number, z: number, margin = 0) {
   if (Math.hypot(x - CAMP.x, z - CAMP.z) < CAMP_RADIUS + 6 + margin) return true;
   if (lakeDistance(x, z) < 1.15 + margin * 0.04) return true;
@@ -259,6 +262,8 @@ export function isReserved(x: number, z: number, margin = 0) {
   if (r.dist < riverHalfWidth(r.t) + 2 + margin) return true;
   if (pathInfo(x, z).dist < PATH_HALF_WIDTH + 1.5 + margin) return true;
   if (Math.hypot(x - TREE.x, z - TREE.z) < 130 + margin) return true;
+  // The hackathon district's clearing (lib/world/regions.ts).
+  if (Math.hypot(x - DISTRICT_SITE.x, z - DISTRICT_SITE.z) < DISTRICT_SITE.r + margin) return true;
   return false;
 }
 

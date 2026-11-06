@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { discover } from "@/lib/discoveries";
 
 /**
  * Shared state for the experience.
@@ -16,10 +17,24 @@ export type FocusPhase = "moving" | "focusing" | "focused";
 export type QualityTier = "high" | "medium" | "low";
 
 export const frame = {
-  /** Raw scroll progress through the journey, 0..1. */
+  /** Raw scroll position through the whole journey, 0..1 (lib/world/chapters.ts). */
+  scrollTarget: 0,
+  /** Smoothed scroll position the camera follows, 0..1. */
+  scroll: 0,
+  /** Story time of the raw scroll position, 0..1. */
   target: 0,
-  /** Smoothed progress the camera follows, 0..1. */
+  /** Story time the world follows, 0..1 (holds still inside a region). */
   progress: 0,
+  /** Region the camera is in (null on the main story path) and how far through it, 0..1. */
+  region: null as null | "district" | "arena" | "library",
+  regionT: 0,
+  /** 1 while the camera is in a sealed interior away from the valley (the arena). */
+  pocket: 0,
+  /** 0..1 fade to dark across a cut into or out of a region. */
+  cut: 0,
+  /** Look-around offsets from dragging (radians). */
+  lookYaw: 0,
+  lookPitch: 0,
   /** Smoothed scroll velocity in progress units per second (signed). */
   velocity: 0,
   /** Seconds since the last scroll movement. */
@@ -57,10 +72,14 @@ export interface UiState {
   /** Project record open in the panel. */
   openId: string | null;
   indexOpen: boolean;
+  /** The aim-trainer mini-game is open (the world pauses). */
+  gameOpen: boolean;
   /** World is (at least partly) visible — false once the portfolio covers it. */
   inWorld: boolean;
   quality: QualityTier;
   sound: boolean;
+  /** Region the camera is in (null on the story path). */
+  region: null | "district" | "arena" | "library";
 }
 
 type Listener = () => void;
@@ -74,9 +93,11 @@ const initial: UiState = {
   hoverId: null,
   openId: null,
   indexOpen: false,
+  gameOpen: false,
   inWorld: true,
   quality: "high",
   sound: false,
+  region: null,
 };
 
 let state: UiState = initial;
@@ -124,10 +145,17 @@ const FRAME_DEFAULTS = { ...frame };
  */
 export function resetWorldState(overrides: Partial<UiState> = {}) {
   Object.assign(frame, FRAME_DEFAULTS);
-  ui.set({ ready: false, loaded: 0, chapter: 0, focusId: null, focusPhase: "moving", hoverId: null, inWorld: true, sound: false, ...overrides });
+  ui.set({ ready: false, loaded: 0, chapter: 0, focusId: null, focusPhase: "moving", hoverId: null, inWorld: true, sound: false, region: null, ...overrides });
 }
 
-export const openRecord = (id: string) => ui.set({ openId: id, indexOpen: false });
+export const openGame = () => ui.set({ gameOpen: true, indexOpen: false, openId: null });
+/** Open anything's record (project, event, achievement, memory …); "aim" opens the aim trainer. */
+export const openRecord = (id: string) => {
+  if (id === "aim") return openGame();
+  ui.set({ openId: id, indexOpen: false });
+  discover(id);
+};
 export const closeRecord = () => ui.set({ openId: null });
 export const openIndex = () => ui.set({ indexOpen: true });
+export const closeGame = () => ui.set({ gameOpen: false });
 export const closeIndex = () => ui.set({ indexOpen: false });

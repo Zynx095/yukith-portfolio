@@ -22,6 +22,19 @@ export function ProjectDetails({ project, className = "" }: { project: Project; 
           <h4 className="label">The problem</h4>
           <p className="mt-1.5 text-paper/90">{project.problem}</p>
         </div>
+        {project.architecture && (
+          <div>
+            <h4 className="label">How it fits together</h4>
+            <ol className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-paper/90">
+              {project.architecture.map((step, i) => (
+                <li key={step} className="flex items-center gap-1.5">
+                  {i > 0 && <span aria-hidden="true" className="text-paper-faint">→</span>}
+                  <span className="rounded-md border border-line px-2 py-0.5">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
         <div>
           <h4 className="label">Implemented</h4>
           <ul className="mt-2 space-y-1.5">
@@ -33,6 +46,19 @@ export function ProjectDetails({ project, className = "" }: { project: Project; 
             ))}
           </ul>
         </div>
+        {project.decisions && (
+          <div>
+            <h4 className="label">Engineering decisions</h4>
+            <ul className="mt-2 space-y-1.5">
+              {project.decisions.map((d) => (
+                <li key={d} className="flex gap-3 text-paper/90">
+                  <span aria-hidden="true" className="mt-[0.7em] h-px w-3 shrink-0 bg-sap" />
+                  <span>{d}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <dl className="grid gap-x-4 gap-y-2 sm:grid-cols-[7rem_1fr]">
           <dt className="label pt-0.5">My part</dt>
           <dd className="text-paper/90">{project.contribution}</dd>

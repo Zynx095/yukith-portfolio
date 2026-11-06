@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { BEATS, RINGS } from "@/lib/world/journey";
-import { CHAPTERS } from "@/lib/world/chapters";
+import { CHAPTERS, JOURNEY_VH } from "@/lib/world/chapters";
 import { frame, openRecord, useUi } from "@/lib/world/store";
 import { scrollToProgress } from "@/lib/world/scroll";
-import { projectById, DOMAIN_LABEL } from "@/src/data/projects";
+import { entryById } from "@/lib/entries";
 import { RING_STAGES, type RingKind } from "@/lib/world/rings";
 import { ArrowRight, GitHubIcon, LinkedInIcon, MailIcon } from "@/components/shared/Icons";
+import { WorldTags } from "./WorldTags";
 import { socialData } from "@/src/data/social";
 import { scrollToId } from "@/components/providers/smooth-scroll";
 
@@ -19,6 +20,13 @@ import { scrollToId } from "@/components/providers/smooth-scroll";
  * beat, chapter or focused relic changes.
  */
 
+/** One line as each region opens (region time). */
+const REGION_BEATS: { region: "district" | "arena" | "library"; start: number; end: number; kicker: string; line: string; sub?: string }[] = [
+  { region: "district", start: 0.03, end: 0.16, kicker: "The hackathon district", line: "Every hackathon, competition and event, in one clearing.", sub: "Results under the pavilion, organising at the gate, everything else round the ring." },
+  { region: "arena", start: 0.0, end: 0.14, kicker: "The arena", line: "Competitive gaming: Valorant, CS:GO, Mobile Legends.", sub: "Ranks and results as reported by Yukith — no invented statistics." },
+  { region: "library", start: 0.0, end: 0.22, kicker: "The library", line: "A reading cabin on the World Tree's longest limb.", sub: "Manhwa, manga, anime, a TV series — and stories of my own." },
+];
+
 function useProgressBeat() {
   const [beat, setBeat] = useState(-1);
   const [ring, setRing] = useState(-1);
@@ -28,12 +36,17 @@ function useProgressBeat() {
     let lastR = -2;
     const tick = () => {
       const p = frame.progress;
-      const b = BEATS.findIndex((x) => p >= x.start && p < x.end);
+      let b = frame.region ? -1 : BEATS.findIndex((x) => p >= x.start && p < x.end);
+      if (frame.region) {
+        const rb = REGION_BEATS.findIndex((x) => x.region === frame.region && frame.regionT >= x.start && frame.regionT < x.end);
+        if (rb >= 0) b = 100 + rb;
+      }
       if (b !== lastB) setBeat((lastB = b));
       let r = -1;
-      RINGS.forEach((x, i) => {
-        if (Math.abs(p - x.progress) < 0.0115) r = i;
-      });
+      if (!frame.region)
+        RINGS.forEach((x, i) => {
+          if (Math.abs(p - x.progress) < 0.0115) r = i;
+        });
       if (r !== lastR) setRing((lastR = r));
       raf = requestAnimationFrame(tick);
     };
@@ -44,7 +57,7 @@ function useProgressBeat() {
 }
 
 function Narration({ beat }: { beat: number }) {
-  const b = beat >= 0 ? BEATS[beat] : null;
+  const b = beat >= 100 ? REGION_BEATS[beat - 100] : beat >= 0 ? BEATS[beat] : null;
   const isTitle = beat === 0;
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-24 px-5 md:bottom-28 md:px-12" aria-live="polite">
@@ -58,7 +71,7 @@ function Narration({ beat }: { beat: number }) {
               <p className="mt-2 font-display text-[clamp(1.4rem,3vw,2.3rem)] leading-snug text-paper [text-shadow:0_2px_24px_rgba(0,0,0,0.55)]">{b.line}</p>
             )}
             {b.sub && <p className="mt-3 text-sm text-paper/80 md:text-base [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">{b.sub}</p>}
-            {b.contact && <CrownContact />}
+            {"contact" in b && b.contact && <CrownContact />}
           </>
         )}
       </div>
@@ -99,7 +112,7 @@ function ChapterRail() {
       const p = frame.progress;
       CHAPTERS.forEach((c, i) => {
         const end = CHAPTERS[i + 1]?.start ?? 1;
-        const f = Math.min(1, Math.max(0, (p - c.start) / (end - c.start)));
+        const f = Math.min(1, Math.max(0, (frame.scroll - c.start) / (end - c.start)));
         const el = fill.current[i];
         if (el) el.style.transform = `scaleX(${f})`;
       });
@@ -118,7 +131,7 @@ function ChapterRail() {
           <li key={c.id} className="flex-1">
             <button
               type="button"
-              onClick={() => scrollToProgress(c.start + (i === 0 ? 0 : 0.012))}
+              onClick={() => scrollToProgress(c.start + (i === 0 ? 0 : 0.3 / JOURNEY_VH))}
               aria-label={`Go to chapter ${i + 1}: ${c.title}`}
               aria-current={i === chapter ? "step" : undefined}
               className="group block w-full py-2"
@@ -134,12 +147,11 @@ function ChapterRail() {
   );
 }
 
-function RelicLabel() {
+function FocusLabel() {
   const focusId = useUi((s) => s.focusId);
   const hoverId = useUi((s) => s.hoverId);
   const box = useRef<HTMLDivElement>(null);
-  const id = focusId;
-  const project = id ? projectById(id) : undefined;
+  const entry = focusId ? entryById(focusId) : undefined;
 
   useEffect(() => {
     let raf = 0;
@@ -170,32 +182,47 @@ function RelicLabel() {
       className="absolute bottom-28 left-4 right-4 top-auto max-w-sm transition-opacity duration-300 md:bottom-auto md:left-0 md:right-auto md:top-0 md:w-[380px]"
       style={{ opacity: 0 }}
     >
-      {project && (
+      {entry && (
         <div className="rounded-xl border border-line bg-ink/80 p-5 backdrop-blur-sm">
-          <p className="label">
-            {DOMAIN_LABEL[project.domain]} · {project.period}
-          </p>
-          <p className="mt-2 font-display text-3xl leading-tight">{project.title}</p>
-          <p className="text-sm text-paper-dim">{project.kind}</p>
-          <p className="mt-3 text-[0.95rem] leading-snug text-paper/90">{project.tagline}</p>
-          <p className="mt-3 inline-flex items-center gap-2 text-xs text-paper-dim">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-signal" />
-            {project.status}
-          </p>
+          <p className="label">{entry.kicker}</p>
+          <p className="mt-2 font-display text-3xl leading-tight">{entry.title}</p>
+          {entry.subtitle && <p className="text-sm text-paper-dim">{entry.subtitle}</p>}
+          {entry.line && <p className="mt-3 text-[0.95rem] leading-snug text-paper/90">{entry.line}</p>}
+          {entry.status && (
+            <p className="mt-3 inline-flex items-center gap-2 text-xs text-paper-dim">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-signal" />
+              {entry.status}
+            </p>
+          )}
           <div>
             <button
               type="button"
-              onClick={() => openRecord(project.id)}
+              onClick={() => openRecord(entry.id)}
               aria-haspopup="dialog"
-              className={`mt-4 inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-medium transition-colors ${hoverId === project.id ? "bg-signal text-ink" : "bg-paper text-ink hover:bg-signal"}`}
+              className={`mt-4 inline-flex min-h-11 items-center gap-2 rounded-full px-5 text-sm font-medium transition-colors ${hoverId === entry.id ? "bg-signal text-ink" : "bg-paper text-ink hover:bg-signal"}`}
             >
-              Open the record <ArrowRight />
+              {entry.action} <ArrowRight />
             </button>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+/** Region cuts: the world fades to dark and back, hiding the change of place. */
+function CutFade() {
+  const el = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      if (el.current) el.current.style.opacity = String(frame.cut);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return <div ref={el} aria-hidden="true" className="pointer-events-none absolute inset-0 bg-black" style={{ opacity: 0 }} />;
 }
 
 const RING_LABEL: Record<RingKind, string> = {
@@ -343,9 +370,11 @@ export function JourneyOverlay() {
       {/* A gentle gradient keeps the lower-third text readable over any frame. */}
       <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/45 to-transparent" />
       <Outro />
+      <CutFade />
       <Narration beat={beat} />
       <RingPanel ring={ring} />
-      <RelicLabel />
+      <FocusLabel />
+      <WorldTags />
       <PetHint />
       <ScrollCue />
       <ChapterRail />

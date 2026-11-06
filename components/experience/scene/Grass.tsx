@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { CAMP, PATH_HALF_WIDTH, TREE, lakeDistance, pathInfo, riverHalfWidth, riverInfo, terrainHeight } from "@/lib/world/layout";
+import { CAMP, DISTRICT_SITE, PATH_HALF_WIDTH, TREE, lakeDistance, pathInfo, riverHalfWidth, riverInfo, terrainHeight } from "@/lib/world/layout";
 import { SimplexNoise, createRng, smoothstep } from "@/lib/world/noise";
 import { shared } from "@/lib/world/materials";
 import { useWorld } from "./WorldContext";
@@ -48,6 +48,7 @@ function bakeFieldData() {
       d *= smoothstep(1.02, 1.12, lakeDistance(x, z));
       d *= smoothstep(4, 7, camp);
       d *= smoothstep(138, 170, Math.hypot(x - TREE.x, z - TREE.z));
+      d *= smoothstep(DISTRICT_SITE.r - 12, DISTRICT_SITE.r - 4, Math.hypot(x - DISTRICT_SITE.x, z - DISTRICT_SITE.z));
       const gx = at(i - 1, j) - at(i + 1, j);
       const gz = at(i, j - 1) - at(i, j + 1);
       const ny = (4 * FIELD.step) / Math.hypot(gx, 4 * FIELD.step, gz);

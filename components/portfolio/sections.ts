@@ -4,9 +4,11 @@ export const SECTIONS = [
   { id: "about", label: "About", nav: true },
   { id: "work", label: "Projects", nav: true },
   { id: "experience", label: "Experience", nav: true },
+  { id: "competitions", label: "Competitions", nav: true },
+  { id: "gaming", label: "Gaming", nav: true },
   { id: "leadership", label: "Leadership", nav: false },
-  { id: "achievements", label: "Achievements", nav: true },
-  { id: "skills", label: "Skills", nav: true },
+  { id: "skills", label: "Skills", nav: false },
+  { id: "interests", label: "Library", nav: true },
   { id: "education", label: "Education", nav: false },
   { id: "contact", label: "Contact", nav: true },
 ] as const;

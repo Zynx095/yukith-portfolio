@@ -15,7 +15,7 @@ export const interests: Interest[] = [
   { prop: "controller", label: "Games", note: "Elden Ring and Valorant. Games are how I first got into computers." },
   { prop: "books", label: "Anime, manga & manhwa", note: "Bleach, Tomodachi Game, Jujutsu Kaisen — and Lookism, which inspired my Roblox game." },
   { prop: "notebook", label: "Writing", note: "Reading, writing stories and storytelling in general." },
-  { prop: "headphones", label: "Music & shows", note: "R&B on repeat. Favourite series: Dark." },
+  { prop: "headphones", label: "Music & shows", note: "R&B, and the series Dark." },
 ];
 
 export const home = {

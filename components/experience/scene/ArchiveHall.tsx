@@ -192,7 +192,7 @@ export function ArchiveHall() {
 
   useFrame(() => {
     const p = frame.progress;
-    if (group.current) group.current.visible = p > 0.36 && p < 0.975;
+    if (group.current) group.current.visible = p > 0.36 && p < 0.975 && !frame.region;
     if (core.current) core.current.scale.setScalar(0.62 + 0.06 * Math.sin(shared.uTime.value * 1.6));
   });
 

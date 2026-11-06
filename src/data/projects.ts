@@ -61,6 +61,10 @@ export interface Project {
   context?: string;
   /** What is simulated, partial or not deployed — always shown with the record. */
   limits?: string;
+  /** How it is put together, as a pipeline of stages (from the source tree). */
+  architecture?: string[];
+  /** Engineering decisions worth knowing about (each visible in the code or README). */
+  decisions?: string[];
   links: ProjectLink[];
   /** Shown as a relic in the World Tree's archive hall. */
   featured: boolean;
@@ -102,6 +106,12 @@ export const PROJECTS: Project[] = [
       gh("WARDEN"),
       { label: "Live agent health", href: "https://warden-sentinel.onrender.com/health", note: "free host — first request can take ~30 s" },
     ],
+    architecture: ["Agent Chat Protocol message in (uAgents)", "intent parsing", "risk analysis", "deterministic policy (WDN-000 … WDN-006)", "digest-bound human approval", "restricted executor in a workspace", "independent outcome audit → hash-chained JSONL log"],
+    decisions: [
+      "The model is treated as an untrusted proposal engine: nothing it says is taken as evidence that an action is safe or succeeded.",
+      "Approvals are bound to a canonical digest of the exact action, expire, are single-use and check the sender.",
+      "An auditor re-observes the target after execution and reports VERIFIED only from what it saw.",
+    ],
     featured: true,
     relic: "gate",
   },
@@ -129,6 +139,12 @@ export const PROJECTS: Project[] = [
     status: "Hackathon prototype",
     limits: "Device telemetry is simulated by a software agent, the ESP32 firmware is a skeleton that has never been flashed, and demo attacks are synthetic — the project labels all three as such.",
     links: [gh("Q-shield"), { label: "Dashboard demo", href: "https://q-shield-chi.vercel.app" }],
+    architecture: ["device telemetry and camera observations", "FastAPI gateway", "trust engine — six weighted factors with hysteresis", "quarantine at the gateway", "evidence chain (SHA-256 links, ML-DSA-65 signatures)", "operator-verified recovery"],
+    decisions: [
+      "Trust is a continuous score with hysteresis (80 / 50 / 85) so a device cannot flap between trusted and quarantined.",
+      "Post-quantum primitives (ML-KEM-768, ML-DSA-65) are checked against NIST ACVP test vectors rather than assumed correct.",
+      "The vision service treats a covered, frozen or turned camera as evidence in its own right.",
+    ],
     featured: true,
     relic: "trust-ring",
   },
@@ -156,6 +172,12 @@ export const PROJECTS: Project[] = [
     status: "Phase 6 frozen · decision authority in shadow mode",
     limits: "Runs locally. The AWS architecture (EventBridge, API Gateway, Lambda, DynamoDB, Cognito, Bedrock) is modelled in CDK and synthesises, but nothing is deployed. Data is synthetic and public.",
     links: [gh("Jiva")],
+    architecture: ["events from four role-scoped apps", "central event bus", "state engines (patient, hospital, ambulance)", "Hospital Acceptance Protocol", "provider-agnostic routing (Valhalla / OSRM / labelled fallback)", "live updates over Socket.IO"],
+    decisions: [
+      "A bed is never assumed free: public data says what a hospital can do, only a time-bounded acceptance says it will.",
+      "Every derived value carries confidence and provenance, so estimates are never displayed as facts.",
+      "The decision engine runs in shadow mode; the AWS architecture is modelled in CDK and synthesises, but nothing is deployed.",
+    ],
     featured: true,
     relic: "mesh",
   },
@@ -183,6 +205,12 @@ export const PROJECTS: Project[] = [
     status: "Active research",
     limits: "The central claim is blocked until independent benign data is available; current models are research pilots and the README says so.",
     links: [gh("encrypted-traffic-threat-hunter")],
+    architecture: ["raw PCAPs (SHA-256 provenance)", "bidirectional flow reconstruction", "TLS ClientHello parsing → JA3 / JA3S / JA4", "feature families: flow-only, JA3, JA4, fused", "five experiments (A–E) with GroupShuffleSplit isolation", "documented confounding"],
+    decisions: [
+      "Payloads are never decrypted — the whole pipeline works on metadata.",
+      "Leakage is controlled explicitly: grouped splits and removal of deterministic identifiers.",
+      "The research claim is held back until independent benign data exists, and the README says so.",
+    ],
     featured: true,
     relic: "geode",
   },
@@ -209,6 +237,12 @@ export const PROJECTS: Project[] = [
     status: "Local prototype · active development",
     limits: "Validated on local webcams; RTSP camera support is partial and Gemini scene narration is experimental.",
     links: [gh("AURA")],
+    architecture: ["OpenCV camera pipeline", "YOLOv8 detection", "centroid tracking and per-subject timelines", "behaviour state machine NORMAL → OBSERVED → SUSPICIOUS", "polygon zones and intrusion events", "incidents with evidence snapshots (SQLite) → FastAPI + WebSocket → Next.js dashboard"],
+    decisions: [
+      "Behaviour is judged over time per subject, not per frame.",
+      "Incidents persist with evidence snapshots, so the dashboard is an audit trail rather than a live feed.",
+      "Team of two: AI systems and backend by Yukith, frontend by Pranathi Nagabhushana.",
+    ],
     featured: true,
     relic: "lens",
   },
@@ -235,6 +269,12 @@ export const PROJECTS: Project[] = [
     contribution: "Solo build.",
     status: "Complete prototype",
     links: [gh("ALIAS"), { label: "Live demo", href: "https://alias-ochre.vercel.app" }],
+    architecture: ["login events", "six baseline models (temporal, device, location, network, authentication, access)", "anomaly engine", "multi-signal correlation and risk score", "investigation report (Gemini)", "WebSocket alerts → React SOC dashboard"],
+    decisions: [
+      "Signals are correlated before scoring, so one odd login is not an incident on its own.",
+      "The output is an explained case file, not a bare alert.",
+      "A scenario portal replays demo attacks for repeatable testing; 61 backend tests.",
+    ],
     featured: true,
     relic: "ledger",
   },
@@ -259,6 +299,11 @@ export const PROJECTS: Project[] = [
     status: "Prototype · rework started Sep 2026",
     limits: "The dashboard's media “deepfake” scores are simulated in the prototype and are not claimed as a feature.",
     links: [gh("shadowguard")],
+    architecture: ["mitmproxy addon on ChatGPT / OpenAI traffic", "keyword hard-blocks", "FastAPI service with Microsoft Presidio PII analysis", "decision: block · redact · allow", "SQLite log and WebSocket alerts", "React dashboard in a Tauri desktop app"],
+    decisions: [
+      "Three outcomes instead of two: moderate risk is redacted, not blocked, so work can continue.",
+      "Only prompt data-loss filtering is claimed; the prototype's media scores are simulated and not presented as a feature.",
+    ],
     featured: true,
     relic: "veil",
   },
@@ -284,6 +329,11 @@ export const PROJECTS: Project[] = [
     contribution: "Solo build.",
     status: "Version 2 in development",
     links: [gh("SUGAR-AI")],
+    architecture: ["microphone", "voice-activity detection and endpointing", "faster-whisper speech-to-text", "provider pool (Ollama; optional Claude / OpenAI-compatible)", "tool registry with permissions → Windows control, Spotify, YouTube", "MeloTTS speech out · token-protected WebSocket UI"],
+    decisions: [
+      "Everything runs locally by default; cloud models are optional providers, not a dependency.",
+      "Tools are registered with permissions instead of giving the model the whole desktop.",
+    ],
     featured: true,
     relic: "voice-orb",
   },
@@ -307,6 +357,11 @@ export const PROJECTS: Project[] = [
     status: "Prototype",
     limits: "The vision demo maps everyday COCO classes to stand-in waste types.",
     links: [gh("stp-bot-dashboard")],
+    architecture: ["browser dashboard (manual / AI mode, gamepad, SOS)", "serial link", "Arduino Mega firmware: differential drive, auger with pulse mode, ultrasonic ranging, proximity buzzer, telemetry", "YOLOv8n vision script that can drive the auger"],
+    decisions: [
+      "Manual control always remains available; the vision script only takes over the auger.",
+      "The demo maps everyday COCO classes to stand-in waste types, and says so.",
+    ],
     featured: true,
     relic: "rover",
   },
@@ -332,6 +387,11 @@ export const PROJECTS: Project[] = [
     status: "Hackathon build · synthetic data",
     context: "Built solo for PromptWars × ACM SRM Student Chapter (SRM Institute of Science and Technology), Oct 2026",
     links: [gh("promptwarsXACM"), { label: "Live demo", href: "https://fairshift-nine-red.vercel.app" }],
+    architecture: ["check-in (rotating site QR, optional passkey)", "HMAC-signed work receipts", "Merkle-tree checkpoints", "pay breakdown: agreed vs worked vs paid", "confidential reports → accountability loop"],
+    decisions: [
+      "Money is integer paise throughout — no rounding drift.",
+      "A hazard closes only with proof, and patterns surface only when three reports agree.",
+    ],
     featured: false,
   },
   {
@@ -354,6 +414,11 @@ export const PROJECTS: Project[] = [
     status: "Hackathon build · synthetic data",
     context: "Qiskit Fall Fest 2026 (IIIT Kottayam), Track 2",
     links: [gh("WATERWEAVE")],
+    architecture: ["delivery requests on a grid", "Ising cost Hamiltonian (fairness, supply, storage penalties)", "solved three ways: rule of thumb, exhaustive search, 12-qubit QAOA", "FastAPI engine → React app that presents itself"],
+    decisions: [
+      "An exhaustive baseline sits next to the quantum result so the QAOA answer can be checked.",
+      "All data is synthetic and labelled as such.",
+    ],
     featured: false,
   },
   {
@@ -425,6 +490,11 @@ export const PROJECTS: Project[] = [
     contribution: "Backend architecture, database design, security and API integration. Frontend by Pranathi Nagabhushana.",
     status: "Hackathon build",
     links: [gh("Dayflow---Human-Resource-Management-System")],
+    architecture: ["Next.js / TypeScript frontend", "Express API with JWT, role-checked routes", "PostgreSQL (parameterised queries)", "attendance, leave and payroll modules"],
+    decisions: [
+      "Every query goes through parameterised pg placeholders.",
+      "Backend, database and security by Yukith; frontend by Pranathi Nagabhushana.",
+    ],
     featured: false,
   },
   {

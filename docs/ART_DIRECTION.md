@@ -49,9 +49,12 @@ belongs to a networks student and no one else.
 | Arrival | late-afternoon gold, warm haze | Scale and calm — the tree on the horizon |
 | Home | golden hour, campfire warmth | Personal, cozy |
 | The path | sun lowering, long shadows | Purpose; signal threads appear in the soil |
+| The district | the same late sun as the path; lanterns | Pride without boasting — results first, everything else honest |
+| The arena | a pocket of dark steel, strip light and one crimson accent | Cinematic focus |
 | The reveal | sunset rim light on the tree | Awe |
 | The roots | dusk, cool shadows, warm sky | The signal becomes clearly visible |
 | The archive hall | amber heartwood + cool signal | Focused, sacred, quiet |
+| The library | lamp-lit dusk inside, the valley through the window | Quiet, personal |
 | The rings | three stages: 2024 amber (Roots), 2025 gold with shafts of daylight (Reach), 2026 signal-teal (Branching) | Growth — one node per item, the years stacked up the hollow as halos |
 | The crown | night: out of the broken top between the leaders, above the tiers, stars, the crown's nodes | Connection — contact links in the last beat |
 
@@ -121,6 +124,27 @@ visitor must read to understand the site (carved words are decorative echoes of 
 - **Optional:** click a relic for its record, click Bella to throw a stick, inspect camp props,
   open the index (`/`), toggle sound.
 - Every interaction is one gesture (Egg Hunt), and everything has an HTML equivalent.
+
+## Regions (added 2026-11-06)
+
+The valley gained places that tell the rest of the story. Each keeps the pillars above: natural
+first, every word one click from its record, nothing that needs reading to be understood.
+
+| Region | Where | Light and material | Rule |
+|---|---|---|---|
+| **Home** (Valley of Origins) | the camp by the lake, chapter 2 | golden hour, campfire, grill embers and smoke | Five faceless, unnamed figures doing ordinary things (grill, talking, resting, playing with Bella). Simple jointed forms in plain cloth colours — a scene of home, never a portrait of anyone. Memory objects (a photo frame, the scrap-built PC) hold the memories. |
+| **The hackathon district** | an open-air clearing beside the trail, between the path and the reveal | the same late sun; lanterns; warm timber, steel and paper | Results under a timber pavilion as trophies (cup, star, gear, circuit plaque, crystal); organising roles as two-sided banners at the gate; every other event round the ring as an artifact shaped by its domain — a hardware bench, an AI lattice, a terminal, a quantum circuit, a data wall, an agent core, a film loop. The artifact is decoration; the words come from the record. |
+| **The arena** | a sealed hall behind a gate at the back of the district | dark steel, strip lights, one crimson accent, a ring of screens over the stage, its own environment map | Cinematic and serious, not childish. Original emblems (no publisher marks); a chamber per game with a slowly turning sculpture; a levels wall explicitly "not a timeline"; the aim-trainer booth. The valley is hidden while inside (a pocket). |
+| **The aim trainer** | the arena's booth, or the index, or Classic | a plain training room, a spotlight, clean target shader | An original portfolio mini-game; nothing of Valorant's maps, models, sound or UI. Labelled as such on its first screen. |
+| **The library** | a reading cabin on the World Tree's longest limb, after the archive | lamp-lit interior at dusk, a window over the valley | Shelves of instanced books; the owner's named titles face-out with original abstract covers; a manhwa strip display, a writing desk, a record player, a window seat. No cover art or panels reproduced. |
+| **Ecosystem** | everywhere outdoors | — | Fallen mossy logs with mushrooms, wildflower drifts in white, violet and blue, birds wheeling round the crown by day, fireflies over the roots at dusk. Instanced; kept off the trail, the camp, the water and the district. |
+
+**Transitions.** Walking into the district is continuous. The arena and the library are entered
+through a short fade to black — a change of place, so the camera never flies through walls.
+
+**Interaction additions.** Name tags float over interactive things near the camera (at most five);
+every one opens the same record dialog as the index. Dragging looks around without leaving the
+path. Opening anything records a discovery in the visitor's browser; the index shows the count.
 
 ## What this is not
 

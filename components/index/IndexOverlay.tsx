@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { closeIndex, openIndex, openRecord, ui, useUi } from "@/lib/world/store";
+import { closeIndex, openGame, openIndex, openRecord, ui, useUi } from "@/lib/world/store";
+import { DISCOVERABLES, useDiscoveryCount } from "@/lib/discoveries";
 import { getLenis, scrollToId } from "@/components/providers/smooth-scroll";
 import { scrollToProgress } from "@/lib/world/scroll";
-import { CHAPTERS } from "@/lib/world/chapters";
+import { CHAPTERS, JOURNEY_VH } from "@/lib/world/chapters";
 import { COLLABORATIONS, FEATURED, MORE_WORK } from "@/src/data/projects";
 import { SECTIONS } from "@/components/portfolio/sections";
 import { useView } from "@/lib/view";
@@ -20,6 +21,7 @@ import { CloseIcon } from "@/components/shared/Icons";
 export function IndexOverlay() {
   const open = useUi((s) => s.indexOpen);
   const view = useView();
+  const found = useDiscoveryCount();
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -114,7 +116,7 @@ export function IndexOverlay() {
                   <ol className="mt-3 space-y-1">
                     {CHAPTERS.map((c, i) => (
                       <li key={c.id}>
-                        <button type="button" onClick={() => go(() => scrollToProgress(c.start + (i === 0 ? 0 : 0.012)))} className="group flex w-full gap-3 py-1.5 text-left">
+                        <button type="button" onClick={() => go(() => scrollToProgress(c.start + (i === 0 ? 0 : 0.3 / JOURNEY_VH)))} className="group flex w-full gap-3 py-1.5 text-left">
                           <span className="label w-6 pt-1 tabular-nums">{String(i + 1).padStart(2, "0")}</span>
                           <span>
                             <span className="group-hover:text-signal">{c.title}</span>
@@ -140,6 +142,15 @@ export function IndexOverlay() {
                   ))}
                 </ul>
               </nav>
+              <div>
+                <h3 className="label">Play &amp; discover</h3>
+                <button type="button" onClick={() => go(openGame)} className="mt-3 inline-flex min-h-11 items-center rounded-full border border-line-strong px-4 text-sm hover:border-signal hover:text-signal">
+                  Open the aim trainer
+                </button>
+                <p className="mt-3 text-sm text-paper-dim">
+                  Discovered {found} of {DISCOVERABLES.length} things in the world — relics, exhibits, memories and more.
+                </p>
+              </div>
               <div>
                 <h3 className="label">Contact</h3>
                 <SocialLinks className="mt-3" />
