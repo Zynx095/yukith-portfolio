@@ -12,7 +12,7 @@ Branch: `feat/world-tree-rebuild`.
 | A — Research & audit | ✅ done | `docs/research/REFERENCES.md`, `docs/AUDIT.md` |
 | B — Reference comparison & art direction | ✅ done | `docs/ART_DIRECTION.md` |
 | C — Content & data verification | ✅ done | `src/data/*` rewritten from the October 2026 resume + source trees |
-| D — Architecture cleanup | ✅ done | old world/UI removed; 45 unused npm deps pruned (55 → 10 runtime deps); dead helpers removed |
+| D — Architecture cleanup | ✅ done | old world/UI removed; 49 unused runtime deps pruned (59 → 10); dead helpers removed |
 | E — Rendering pipeline | ✅ done | WebGL2, MSAA composer, ACES, dithering, PMREM sky IBL rebuilt as the day ends, moonlight |
 | F — World Tree rebuild | ✅ first pass | photo bark, heartwood, instanced crown; further silhouette tuning possible |
 | G — Environment & journey | ✅ first pass | valley, river, lake, meadow, forest, camp, waystones, network, rings, crown |
