@@ -24,7 +24,7 @@ import { scrollToId } from "@/components/providers/smooth-scroll";
 const REGION_BEATS: { region: "district" | "arena" | "library"; start: number; end: number; kicker: string; line: string; sub?: string }[] = [
   { region: "district", start: 0.03, end: 0.16, kicker: "The hackathon district", line: "Every hackathon, competition and event, in one clearing.", sub: "Results under the pavilion, organising at the gate, everything else round the ring." },
   { region: "arena", start: 0.0, end: 0.14, kicker: "The arena", line: "Competitive gaming: Valorant, CS:GO, Mobile Legends.", sub: "Ranks and results as reported by Yukith — no invented statistics." },
-  { region: "library", start: 0.0, end: 0.22, kicker: "The library", line: "A reading cabin on the World Tree's longest limb.", sub: "Manhwa, manga, anime, a favourite series — and stories of my own." },
+  { region: "library", start: 0.0, end: 0.22, kicker: "The library", line: "A reading cabin on the World Tree's longest limb.", sub: "Manhwa, manga, anime, a TV series — and stories of my own." },
 ];
 
 function useProgressBeat() {

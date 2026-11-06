@@ -51,25 +51,22 @@ export const TOURNAMENTS: TournamentRecord[] = [
     id: "school-valorant",
     title: "School Valorant tournaments",
     game: "Valorant",
-    result: "Several tournaments played; more than one won",
+    result: "Multiple tournaments played",
     level: "School",
-    detail: "Played in multiple school-level tournaments and won several of them.",
+    detail: "Played in multiple school Valorant tournaments. Across school and college competitions, won multiple tournaments — which ones is not on record, so none are named.",
     evidence: "owner-reported",
   },
   {
     id: "college-valorant",
     title: "College Valorant tournaments",
     game: "Valorant",
-    result: "Several tournaments played; more than one won",
+    result: "Tournaments played",
     level: "College",
-    detail: "Played in multiple college-level tournaments and won several of them.",
+    detail: "Played in college Valorant tournaments. Across school and college competitions, won multiple tournaments — which ones is not on record, so none are named.",
     evidence: "owner-reported",
   },
 ];
 
 /** What the arena says about competitive play, in one line. */
 export const GAMING_SUMMARY =
-  "Competitive FPS and MOBA player: Immortal 1 in Valorant, Legendary Eagle in CS:GO, Grandmaster in Mobile Legends — and fourth place at an AMD Valorant tournament.";
-
-/** Games that matter to the owner outside ranked play (src/data/about.ts and the earlier owner data). */
-export const FAVOURITE_GAMES = ["Elden Ring", "Valorant", "CS:GO"];
+  "Competitive FPS and MOBA player: Immortal 1 in Valorant, Legendary Eagle in CS:GO, Grandmaster in Mobile Legends; multiple tournament wins across school and college, and fourth place at an AMD Valorant tournament.";

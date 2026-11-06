@@ -5,9 +5,11 @@
  * no names, no relationships, no birth date, no school marks
  * (docs/CONTENT_VERIFICATION.md §8 and §14).
  *
- * The family scene shows the kind of afternoon the owner described — someone at
- * the grill, people talking, someone resting by the fire, someone playing with
- * Bella — without saying who anyone is.
+ * The family scene stages the activities the owner suggested for it (brief of
+ * 2026-11-06) — someone at the grill, people talking, someone resting by the
+ * fire, someone playing with Bella — as generic, faceless figures. The lines
+ * describe the scene; they make no claim about who anyone is or how often
+ * anything happens.
  */
 
 export interface FamilyMoment {
@@ -20,11 +22,11 @@ export interface FamilyMoment {
 }
 
 export const FAMILY_MOMENTS: FamilyMoment[] = [
-  { id: "family-grill", activity: "grill", title: "At the grill", line: "Family afternoons by the lake usually end with someone at the grill." },
-  { id: "family-talk", activity: "talk-a", title: "Talking it over", line: "Long conversations by the water, the kind that run until it gets dark." },
-  { id: "family-talk-b", activity: "talk-b", title: "Talking it over", line: "Long conversations by the water, the kind that run until it gets dark." },
-  { id: "family-rest", activity: "rest", title: "By the fire", line: "Someone always claims the chair closest to the fire." },
-  { id: "family-play", activity: "play", title: "Playing with Bella", line: "Bella decides when playtime starts, and she never decides it is over." },
+  { id: "family-grill", activity: "grill", title: "At the grill", line: "Someone at the grill. The figures at the camp are generic: a picture of home, not of anyone in particular." },
+  { id: "family-talk", activity: "talk-a", title: "Talking it over", line: "People talking by the water. No figure here stands for a specific person." },
+  { id: "family-talk-b", activity: "talk-b", title: "Talking it over", line: "People talking by the water. No figure here stands for a specific person." },
+  { id: "family-rest", activity: "rest", title: "By the fire", line: "Someone resting in the chair by the fire." },
+  { id: "family-play", activity: "play", title: "Playing with Bella", line: "Someone playing with Bella, the family's Shih Tzu. Click Bella herself to send her running." },
 ];
 
 export interface Memory {
@@ -62,7 +64,7 @@ export const FIRST_STEPS = {
   firstGames: ["Elden Ring", "CS:GO"],
 };
 
-export const FAMILY_SUMMARY = "Home is Bengaluru — family, and Bella the Shih Tzu, who runs the place.";
+export const FAMILY_SUMMARY = "Home is Bengaluru — family, and Bella the Shih Tzu.";
 
 export const memoryById = (id: string) => MEMORIES.find((m) => m.id === id);
 export const familyById = (id: string) => FAMILY_MOMENTS.find((m) => m.id === id);

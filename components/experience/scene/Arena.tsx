@@ -285,10 +285,10 @@ export function Arena() {
       chamber(root, m, ARENA_SPOTS.mlbb, -Math.PI / 2 + 0.55, panels[2], "grandmaster"),
     ];
     const levels = makeLevelsPanel("Competitive levels — not a timeline", [
-      { title: "School", line: "Tournaments won" },
-      { title: "College", line: "Tournaments won" },
+      { title: "School", line: "Multiple tournaments" },
+      { title: "College", line: "Tournaments played" },
+      { title: "Wins", line: "Multiple · school & college" },
       { title: "AMD", line: "4th · Valorant" },
-      { title: "Ranked", line: "Immortal 1 · LE · GM" },
     ]);
     const levelsMesh = new THREE.Mesh(new THREE.PlaneGeometry(13, 4.9), new THREE.MeshBasicMaterial({ map: levels, toneMapped: false }));
     levelsMesh.position.copy(ARENA_SPOTS.wall).add(new THREE.Vector3(0.3, 0, 1.5));

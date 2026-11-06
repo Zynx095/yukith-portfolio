@@ -385,7 +385,7 @@ export function Camp() {
           );
         })}
 
-        {/* A blanket with the things he does off the clock. */}
+        {/* A blanket with the owner's off-the-clock things. */}
         <group position={[2.4, ground(2.4, 1.0) + 0.02, 1.0]} rotation={[0, -0.4, 0]}>
           <mesh material={res.blanket} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
             <planeGeometry args={[2.2, 1.6]} />
@@ -415,7 +415,7 @@ export function Camp() {
               <boxGeometry args={[0.2, 0.04, 0.28]} />
             </mesh>
           ))}
-          {/* A notebook and pen — he writes stories */}
+          {/* A notebook and pen — the owner writes stories */}
           <group position={[0.65, 0.015, 0.2]} rotation={[0, -0.3, 0]}>
             <mesh material={res.paper} castShadow>
               <boxGeometry args={[0.3, 0.02, 0.4]} />
@@ -424,7 +424,7 @@ export function Camp() {
               <cylinderGeometry args={[0.008, 0.008, 0.26, 6]} />
             </mesh>
           </group>
-          {/* Headphones — R&B on repeat */}
+          {/* Headphones — R&B */}
           <group position={[-0.1, 0.05, 0.45]} rotation={[Math.PI / 2, 0, 0.6]}>
             <mesh material={res.plastic}>
               <torusGeometry args={[0.1, 0.012, 8, 24, Math.PI]} />
