@@ -21,8 +21,8 @@ export interface QualitySettings {
 
 export const QUALITY: Record<QualityTier, QualitySettings> = {
   high: { maxDpr: 2, shadowMapSize: 2048, postprocessing: true, msaa: 4, foliage: 1 },
-  medium: { maxDpr: 1.5, shadowMapSize: 1024, postprocessing: true, msaa: 2, foliage: 0.75 },
-  low: { maxDpr: 1, shadowMapSize: 0, postprocessing: false, msaa: 0, foliage: 0.5 },
+  medium: { maxDpr: 1.5, shadowMapSize: 1024, postprocessing: true, msaa: 2, foliage: 0.6 },
+  low: { maxDpr: 1, shadowMapSize: 0, postprocessing: false, msaa: 0, foliage: 0.32 },
 };
 
 export const TIER_ORDER: QualityTier[] = ["low", "medium", "high"];

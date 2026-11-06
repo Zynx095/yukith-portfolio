@@ -1,521 +1,542 @@
 import * as THREE from "three";
-import type { WorldTextures } from "./textures";
-import { SUN_COLOR, SUN_DIRECTION } from "./atmosphere";
-import { WATER_LEVEL } from "./layout";
+import type { WorldAssets } from "./assets";
+import { GLSL_HASH, GLSL_SIMPLEX3 } from "./glsl";
 
 /**
- * Natural-surface materials. Each is a MeshStandardMaterial extended through
- * `onBeforeCompile`, so they keep three's PBR lighting, shadows and fog while
- * reading the baked procedural textures.
+ * Materials. Natural surfaces are MeshStandardMaterials extended through
+ * `onBeforeCompile`, so they keep three's PBR lighting, shadows and the
+ * height fog while reading the photo-scanned textures. Light count never
+ * changes, so none of these recompile mid-journey.
  */
 
-/** Shared animated uniforms (advanced once per frame by <WorldClock/>). */
-export const sharedUniforms = {
+/** Uniforms shared by every animated material, advanced once per frame. */
+export const shared = {
   uTime: { value: 0 },
+  uSunDir: { value: new THREE.Vector3(0.5, 0.3, -0.7).normalize() },
+  uSunColor: { value: new THREE.Color("#ffd29a") },
+  /** 0 day → 1 night. */
+  uNight: { value: 0 },
+  /** Wind strength. */
+  uWind: { value: 1 },
+  /** 0 outside → 1 deep inside the World Tree. */
+  uInterior: { value: 0 },
 };
 
-const SUN_V = `vec3(${SUN_DIRECTION.x.toFixed(5)}, ${SUN_DIRECTION.y.toFixed(5)}, ${SUN_DIRECTION.z.toFixed(5)})`;
-
-const WORLD_VARYINGS_VERTEX = /* glsl */ `
-  vec4 worldPos4 = vec4(transformed, 1.0);
+const WORLD_VARYING_VERTEX = /* glsl */ `
+  vec4 wp4 = vec4(transformed, 1.0);
   #ifdef USE_INSTANCING
-    worldPos4 = instanceMatrix * worldPos4;
+    wp4 = instanceMatrix * wp4;
   #endif
-  vWorld = (modelMatrix * worldPos4).xyz;
+  vWorld = (modelMatrix * wp4).xyz;
 `;
 
-// ─── Bark ─────────────────────────────────────────────────────────────────────
+// ─── Bark (World Tree trunk, roots and limbs) ───────────────────────────────
 
 export interface BarkOptions {
-  deep: string;
-  mid: string;
-  ridge: string;
-  moss: string;
-  mossAmount: number;
-  /** World Y of the ground the bark meets (for soil darkening and low moss). */
+  /** World Y of the ground the bark meets (soil darkening and low moss). */
   ground: number;
+  /** Overall colour multiplier applied to the photo albedo. */
+  tint?: string;
+  /** Scalar brightness applied with the tint (the scanned bark is dark). */
+  brightness?: number;
+  moss?: number;
+  /** Second, coarser texture scale used to break tiling (fraction of the base UV scale). */
+  macro?: number;
   normalScale?: number;
-  envMap?: THREE.Texture | null;
-  envMapIntensity?: number;
-  /** Golden light glowing from deep fissures (0 = none). */
-  glow?: number;
-  glowColor?: string;
-  /** World Y range over which the glow ramps from 0 to full. */
-  glowFrom?: number;
-  glowTo?: number;
-  /** Crack depth where the sap glow begins (higher = thinner veins). */
-  glowEdge?: number;
-  /** Frequency multiplier of a second, finer bark layer for close viewing (0 = off). */
-  detail?: number;
-  /** Outer bark (default) or the heartwood lining the hollow. */
-  surface?: "bark" | "wood";
 }
 
-export function createBarkMaterial(textures: WorldTextures, o: BarkOptions) {
+export function createBarkMaterial(a: WorldAssets, o: BarkOptions) {
   const mat = new THREE.MeshStandardMaterial({
-    color: "#ffffff",
-    roughness: 0.92,
+    map: a.bark.color,
+    normalMap: a.bark.normal,
+    normalScale: new THREE.Vector2(o.normalScale ?? 1.35, o.normalScale ?? 1.35),
+    roughness: 1,
     metalness: 0,
-    normalMap: o.surface === "wood" ? textures.woodNormal : textures.barkNormal,
-    normalScale: new THREE.Vector2(o.normalScale ?? 1.25, o.normalScale ?? 1.25),
-    envMap: o.envMap ?? null,
-    envMapIntensity: o.envMapIntensity ?? 1,
   });
   const uniforms = {
-    uBarkData: { value: o.surface === "wood" ? textures.woodData : textures.barkData },
-    uDeep: { value: new THREE.Color(o.deep) },
-    uMid: { value: new THREE.Color(o.mid) },
-    uRidge: { value: new THREE.Color(o.ridge) },
-    uMossColor: { value: new THREE.Color(o.moss) },
-    uMoss: { value: o.mossAmount },
+    uData: { value: a.bark.data },
+    uMossTex: { value: a.grass.color },
+    uTint: { value: new THREE.Color(o.tint ?? "#ffffff").multiplyScalar(o.brightness ?? 1) },
+    uMoss: { value: o.moss ?? 0.6 },
     uGround: { value: o.ground },
-    uGlow: { value: o.glow ?? 0 },
-    uGlowColor: { value: new THREE.Color(o.glowColor ?? "#ffb347") },
-    uGlowRange: { value: new THREE.Vector2(o.glowFrom ?? -1e4, o.glowTo ?? -1e4 + 1) },
-    uGlowEdge: { value: o.glowEdge ?? 0.72 },
-    uDetail: { value: o.detail ?? 0 },
-    uTime: sharedUniforms.uTime,
+    uMacro: { value: o.macro ?? 0.27 },
   };
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying vec3 vWorld;")
-      .replace("#include <fog_vertex>", `#include <fog_vertex>\n${WORLD_VARYINGS_VERTEX}`);
+      .replace("#include <fog_vertex>", `#include <fog_vertex>\n${WORLD_VARYING_VERTEX}`);
     shader.fragmentShader = shader.fragmentShader
       .replace(
         "#include <common>",
         `#include <common>
         varying vec3 vWorld;
-        uniform sampler2D uBarkData;
-        uniform vec3 uDeep, uMid, uRidge, uMossColor, uGlowColor;
-        uniform float uMoss, uGround, uGlow, uTime, uGlowEdge, uDetail;
-        uniform vec2 uGlowRange;`
+        uniform sampler2D uData, uMossTex;
+        uniform vec3 uTint;
+        uniform float uMoss, uGround, uMacro;`
       )
       .replace(
         "#include <map_fragment>",
-        `vec4 bark = texture2D(uBarkData, vNormalMapUv);
-        float bh = bark.r;
-        float crack = bark.g;
-        float macroCrack = crack;
-        float bvar = bark.b;
-        #ifdef BARK_DETAIL
-          // A finer layer of the same bark breaks up large plates seen up close.
-          vec4 bark2 = texture2D(uBarkData, vNormalMapUv * uDetail + vec2(0.37, 0.11));
-          bh = mix(bh, bark2.r, 0.42);
-          bvar = mix(bvar, bark2.b, 0.35);
-          crack = max(crack * 0.9, bark2.g * 0.6);
-        #endif
+        `vec4 bd = texture2D(uData, vMapUv);
+        // A second, rotated and coarser sample breaks the visible repetition.
+        vec2 muv = mat2(0.8, -0.6, 0.6, 0.8) * vMapUv * uMacro + vec2(0.37, 0.71);
+        vec3 c1 = texture2D(map, vMapUv).rgb;
+        vec3 c2 = texture2D(map, muv).rgb;
+        float macroH = texture2D(uData, muv * 0.5).b;
+        vec3 albedo = mix(c1, c1 * (c2 / max(dot(c2, vec3(0.333)), 0.05)) * 0.42, 0.45);
+        albedo *= uTint * (0.82 + 0.36 * macroH);
         vec3 wN = inverseTransformDirection(normalize(vNormal), viewMatrix);
-        vec3 albedo = mix(uDeep, uMid, smoothstep(0.04, 0.42, bh));
-        albedo = mix(albedo, uRidge, smoothstep(0.5, 0.95, bh) * (0.45 + 0.55 * bvar));
-        albedo *= 0.8 + 0.4 * bvar;
         float up = clamp(wN.y, 0.0, 1.0);
-        float low = 1.0 - smoothstep(uGround + 1.0, uGround + 9.0, vWorld.y);
-        float moss = smoothstep(0.45, 0.85, bark.a * (0.35 + 0.75 * up + 0.55 * low)) * uMoss;
-        albedo = mix(albedo, uMossColor * (0.75 + 0.5 * bvar), moss * (0.35 + 0.65 * bh));
-        albedo *= mix(0.5, 1.0, smoothstep(uGround - 0.5, uGround + 2.5, vWorld.y));
+        float low = 1.0 - smoothstep(uGround + 0.5, uGround + 14.0, vWorld.y);
+        float mossMask = smoothstep(0.52, 0.82, up * 0.75 + low * 0.55 + (macroH - 0.5) * 0.9 + (1.0 - bd.b) * 0.35) * uMoss;
+        vec3 mossCol = texture2D(uMossTex, vMapUv * 1.7).rgb * vec3(0.78, 0.95, 0.62);
+        albedo = mix(albedo, mossCol, mossMask);
+        // Damp soil darkening where the bark meets the ground.
+        albedo *= mix(0.55, 1.0, smoothstep(uGround - 0.6, uGround + 3.0, vWorld.y));
         diffuseColor.rgb *= albedo;`
       )
       .replace(
         "#include <roughnessmap_fragment>",
-        `float roughnessFactor = roughness * (0.9 + 0.12 * crack);
-        roughnessFactor = mix(roughnessFactor, 1.0, moss * 0.6);`
+        `float roughnessFactor = mix(0.72, 1.0, bd.g);
+        roughnessFactor = mix(roughnessFactor, 0.95, mossMask);`
       )
       .replace(
         "#include <aomap_fragment>",
         `#include <aomap_fragment>
-        float barkAO = mix(1.0, 0.3, crack * crack);
-        reflectedLight.indirectDiffuse *= barkAO;
-        reflectedLight.indirectSpecular *= barkAO;
-        reflectedLight.directDiffuse *= mix(1.0, 0.62, crack);
-        // Golden sap light in the deepest fissures, pulsing slowly upward.
-        float sap = smoothstep(uGlowEdge, 0.995, macroCrack) * smoothstep(uGlowRange.x, uGlowRange.y, vWorld.y);
-        float pulse = 0.62 + 0.38 * sin(vWorld.y * 0.045 - uTime * 0.55 + bvar * 6.2831);
-        totalEmissiveRadiance += uGlowColor * (uGlow * sap * pulse);`
+        float cavity = mix(0.35, 1.0, bd.r);
+        reflectedLight.indirectDiffuse *= cavity;
+        reflectedLight.indirectSpecular *= cavity;
+        reflectedLight.directDiffuse *= mix(0.72, 1.0, bd.r);`
       );
   };
-  if (o.detail) {
-    mat.defines = { ...mat.defines, BARK_DETAIL: "" };
-    const prev = mat.onBeforeCompile;
-    mat.onBeforeCompile = (shader, renderer) => {
-      prev.call(mat, shader, renderer);
-      shader.fragmentShader = shader.fragmentShader.replace(
-        "#include <normal_fragment_maps>",
-        `{
-          vec3 mapN = texture2D(normalMap, vNormalMapUv).xyz * 2.0 - 1.0;
-          vec3 mapN2 = texture2D(normalMap, vNormalMapUv * uDetail + vec2(0.37, 0.11)).xyz * 2.0 - 1.0;
-          mapN = normalize(vec3(mapN.xy + mapN2.xy * 0.75, mapN.z));
-          mapN.xy *= normalScale;
-          normal = normalize(tbn * mapN);
-        }`
-      );
-    };
-  }
-  mat.customProgramCacheKey = () => `bark-v3${o.detail ? "-d" : ""}`;
+  mat.customProgramCacheKey = () => "bark-photo-v1";
   return mat;
 }
 
-// ─── Rock (tri-planar) ───────────────────────────────────────────────────────
+// ─── Heartwood (the hollow inside the World Tree) ───────────────────────────
 
-export function createRockMaterial(textures: WorldTextures, opts: { tint?: string; mossAmount?: number; scale?: number } = {}) {
-  const mat = new THREE.MeshStandardMaterial({ color: opts.tint ?? "#ffffff", roughness: 0.88, metalness: 0 });
+export function createHeartwoodMaterial(a: WorldAssets) {
+  const mat = new THREE.MeshStandardMaterial({
+    map: a.bark.color,
+    normalMap: a.bark.normal,
+    normalScale: new THREE.Vector2(0.9, 0.9),
+    roughness: 0.85,
+    metalness: 0,
+  });
   const uniforms = {
-    uRockData: { value: textures.rockData },
-    uRockNormal: { value: textures.rockNormal },
-    uRockScale: { value: opts.scale ?? 0.11 },
-    uRockMoss: { value: opts.mossAmount ?? 0.7 },
+    uData: { value: a.bark.data },
+    uTime: shared.uTime,
   };
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying vec3 vWorld;")
-      .replace("#include <fog_vertex>", `#include <fog_vertex>\n${WORLD_VARYINGS_VERTEX}`);
+      .replace("#include <fog_vertex>", `#include <fog_vertex>\n${WORLD_VARYING_VERTEX}`);
     shader.fragmentShader = shader.fragmentShader
       .replace(
         "#include <common>",
         `#include <common>
         varying vec3 vWorld;
-        uniform sampler2D uRockData, uRockNormal;
-        uniform float uRockScale, uRockMoss;
-        vec3 triW(vec3 n) { vec3 w = pow(abs(n), vec3(4.0)); return w / (w.x + w.y + w.z); }`
+        uniform sampler2D uData;
+        uniform float uTime;`
       )
       .replace(
         "#include <map_fragment>",
-        `vec3 rN = inverseTransformDirection(normalize(vNormal), viewMatrix);
-        vec3 tw = triW(rN);
-        vec3 rp = vWorld * uRockScale;
-        vec4 rx = texture2D(uRockData, rp.zy);
-        vec4 ry = texture2D(uRockData, rp.xz);
-        vec4 rz = texture2D(uRockData, rp.xy);
-        vec4 rock = rx * tw.x + ry * tw.y + rz * tw.z;
-        // A second, larger scale breaks up the cell pattern of the first.
-        vec3 rq = vWorld * uRockScale * 0.31 + 0.37;
-        vec4 rock2 = texture2D(uRockData, rq.zy) * tw.x + texture2D(uRockData, rq.xz) * tw.y + texture2D(uRockData, rq.xy) * tw.z;
-        rock = mix(rock, rock2, 0.42);
-        vec3 stone = mix(vec3(0.07, 0.066, 0.06), vec3(0.24, 0.225, 0.2), smoothstep(0.1, 0.8, rock.r));
-        stone *= 0.75 + 0.5 * rock2.b;
-        stone = mix(stone, stone * vec3(1.12, 1.0, 0.82), rock.b * 0.8);
-        float mossUp = smoothstep(0.45, 0.85, rN.y);
-        float rmoss = clamp(mossUp * smoothstep(0.25, 0.7, rock.a + 0.25) * uRockMoss, 0.0, 1.0);
-        stone = mix(stone, vec3(0.2, 0.25, 0.1) * (0.8 + 0.4 * rock.b), rmoss);
-        float wet = 1.0 - smoothstep(${WATER_LEVEL.toFixed(2)} + 0.1, ${WATER_LEVEL.toFixed(2)} + 1.2, vWorld.y);
-        stone *= mix(1.0, 0.55, wet);
-        diffuseColor.rgb *= stone;`
-      )
-      .replace(
-        "#include <roughnessmap_fragment>",
-        `float roughnessFactor = mix(roughness, 0.35, wet);
-        roughnessFactor = mix(roughnessFactor, 1.0, rmoss);`
+        `// Long vertical fibres: the bark texture stretched along the grain, recoloured as heartwood.
+        vec2 fuv = vMapUv * vec2(1.6, 0.35);
+        vec4 fd = texture2D(uData, fuv);
+        vec3 src = texture2D(map, fuv).rgb;
+        float lum = dot(src, vec3(0.3, 0.55, 0.15));
+        vec3 wood = mix(vec3(0.20, 0.105, 0.05), vec3(0.62, 0.38, 0.2), smoothstep(0.04, 0.4, lum));
+        wood *= 0.78 + 0.32 * fd.b;
+        diffuseColor.rgb *= wood;`
       )
       .replace(
         "#include <normal_fragment_maps>",
         `{
-          vec3 nx = texture2D(uRockNormal, rp.zy).xyz * 2.0 - 1.0;
-          vec3 ny = texture2D(uRockNormal, rp.xz).xyz * 2.0 - 1.0;
-          vec3 nz = texture2D(uRockNormal, rp.xy).xyz * 2.0 - 1.0;
-          // Whiteout blend of tangent-space normals into world space.
-          vec3 wx = vec3(nx.xy + rN.zy, abs(nx.z) * rN.x);
-          vec3 wy = vec3(ny.xy + rN.xz, abs(ny.z) * rN.y);
-          vec3 wz = vec3(nz.xy + rN.xy, abs(nz.z) * rN.z);
-          vec3 wn = normalize(wx.zyx * tw.x + wy.xzy * tw.y + wz.xyz * tw.z);
-          normal = normalize((viewMatrix * vec4(wn, 0.0)).xyz);
+          vec3 mapN = texture2D(normalMap, vMapUv * vec2(1.6, 0.35)).xyz * 2.0 - 1.0;
+          mapN.xy *= normalScale;
+          normal = normalize(tbn * mapN);
         }`
       )
+      .replace("#include <roughnessmap_fragment>", "float roughnessFactor = mix(0.6, 0.95, fd.g);")
       .replace(
         "#include <aomap_fragment>",
         `#include <aomap_fragment>
-        float rockAO = mix(1.0, 0.74, rock.g);
-        reflectedLight.indirectDiffuse *= rockAO;
-        reflectedLight.directDiffuse *= mix(1.0, 0.9, rock.g);`
+        reflectedLight.indirectDiffuse *= mix(0.45, 1.0, fd.r);
+        reflectedLight.directDiffuse *= mix(0.6, 1.0, fd.r);`
       );
   };
-  mat.customProgramCacheKey = () => "rock-v2";
+  mat.customProgramCacheKey = () => "heartwood-v1";
   return mat;
 }
 
-// ─── Foliage ──────────────────────────────────────────────────────────────────
-
-export interface FoliageOptions {
-  /** Atlas cell when instances don't carry their own (`aCell` attribute). */
-  cell?: number;
-  perInstanceCell?: boolean;
-  /** Multiply by the geometry's per-card colour attribute (breaks up uniform masses). */
-  vertexColors?: boolean;
-  wind?: number;
-  translucency?: number;
-  envMap?: THREE.Texture | null;
-  /** Self-illumination as a fraction of albedo (the World Tree's luminous crown). */
-  selfGlow?: number;
-}
-
-function foliageVertexPatch(shader: { vertexShader: string }, o: FoliageOptions) {
-  shader.vertexShader = shader.vertexShader
-    .replace(
-      "#include <common>",
-      `#include <common>
-      uniform float uTime;
-      uniform float uWind;
-      ${o.perInstanceCell ? "attribute float aCell;" : ""}
-      varying float vClumpAO;`
-    )
-    .replace(
-      "#include <uv_vertex>",
-      `#include <uv_vertex>
-      {
-        // Atlas cells are numbered row-major from the canvas' top-left; UV v runs bottom-up.
-        float cell = ${o.perInstanceCell ? "aCell" : (o.cell ?? 0).toFixed(1)};
-        vec2 offs = vec2(mod(cell, 2.0), 1.0 - floor(cell / 2.0)) * 0.5;
-        #ifdef USE_MAP
-          // Inset slightly so mip levels don't bleed between cells.
-          vMapUv = mix(offs + vec2(0.004), offs + vec2(0.496), vMapUv);
-        #endif
-      }`
-    )
-    .replace(
-      "#include <begin_vertex>",
-      `#include <begin_vertex>
-      vClumpAO = clamp(length(position) * 0.85, 0.25, 1.0);
-      {
-        vec3 anchor = vec3(0.0);
-        #ifdef USE_INSTANCING
-          anchor = instanceMatrix[3].xyz;
-        #endif
-        anchor = (modelMatrix * vec4(anchor, 1.0)).xyz;
-        float phase = dot(anchor, vec3(0.071, 0.0, 0.053));
-        float sway = sin(uTime * 0.9 + phase) * 0.6 + sin(uTime * 2.3 + phase * 2.7) * 0.25;
-        float flutter = sin(uTime * 6.0 + dot(position, vec3(3.1, 2.3, 4.7)) + phase) * 0.12;
-        transformed += vec3(sway, sway * 0.25, sway * 0.6) * uWind * (0.4 + 0.6 * vClumpAO);
-        transformed += normal * flutter * uWind;
-      }`
-    );
-}
-
-export function createFoliageMaterial(textures: WorldTextures, o: FoliageOptions = {}) {
-  const mat = new THREE.MeshStandardMaterial({
-    color: "#ffffff",
-    map: textures.leaves,
-    vertexColors: o.vertexColors ?? false,
-    alphaTest: 0.42,
-    alphaToCoverage: true,
-    side: THREE.DoubleSide,
-    roughness: 0.82,
-    metalness: 0,
-    envMap: o.envMap ?? null,
-  });
-  const uniforms = {
-    uTime: sharedUniforms.uTime,
-    uWind: { value: o.wind ?? 0.08 },
-    uTranslucency: { value: o.translucency ?? 0.55 },
-    uSelfGlow: { value: o.selfGlow ?? 0 },
-  };
-  mat.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
-    foliageVertexPatch(shader, o);
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        "#include <common>",
-        `#include <common>
-        uniform float uTranslucency, uSelfGlow;
-        varying float vClumpAO;`
-      )
-      .replace(
-        "#include <map_fragment>",
-        `#include <map_fragment>
-        // Keep alpha coverage as the atlas mips down so distant foliage doesn't thin out.
-        {
-          vec2 texSize = vec2(textureSize(map, 0));
-          vec2 dx = dFdx(vMapUv * texSize);
-          vec2 dy = dFdy(vMapUv * texSize);
-          float mip = max(0.0, 0.5 * log2(max(dot(dx, dx), dot(dy, dy))));
-          diffuseColor.a *= 1.0 + mip * 0.28;
-        }`
-      )
-      .replace(
-        "#include <aomap_fragment>",
-        `#include <aomap_fragment>
-        float leafAO = mix(0.45, 1.0, vClumpAO);
-        reflectedLight.indirectDiffuse *= leafAO;
-        reflectedLight.directDiffuse *= mix(0.7, 1.0, vClumpAO);
-        vec3 sunView = normalize((viewMatrix * vec4(${SUN_V}, 0.0)).xyz);
-        float through = pow(clamp(dot(-geometryViewDir, sunView), 0.0, 1.0), 3.0);
-        totalEmissiveRadiance += diffuseColor.rgb * vec3(${SUN_COLOR.r.toFixed(3)}, ${SUN_COLOR.g.toFixed(3)}, ${SUN_COLOR.b.toFixed(3)}) * through * uTranslucency * vClumpAO;
-        totalEmissiveRadiance += diffuseColor.rgb * uSelfGlow * mix(0.55, 1.0, vClumpAO);`
-      );
-  };
-  mat.customProgramCacheKey = () => `foliage-v3-${o.perInstanceCell ? "i" : o.cell ?? 0}${o.vertexColors ? "-vc" : ""}`;
-  return mat;
-}
-
-/** Shadow-casting depth material matching the foliage cut-outs and wind. */
-export function createFoliageDepthMaterial(textures: WorldTextures, o: FoliageOptions = {}) {
-  const mat = new THREE.MeshDepthMaterial({
-    depthPacking: THREE.RGBADepthPacking,
-    map: textures.leaves,
-    alphaTest: 0.42,
-    side: THREE.DoubleSide,
-  });
-  const uniforms = { uTime: sharedUniforms.uTime, uWind: { value: o.wind ?? 0.08 } };
-  mat.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
-    foliageVertexPatch(shader, o);
-  };
-  mat.customProgramCacheKey = () => `foliage-depth-v1-${o.perInstanceCell ? "i" : o.cell ?? 0}`;
-  return mat;
-}
-
-// ─── Terrain ──────────────────────────────────────────────────────────────────
+// ─── Terrain (splat of photo-scanned surfaces) ──────────────────────────────
 
 /**
- * Splatted ground: grass with dry patches, packed dirt, wet banks, forest
- * humus and rock on steep slopes. Per-vertex masks (attribute `aMask`:
- * dirt, wet, humus, rockiness) come from the layout so paths and shores sit
- * exactly where the geography says they are.
+ * Ground: grass by default, blended with forest litter, the worn trail, rock
+ * on steep slopes and damp earth near water. Masks come from the `aMask`
+ * vertex attribute (litter, trail, rock, wet); the `uv` attribute holds world
+ * XZ / tile size so three's derivative tangent frame matches the textures.
  */
-export function createTerrainMaterial(textures: WorldTextures) {
+export function createGroundMaterial(a: WorldAssets) {
   const mat = new THREE.MeshStandardMaterial({
-    color: "#ffffff",
-    roughness: 0.95,
+    map: a.grass.color,
+    normalMap: a.grass.normal,
+    normalScale: new THREE.Vector2(1, 1),
+    roughness: 1,
     metalness: 0,
-    normalMap: textures.groundNormal,
-    normalScale: new THREE.Vector2(0.9, 0.9),
   });
   const uniforms = {
-    uGround: { value: textures.groundData },
-    uRockData: { value: textures.rockData },
+    uGrassD: { value: a.grass.data },
+    uLitter: { value: a.litter.color },
+    uLitterN: { value: a.litter.normal },
+    uLitterD: { value: a.litter.data },
+    uTrail: { value: a.trail.color },
+    uTrailN: { value: a.trail.normal },
+    uTrailD: { value: a.trail.data },
+    uRock: { value: a.rock.color },
+    uRockN: { value: a.rock.normal },
+    uMeadow: { value: new THREE.Color("#5c7a2e") },
   };
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nattribute vec4 aMask;\nvarying vec4 vMask;\nvarying vec3 vWorld;")
-      .replace("#include <fog_vertex>", `#include <fog_vertex>\nvMask = aMask;\n${WORLD_VARYINGS_VERTEX}`);
+      .replace("#include <fog_vertex>", `#include <fog_vertex>\nvMask = aMask;\n${WORLD_VARYING_VERTEX}`);
     shader.fragmentShader = shader.fragmentShader
       .replace(
         "#include <common>",
         `#include <common>
         varying vec4 vMask;
         varying vec3 vWorld;
-        uniform sampler2D uGround, uRockData;`
+        uniform sampler2D uGrassD, uLitter, uLitterN, uLitterD, uTrail, uTrailN, uTrailD, uRock, uRockN;
+        uniform vec3 uMeadow;
+        // Height-aware blend: the taller material wins at the transition, so edges look physical.
+        float hb(float h1, float h2, float m) { float a = h1 + (1.0 - m), b = h2 + m; float d = 0.18; float ma = max(a, b) - d; float w1 = max(a - ma, 0.0), w2 = max(b - ma, 0.0); return w2 / (w1 + w2); }`
       )
       .replace(
         "#include <map_fragment>",
-        `vec2 gUv = vWorld.xz / 7.0;
-        vec4 g1 = texture2D(uGround, gUv);
-        vec4 g2 = texture2D(uGround, vWorld.xz / 41.0 + 0.37);
-        vec4 g3 = texture2D(uGround, vWorld.xz / 173.0 + 0.71);
-        float macro = g2.a * 0.6 + g3.a * 0.4;
-        vec3 tN = inverseTransformDirection(normalize(vNormal), viewMatrix);
-        float slope = 1.0 - tN.y;
-
-        vec3 grassDark = vec3(0.105, 0.135, 0.05);
-        vec3 grassLight = vec3(0.24, 0.27, 0.1);
-        vec3 grassDry = vec3(0.36, 0.32, 0.15);
-        vec3 grass = mix(grassDark, grassLight, smoothstep(0.25, 0.85, g1.r * 0.55 + macro * 0.6));
-        // Dry patches only on gentle ground: planar sampling would streak down steep slopes.
-        float gentle = 1.0 - smoothstep(0.12, 0.32, slope);
-        grass = mix(grass, grassDry, smoothstep(0.35, 0.8, g2.b * 0.7 + g3.b * 0.5) * 0.75 * gentle);
-
-        vec3 dirt = mix(vec3(0.2, 0.14, 0.085), vec3(0.32, 0.24, 0.15), g1.g * 0.6 + macro * 0.4);
-        vec3 wet = mix(vec3(0.12, 0.1, 0.075), vec3(0.2, 0.17, 0.12), g1.g);
-        vec3 humus = mix(vec3(0.07, 0.05, 0.035), vec3(0.15, 0.1, 0.06), g1.r * 0.5 + g1.g * 0.5);
-
-        vec3 rkW = pow(abs(tN), vec3(4.0));
-        rkW /= rkW.x + rkW.y + rkW.z;
-        vec4 rk = texture2D(uRockData, vWorld.zy * 0.06) * rkW.x + texture2D(uRockData, vWorld.xz * 0.06) * rkW.y + texture2D(uRockData, vWorld.xy * 0.06) * rkW.z;
-        vec3 rockC = mix(vec3(0.17, 0.16, 0.14), vec3(0.4, 0.38, 0.34), rk.r) * (0.8 + 0.4 * rk.b);
-
-        vec3 col = grass;
-        float dirtAmt = clamp(vMask.x + (g1.g - 0.5) * 0.5 * vMask.x, 0.0, 1.0);
-        col = mix(col, dirt, smoothstep(0.15, 0.75, dirtAmt));
-        col = mix(col, humus, smoothstep(0.2, 0.8, vMask.z));
-        col = mix(col, wet, smoothstep(0.1, 0.9, vMask.y));
-        // Outcrops break through the grass on the higher hillsides.
-        float outcrop = smoothstep(0.58, 0.74, g3.a * 0.7 + g2.a * 0.3) * smoothstep(16.0, 34.0, vWorld.y) * smoothstep(0.1, 0.28, slope);
-        float rockAmt = clamp(smoothstep(0.32, 0.55, slope) + vMask.w + outcrop, 0.0, 1.0);
-        col = mix(col, rockC, rockAmt);
-        // Underwater bed reads darker and greener.
-        float under = 1.0 - smoothstep(${WATER_LEVEL.toFixed(2)} - 0.6, ${WATER_LEVEL.toFixed(2)} + 0.05, vWorld.y);
-        col = mix(col, vec3(0.06, 0.07, 0.045), under * 0.75);
-        diffuseColor.rgb *= col;`
-      )
-      .replace(
-        "#include <roughnessmap_fragment>",
-        `float roughnessFactor = roughness;
-        roughnessFactor = mix(roughnessFactor, 0.55, smoothstep(0.3, 0.9, vMask.y));
-        roughnessFactor = mix(roughnessFactor, 0.85, rockAmt);`
-      )
-      .replace(
-        "#include <aomap_fragment>",
-        `#include <aomap_fragment>
-        float gAO = mix(0.55, 1.0, g1.r * 0.5 + 0.5) * mix(1.0, 0.65, vMask.z);
-        reflectedLight.indirectDiffuse *= gAO;`
-      );
-  };
-  mat.customProgramCacheKey = () => "terrain-v2";
-  return mat;
-}
-
-// ─── Water ────────────────────────────────────────────────────────────────────
-
-/**
- * Lake / river / pool surface. PBR (sky reflections with Fresnel, sun glints)
- * with two scrolling ripple normal maps, depth-based colour and opacity from
- * the per-vertex `aDepth` attribute (computed from the terrain), shore foam,
- * and optional downstream flow along the mesh's v coordinate.
- */
-export function createWaterMaterial(textures: WorldTextures, opts: { flow?: number; foam?: number } = {}) {
-  const mat = new THREE.MeshStandardMaterial({
-    color: "#ffffff",
-    roughness: 0.06,
-    metalness: 0,
-    transparent: true,
-    normalMap: textures.waterNormal,
-    normalScale: new THREE.Vector2(0.55, 0.55),
-  });
-  const uniforms = {
-    uTime: sharedUniforms.uTime,
-    uFlow: { value: opts.flow ?? 0 },
-    uFoam: { value: opts.foam ?? 1 },
-    uGround: { value: textures.groundData },
-  };
-  mat.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms);
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nattribute float aDepth;\nvarying float vDepth;\nvarying vec3 vWorld;")
-      .replace("#include <fog_vertex>", `#include <fog_vertex>\nvDepth = aDepth;\n${WORLD_VARYINGS_VERTEX}`);
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        "#include <common>",
-        `#include <common>
-        uniform float uTime, uFlow, uFoam;
-        uniform sampler2D uGround;
-        varying float vDepth;
-        varying vec3 vWorld;`
-      )
-      .replace(
-        "#include <map_fragment>",
-        `float depth = max(vDepth, 0.0);
-        vec3 shallow = vec3(0.16, 0.22, 0.15);
-        vec3 deep = vec3(0.012, 0.045, 0.05);
-        diffuseColor.rgb = mix(shallow, deep, smoothstep(0.0, 2.6, depth));
-        diffuseColor.a = mix(0.35, 0.94, smoothstep(0.0, 1.4, depth));
-        // Shore foam: a thin broken line where the water meets the ground.
-        float foamNoise = texture2D(uGround, vWorld.xz * 0.35 + vec2(uTime * 0.02, 0.0)).g;
-        float foam = (1.0 - smoothstep(0.02, 0.22 + foamNoise * 0.25, depth)) * uFoam;
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.78, 0.8, 0.76), foam * 0.75);
-        diffuseColor.a = max(diffuseColor.a, foam * 0.85);`
+        `vec2 guv = vMapUv;
+        vec2 luv = guv * 0.8 + vec2(0.31, 0.17);
+        vec2 tuv = guv * 1.2;
+        vec2 ruv = guv * 0.35;
+        vec4 gD = texture2D(uGrassD, guv);
+        vec4 lD = texture2D(uLitterD, luv);
+        vec4 tD = texture2D(uTrailD, tuv);
+        // Macro variation so the ground never tiles visibly from above.
+        float macro = texture2D(uGrassD, guv * 0.043 + 0.5).b;
+        // The scanned grass is mostly dry; keep its structure but recolour it as a living meadow.
+        vec3 gTex = texture2D(map, guv).rgb;
+        float gLum = dot(gTex, vec3(0.3, 0.59, 0.11));
+        vec3 meadowHue = uMeadow / max(dot(uMeadow, vec3(0.3, 0.59, 0.11)), 1e-3);
+        vec3 grass = mix(gTex, gLum * meadowHue * 1.15, 0.72) * mix(vec3(0.86, 0.9, 0.78), vec3(1.1, 1.04, 0.9), macro);
+        vec3 litter = texture2D(uLitter, luv).rgb;
+        vec3 trail = texture2D(uTrail, tuv).rgb * vec3(0.78, 0.7, 0.6);
+        vec3 rock = texture2D(uRock, ruv).rgb;
+        float wL = hb(gD.b, lD.b, clamp(vMask.x + (macro - 0.5) * 0.35, 0.0, 1.0));
+        vec3 col = mix(grass, litter, wL);
+        float hgl = mix(gD.b, lD.b, wL);
+        float wT = hb(hgl, tD.b, vMask.y);
+        col = mix(col, trail, wT);
+        float wR = smoothstep(0.35, 0.75, vMask.z);
+        col = mix(col, rock, wR);
+        // Damp earth near water.
+        col *= mix(1.0, 0.62, vMask.w);
+        diffuseColor.rgb *= col;
+        float groundAO = mix(mix(mix(gD.r, lD.r, wL), tD.r, wT), 1.0, wR);
+        float groundRough = mix(mix(mix(gD.g, lD.g, wL), tD.g, wT), 0.85, wR);`
       )
       .replace(
         "#include <normal_fragment_maps>",
         `{
-          vec2 flowUv = vec2(0.0, -uTime * uFlow);
-          vec3 n1 = texture2D(normalMap, vNormalMapUv + flowUv + vec2(uTime * 0.012, uTime * 0.008)).xyz * 2.0 - 1.0;
-          vec3 n2 = texture2D(normalMap, vNormalMapUv * 1.7 + flowUv * 1.3 - vec2(uTime * 0.01, -uTime * 0.014)).xyz * 2.0 - 1.0;
-          vec3 mapN = normalize(vec3(n1.xy + n2.xy, n1.z * n2.z));
+          vec3 nG = texture2D(normalMap, guv).xyz * 2.0 - 1.0;
+          vec3 nL = texture2D(uLitterN, luv).xyz * 2.0 - 1.0;
+          vec3 nT = texture2D(uTrailN, tuv).xyz * 2.0 - 1.0;
+          vec3 nR = texture2D(uRockN, ruv).xyz * 2.0 - 1.0;
+          vec3 mapN = mix(mix(mix(nG, nL, wL), nT, wT), nR, wR);
           mapN.xy *= normalScale;
           normal = normalize(tbn * mapN);
         }`
+      )
+      .replace("#include <roughnessmap_fragment>", "float roughnessFactor = mix(groundRough, 0.35, vMask.w * 0.5);")
+      .replace(
+        "#include <aomap_fragment>",
+        `#include <aomap_fragment>
+        reflectedLight.indirectDiffuse *= mix(0.55, 1.0, groundAO);
+        reflectedLight.directDiffuse *= mix(0.75, 1.0, groundAO);`
       );
   };
-  mat.customProgramCacheKey = () => "water-v1";
+  mat.customProgramCacheKey = () => "ground-splat-v1";
   return mat;
+}
+
+// ─── Foliage (leaf-cluster cards) ───────────────────────────────────────────
+
+export interface FoliageOptions {
+  /** Base tint multiplied into the leaf atlas. */
+  color?: string;
+  /** Second tint for per-instance variation. */
+  color2?: string;
+  /** Wind amplitude (world units at the cluster's edge). */
+  sway?: number;
+  /** Strength of light through the leaves when looking towards the sun. */
+  translucency?: number;
+  alphaTest?: number;
+  /** Use the per-vertex `color` attribute. */
+  vertexColors?: boolean;
+  /** 0..1 blend of the geometry's normals towards the per-instance `aBlobN` (canopy-scale volume shading). */
+  blob?: number;
+}
+
+const BLOB_NORMAL = /* glsl */ `
+  #ifdef USE_BLOB
+    #ifdef USE_INSTANCING
+      vec3 blobN = transpose(mat3(instanceMatrix)) * aBlobN;
+    #else
+      vec3 blobN = aBlobN;
+    #endif
+    objectNormal = normalize(mix(normalize(objectNormal), normalize(blobN), uBlob));
+  #endif
+`;
+
+const FOLIAGE_VERTEX = /* glsl */ `
+  // Wind: a slow sway of the whole cluster plus a faster flutter of each card.
+  vec4 fw4 = vec4(transformed, 1.0);
+  #ifdef USE_INSTANCING
+    fw4 = instanceMatrix * fw4;
+    vec3 iOrigin = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  #else
+    vec3 iOrigin = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  #endif
+  vec3 fWorld = (modelMatrix * fw4).xyz;
+  float fPhase = dot(iOrigin, vec3(0.071, 0.013, 0.053));
+  float fEdge = clamp(length(position) * 0.6, 0.0, 1.0);
+  vec3 fSway = vec3(sin(uTime * 0.9 + fPhase), 0.0, cos(uTime * 0.7 + fPhase * 1.3)) * 0.35;
+  fSway += vec3(sin(uTime * 3.7 + fWorld.y * 0.8 + fPhase * 4.0), sin(uTime * 4.3 + fWorld.x * 0.7), cos(uTime * 3.1 + fWorld.z * 0.9)) * 0.12;
+  transformed += fSway * uSway * uWind * fEdge;
+`;
+
+export function createFoliageMaterial(atlas: THREE.Texture, o: FoliageOptions = {}) {
+  const mat = new THREE.MeshStandardMaterial({
+    map: atlas,
+    alphaTest: o.alphaTest ?? 0.42,
+    alphaToCoverage: true,
+    side: THREE.DoubleSide,
+    roughness: 0.82,
+    metalness: 0,
+    color: o.color ?? "#ffffff",
+    vertexColors: o.vertexColors ?? false,
+  });
+  if (o.blob) mat.defines = { USE_BLOB: "" };
+  const uniforms = {
+    uBlob: { value: o.blob ?? 0 },
+    uTime: shared.uTime,
+    uWind: shared.uWind,
+    uSunDir: shared.uSunDir,
+    uSunColor: shared.uSunColor,
+    uSway: { value: o.sway ?? 0.25 },
+    uTrans: { value: o.translucency ?? 0.9 },
+    uColor2: { value: new THREE.Color(o.color2 ?? o.color ?? "#ffffff") },
+  };
+  mat.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        "#include <common>\nuniform float uTime, uWind, uSway, uBlob;\nvarying float vVar;\nvarying vec3 vFoliageWorld;\n#ifdef USE_BLOB\nattribute vec3 aBlobN;\n#endif"
+      )
+      .replace("#include <beginnormal_vertex>", `#include <beginnormal_vertex>\n${BLOB_NORMAL}`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${FOLIAGE_VERTEX}`)
+      .replace(
+        "#include <fog_vertex>",
+        `#include <fog_vertex>
+        vec4 vw4 = vec4(transformed, 1.0);
+        #ifdef USE_INSTANCING
+          vw4 = instanceMatrix * vw4;
+        #endif
+        vFoliageWorld = (modelMatrix * vw4).xyz;
+        vVar = fract(sin(dot(iOrigin.xz, vec2(12.9898, 78.233))) * 43758.5453);`
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+        uniform vec3 uSunDir, uSunColor, uColor2;
+        uniform float uTrans;
+        varying float vVar;
+        varying vec3 vFoliageWorld;`
+      )
+      .replace(
+        "#include <map_fragment>",
+        `#include <map_fragment>
+        diffuseColor.rgb *= mix(vec3(1.0), uColor2 / max(diffuse, vec3(0.01)), vVar);`
+      )
+      .replace(
+        "#include <lights_fragment_end>",
+        `#include <lights_fragment_end>
+        // Light through the leaves when the sun is behind them.
+        vec3 vDir = normalize(vFoliageWorld - cameraPosition);
+        float back = pow(max(dot(vDir, uSunDir), 0.0), 3.0);
+        float sunUp = smoothstep(-0.08, 0.05, uSunDir.y);
+        reflectedLight.directDiffuse += diffuseColor.rgb * uSunColor * back * uTrans * 1.3 * sunUp;`
+      );
+  };
+  mat.customProgramCacheKey = () => "foliage-v2";
+  return mat;
+}
+
+/** Depth material so leaf cards cast leaf-shaped (not card-shaped) shadows. */
+export function createFoliageDepthMaterial(atlas: THREE.Texture, o: FoliageOptions = {}) {
+  const mat = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: atlas, alphaTest: o.alphaTest ?? 0.42 });
+  const uniforms = { uTime: shared.uTime, uWind: shared.uWind, uSway: { value: o.sway ?? 0.25 } };
+  mat.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nuniform float uTime, uWind, uSway;")
+      .replace("#include <begin_vertex>", `#include <begin_vertex>\n${FOLIAGE_VERTEX}`);
+  };
+  mat.customProgramCacheKey = () => "foliage-depth-v2";
+  return mat;
+}
+
+// ─── Water ──────────────────────────────────────────────────────────────────
+
+/**
+ * River and lake: a dark, glossy surface whose ripples come from animated
+ * noise; reflections come from the sky environment, and the `aDepth`
+ * attribute (water depth) tints shallows and the shoreline.
+ */
+export function createWaterMaterial() {
+  const mat = new THREE.MeshStandardMaterial({ color: "#0d2124", roughness: 0.04, metalness: 0, envMapIntensity: 1.5, transparent: true });
+  const uniforms = { uTime: shared.uTime, uNight: shared.uNight };
+  mat.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nattribute float aDepth;\nattribute vec2 aFlow;\nvarying float vDepth;\nvarying vec2 vFlow;\nvarying vec3 vWorld;")
+      .replace("#include <fog_vertex>", `#include <fog_vertex>\nvDepth = aDepth;\nvFlow = aFlow;\n${WORLD_VARYING_VERTEX}`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+        uniform float uTime, uNight;
+        varying float vDepth;
+        varying vec2 vFlow;
+        varying vec3 vWorld;
+        ${GLSL_HASH}
+        ${GLSL_SIMPLEX3}
+        vec2 rippleGrad(vec2 p, float t) {
+          float e = 0.08;
+          float h0 = snoise3(vec3(p, t));
+          float hx = snoise3(vec3(p + vec2(e, 0.0), t));
+          float hz = snoise3(vec3(p + vec2(0.0, e), t));
+          return vec2(hx - h0, hz - h0) / e;
+        }`
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+        float shallow = 1.0 - smoothstep(0.0, 1.6, vDepth);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.13, 0.16, 0.1), shallow * 0.6);
+        // The shoreline dissolves instead of ending on terrain triangles.
+        diffuseColor.a = smoothstep(0.0, 0.35, vDepth);`
+      )
+      .replace(
+        "#include <normal_fragment_maps>",
+        `{
+          vec2 p = vWorld.xz * 0.9 - vFlow * uTime * 1.6;
+          vec2 g = rippleGrad(p, uTime * 0.35) * 0.5 + rippleGrad(p * 2.9 + 3.1, uTime * 0.6) * 0.3;
+          // Ripples flatten with distance so far water mirrors the sky cleanly.
+          float rippleFade = 1.0 - smoothstep(30.0, 160.0, length(vWorld - cameraPosition));
+          vec3 nW = normalize(vec3(-g.x * 0.07 * rippleFade, 1.0, -g.y * 0.07 * rippleFade));
+          normal = normalize((viewMatrix * vec4(nW, 0.0)).xyz);
+        }`
+      )
+      .replace(
+        "#include <aomap_fragment>",
+        `#include <aomap_fragment>
+        // Soft foam line where the water meets the shore.
+        float foam = (1.0 - smoothstep(0.0, 0.18, vDepth)) * (0.55 + 0.45 * snoise3(vec3(vWorld.xz * 1.3, uTime * 0.6)));
+        reflectedLight.directDiffuse += vec3(0.7, 0.72, 0.68) * foam * 0.25 * (1.0 - uNight * 0.8);`
+      );
+  };
+  mat.customProgramCacheKey = () => "water-v2";
+  return mat;
+}
+
+// ─── Signal (the root network) ──────────────────────────────────────────────
+
+/**
+ * The network's light: thin tubes whose `uv.x` runs along their length.
+ * Pulses travel outward like packets; `aSeed` desynchronises threads. Additive,
+ * HDR (so bloom picks it up), stronger as night falls.
+ */
+export function createSignalMaterial(opts: { color?: string; intensity?: number; speed?: number; floor?: number } = {}) {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    fog: true,
+    uniforms: {
+      ...THREE.UniformsUtils.merge([
+        THREE.UniformsLib.fog,
+        {
+          uColor: { value: new THREE.Color(opts.color ?? "#7ee0cf") },
+          uIntensity: { value: opts.intensity ?? 1 },
+          uSpeed: { value: opts.speed ?? 0.12 },
+          uFocus: { value: 0 },
+          uFloor: { value: opts.floor ?? 0.18 },
+        },
+      ]),
+      uTime: shared.uTime,
+      uNight: shared.uNight,
+    },
+    vertexShader: /* glsl */ `
+      #include <common>
+      #include <fog_pars_vertex>
+      attribute float aSeed;
+      varying vec2 vUv;
+      varying float vSeed;
+      varying vec3 vN;
+      varying vec3 vV;
+      void main() {
+        vUv = uv;
+        vSeed = aSeed;
+        vec3 transformed = position;
+        vec4 mvPosition = modelViewMatrix * vec4(transformed, 1.0);
+        vN = normalize(normalMatrix * normal);
+        vV = normalize(-mvPosition.xyz);
+        gl_Position = projectionMatrix * mvPosition;
+        #include <fog_vertex>
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      #include <common>
+      #include <fog_pars_fragment>
+      uniform vec3 uColor;
+      uniform float uIntensity, uSpeed, uFocus, uFloor;
+      uniform float uTime, uNight;
+      varying vec2 vUv;
+      varying float vSeed;
+      varying vec3 vN;
+      varying vec3 vV;
+      void main() {
+        // Bright core, soft rim — reads as a glowing filament from every angle.
+        float rim = pow(clamp(dot(vN, vV), 0.0, 1.0), 0.6);
+        float s = vUv.x * 9.0 - uTime * uSpeed * 9.0 + vSeed * 17.0;
+        float pulse = pow(0.5 + 0.5 * sin(s), 18.0) + pow(0.5 + 0.5 * sin(s * 0.37 + 1.7), 30.0) * 0.7;
+        float base = 0.12 + 0.88 * mix(0.25, 1.0, uNight);
+        float a = (uFloor * base + pulse * (0.9 + uFocus)) * rim * uIntensity;
+        vec3 glow = uColor * a;
+        gl_FragColor = vec4(glow, 1.0);
+        #include <fog_fragment>
+        #ifdef USE_FOG
+          // Additive light fades into the haze instead of adding fog colour.
+          gl_FragColor.rgb = glow * (1.0 - fogFactor);
+        #endif
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }
+    `,
+  });
 }

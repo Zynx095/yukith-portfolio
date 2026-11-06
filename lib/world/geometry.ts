@@ -28,6 +28,33 @@ export interface TubeOptions {
 const _up = new THREE.Vector3(0, 1, 0);
 
 /**
+ * The "up" axis of buildTube's cross-sections at every point (parallel-transport
+ * frames, started perpendicular to the first tangent and biased to world-up).
+ * Lets other systems place things exactly on a tube's crest.
+ */
+export function tubeUpVectors(points: THREE.Vector3[]): THREE.Vector3[] {
+  const n = points.length;
+  const tangents: THREE.Vector3[] = [];
+  for (let i = 0; i < n; i++) tangents.push(new THREE.Vector3().subVectors(points[Math.min(n - 1, i + 1)], points[Math.max(0, i - 1)]).normalize());
+  let nrm = new THREE.Vector3().crossVectors(tangents[0], _up);
+  if (nrm.lengthSq() < 1e-6) nrm.set(1, 0, 0);
+  nrm.normalize().cross(tangents[0]).normalize();
+  const out: THREE.Vector3[] = [];
+  for (let i = 0; i < n; i++) {
+    if (i > 0) {
+      const axis = new THREE.Vector3().crossVectors(tangents[i - 1], tangents[i]);
+      const s = axis.length();
+      if (s > 1e-6) {
+        axis.divideScalar(s);
+        nrm = nrm.clone().applyAxisAngle(axis, Math.acos(THREE.MathUtils.clamp(tangents[i - 1].dot(tangents[i]), -1, 1)));
+      } else nrm = nrm.clone();
+    }
+    out.push(nrm.clone());
+  }
+  return out;
+}
+
+/**
  * Variable-radius tube along a polyline using parallel-transport frames
  * (no twisting), with optional elliptical sections and organic bumps.
  * Produces UVs suitable for the bark textures (u around, v along length).
@@ -143,80 +170,6 @@ export function resampleCurve(control: THREE.Vector3[], segments: number) {
   return curve.getSpacedPoints(segments);
 }
 
-/**
- * Procedural boulder: a sphere fractured by random planes into an angular,
- * faceted block (how real stone breaks), then weathered — edges softened by
- * the smoothed normals, faces roughened by low-amplitude noise, a flat-ish
- * base so it sits on the ground, and faint bedding planes.
- */
-export function buildRock(seed: number, detail = 4, flatten = 0.65): THREE.BufferGeometry {
-  const noise = new SimplexNoise(seed);
-  const rng = createRng(seed * 7 + 3);
-  const base = new THREE.IcosahedronGeometry(1, detail);
-  const geo = base.index ? base.toNonIndexed() : base;
-  base.dispose();
-  // Merge duplicated vertices so displacement keeps the surface watertight.
-  const merged = mergeByPosition(geo);
-  geo.dispose();
-
-  // Fracture planes: a bed underneath, then random cuts all round.
-  const planes: { n: THREE.Vector3; d: number }[] = [{ n: new THREE.Vector3(0, -1, 0), d: 0.55 }];
-  const cuts = 8 + Math.floor(rng() * 5);
-  for (let i = 0; i < cuts; i++) {
-    const u = rng() * 2 - 1;
-    const a = rng() * Math.PI * 2;
-    const r = Math.sqrt(1 - u * u);
-    planes.push({ n: new THREE.Vector3(Math.cos(a) * r, u * 0.8, Math.sin(a) * r).normalize(), d: 0.62 + rng() * 0.3 });
-  }
-
-  const pos = merged.getAttribute("position") as THREE.BufferAttribute;
-  const v = new THREE.Vector3();
-  const ox = seed * 0.37;
-  for (let i = 0; i < pos.count; i++) {
-    v.fromBufferAttribute(pos, i);
-    // Lumpy core first, so the cut faces are not all the same distance out.
-    v.multiplyScalar(1 + noise.fbm3(v.x * 0.8 + ox, v.y * 0.8, v.z * 0.8, 3) * 0.18);
-    for (const p of planes) {
-      const over = v.dot(p.n) - p.d;
-      if (over > 0) v.addScaledVector(p.n, -over);
-    }
-    // Weathering: shallow pitting and ridges on every face.
-    const len = v.length();
-    const grit = noise.ridged3(v.x * 3.1 + ox, v.y * 3.1, v.z * 3.1, 3) * 0.035 + noise.noise3(v.x * 7 + 1, v.y * 7, v.z * 7) * 0.012;
-    v.multiplyScalar((len + grit) / Math.max(len, 1e-4));
-    v.y *= flatten;
-    v.y += Math.sin(v.y * 11 + ox) * 0.01;
-    pos.setXYZ(i, v.x, v.y, v.z);
-  }
-  merged.computeVertexNormals();
-  return merged;
-}
-
-/** Weld vertices that share a position (keeps index; drops other attributes). */
-export function mergeByPosition(geo: THREE.BufferGeometry): THREE.BufferGeometry {
-  const src = geo.getAttribute("position") as THREE.BufferAttribute;
-  const map = new Map<string, number>();
-  const positions: number[] = [];
-  const index: number[] = [];
-  for (let i = 0; i < src.count; i++) {
-    const x = src.getX(i);
-    const y = src.getY(i);
-    const z = src.getZ(i);
-    const key = `${Math.round(x * 1e4)},${Math.round(y * 1e4)},${Math.round(z * 1e4)}`;
-    let id = map.get(key);
-    if (id === undefined) {
-      id = positions.length / 3;
-      positions.push(x, y, z);
-      map.set(key, id);
-    }
-    index.push(id);
-  }
-  const out = new THREE.BufferGeometry();
-  out.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  out.setIndex(index);
-  return out;
-}
-
 /** Merge geometries that share the same attribute layout into one. */
 export function mergeGeometries(geos: THREE.BufferGeometry[]): THREE.BufferGeometry {
   const attrs = Object.keys(geos[0].attributes);
@@ -243,59 +196,6 @@ export function mergeGeometries(geos: THREE.BufferGeometry[]): THREE.BufferGeome
   }
   out.setIndex(vertexOffset > 65535 ? new THREE.Uint32BufferAttribute(index, 1) : new THREE.Uint16BufferAttribute(index, 1));
   return out;
-}
-
-/**
- * Foliage clump: a handful of alpha-tested cards arranged around a centre.
- * Normals point away from the clump centre so the cluster shades as a soft
- * volume instead of flat planes. `cell` selects the 2×2 atlas quadrant.
- */
-export function buildFoliageClump(cards = 7, seed = 5): THREE.BufferGeometry {
-  const noise = new SimplexNoise(seed);
-  const positions: number[] = [];
-  const normals: number[] = [];
-  const uvs: number[] = [];
-  const index: number[] = [];
-  const golden = Math.PI * (3 - Math.sqrt(5));
-  const q = new THREE.Quaternion();
-  const m = new THREE.Matrix4();
-  for (let c = 0; c < cards; c++) {
-    // Distribute card orientations over the sphere (Fibonacci) with jitter.
-    const y = 1 - (c / (cards - 1)) * 2 * 0.85 - 0.075;
-    const r = Math.sqrt(1 - y * y);
-    const th = golden * c + noise.noise2(c, 0.5) * 0.4;
-    const outward = new THREE.Vector3(Math.cos(th) * r, y, Math.sin(th) * r).normalize();
-    // Card plane contains the outward vector, rotated randomly about it.
-    q.setFromUnitVectors(new THREE.Vector3(0, 0, 1), outward);
-    const spin = new THREE.Quaternion().setFromAxisAngle(outward, noise.noise2(c * 3.1, 2.7) * Math.PI);
-    q.premultiply(spin);
-    m.compose(outward.clone().multiplyScalar(0.18), q, new THREE.Vector3(1, 1, 1));
-    const size = 0.95 + 0.15 * noise.noise2(c * 1.7, 9.1);
-    const base = positions.length / 3;
-    const corners: [number, number][] = [
-      [-1, -1],
-      [1, -1],
-      [1, 1],
-      [-1, 1],
-    ];
-    for (const [cx, cy] of corners) {
-      const v = new THREE.Vector3(cx * size, cy * size, 0).applyMatrix4(m);
-      positions.push(v.x, v.y, v.z);
-      // Spherical normal, slightly blended with the card normal for definition.
-      const sn = v.clone().normalize();
-      const cn = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
-      const nn = sn.multiplyScalar(0.8).addScaledVector(cn, 0.2).normalize();
-      normals.push(nn.x, nn.y, nn.z);
-      uvs.push((cx + 1) / 2, (cy + 1) / 2);
-    }
-    index.push(base, base + 1, base + 2, base, base + 2, base + 3);
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-  geo.setIndex(index);
-  return geo;
 }
 
 /**

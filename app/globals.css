@@ -1,153 +1,124 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+
+/*
+ * Design tokens — see docs/ART_DIRECTION.md.
+ * The page is always dark ("bark ink"): it continues the World Tree's dusk
+ * instead of switching to a different site after the journey.
+ */
+@theme {
+  --color-ink: #0f0d0b;
+  --color-ink-2: #17130f;
+  --color-ink-3: #211b15;
+  --color-paper: #efe7da;
+  --color-paper-dim: #b6aa96;
+  --color-paper-faint: #7d7364;
+  --color-sap: #d9a441;
+  --color-signal: #7ee0cf;
+  --color-ember: #e0703a;
+  --color-line: rgb(239 231 218 / 0.14);
+  --color-line-strong: rgb(239 231 218 / 0.28);
+
+  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "Cascadia Code", Consolas, monospace;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
 
 :root {
-  /* Cream / Paper Backgrounds (Aged Parchment) */
-  --cream-100: #F1E8D8; /* Main background, warmer aged paper */
-  --cream-200: #E6DBC6; /* Secondary warm cream */
-  --cream-300: #D8CCB3; /* Slightly darker parchment */
-  --cream-400: #C4B69A; /* Muted paper edge */
-
-  /* Wood / Bark (Structure & Foundation) */
-  --wood-900: #211510;  /* Very dark espresso for primary readable text */
-  --wood-800: #3E2723;  /* Dark walnut */
-  --wood-700: #4E342E;  /* Medium cedar */
-  --wood-600: #5D4037;  /* Warm bark */
-  --wood-500: #795548;  /* Lighter wood */
-
-  /* Botanical / Green (Life & Growth) - Expanded */
-  --forest-900: #142E1B; /* Deep Forest (Major text, strong labels) */
-  --forest-700: #1B4527; /* Forest Green (Active branches, major visuals) */
-  --moss-500: #355C3D;   /* Moss (Secondary elements, backgrounds) */
-  --sage-400: #657D65;   /* Sage (Inactive states, atmospheric) */
-  --leaf-300: #88A681;   /* Fresh Leaf (Hover, growth moments) */
-
-  /* Warm Accents (Terracotta / Amber) */
-  --earth-600: #A85A36; /* Deep Terracotta */
-  --earth-500: #C07954; /* Terracotta */
-  --earth-400: #D69E7B; /* Warm clay */
-  
-  /* shadcn mappings - light mode base */
-  --background: var(--cream-100);
-  --foreground: var(--forest-900);
-  
-  --card: var(--cream-200);
-  --card-foreground: var(--wood-900);
-  
-  --popover: var(--cream-100);
-  --popover-foreground: var(--wood-900);
-  
-  --primary: var(--forest-700);
-  --primary-foreground: var(--cream-100);
-  
-  --secondary: var(--cream-300);
-  --secondary-foreground: var(--wood-800);
-  
-  --muted: var(--cream-200);
-  --muted-foreground: var(--wood-600);
-  
-  --accent: var(--moss-500);
-  --accent-foreground: var(--cream-100);
-  
-  --destructive: #9C3838;
-  --destructive-foreground: var(--cream-100);
-  
-  --border: var(--cream-400);
-  --input: var(--cream-200);
-  --ring: var(--forest-700);
-  
-  --radius: 0.5rem;
+  color-scheme: dark;
+  --focus: var(--color-signal);
 }
 
-@theme inline {
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-space-mono);
-  --font-serif: var(--font-playfair); 
-
-  --color-cream-100: var(--cream-100);
-  --color-cream-200: var(--cream-200);
-  --color-cream-300: var(--cream-300);
-  --color-cream-400: var(--cream-400);
-
-  --color-wood-900: var(--wood-900);
-  --color-wood-800: var(--wood-800);
-  --color-wood-700: var(--wood-700);
-  --color-wood-600: var(--wood-600);
-  --color-wood-500: var(--wood-500);
-
-  --color-forest-900: var(--forest-900);
-  --color-forest-700: var(--forest-700);
-  --color-moss-500: var(--moss-500);
-  --color-sage-400: var(--sage-400);
-  --color-leaf-300: var(--leaf-300);
-
-  --color-earth-600: var(--earth-600);
-  --color-earth-500: var(--earth-500);
-  --color-earth-400: var(--earth-400);
-
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+/*
+ * Classic presentation — the same tokens re-cut for a light, editorial page
+ * (warm paper, near-black ink, one ochre and one deep-teal accent). Every
+ * component is written against the tokens, so the whole site follows.
+ * The server renders data-view="classic"; the boot script in <head> switches
+ * to "immersive" before the first paint when that is the visitor's mode.
+ */
+html[data-view="classic"] {
+  color-scheme: light;
+  --color-ink: #f4efe6;
+  --color-ink-2: #ebe4d8;
+  --color-ink-3: #e1d8c9;
+  --color-paper: #17140f;
+  --color-paper-dim: #574f43;
+  --color-paper-faint: #6f6657;
+  --color-sap: #8a5a12;
+  --color-signal: #0e6a5d;
+  --color-ember: #a8461a;
+  --color-line: rgb(23 20 15 / 0.13);
+  --color-line-strong: rgb(23 20 15 / 0.26);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  html {
-    color-scheme: light;
-    background-color: var(--background);
-  }
-  body {
-    background-color: var(--background);
-    color: var(--foreground);
-    overflow-x: hidden;
-    font-family: var(--font-sans);
-  }
-  
-  ::selection {
-    background: var(--leaf-300);
-    color: var(--forest-900);
-  }
-  ::-webkit-scrollbar {
-    width: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: var(--cream-200);
-  }
-  ::-webkit-scrollbar-thumb {
-    background: var(--sage-400);
-    border-radius: 3px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--moss-500);
+/* Classic never shows the journey, its loader or its overlays. */
+html[data-view="classic"] #journey,
+html[data-view="classic"] #loader,
+html[data-view="classic"] [data-immersive-only] {
+  display: none !important;
+}
+html[data-view="immersive"] [data-classic-only] {
+  display: none !important;
+}
+/* Controls that need JavaScript are hidden in a no-JS visit. */
+html:not(.js) [data-js-only] {
+  display: none !important;
+}
+/* The presentation switcher's pressed state follows the document's mode. */
+.view-opt {
+  color: var(--color-paper-dim);
+}
+.view-opt:hover {
+  color: var(--color-paper);
+}
+html[data-view="immersive"] .view-opt[data-opt="immersive"],
+html[data-view="classic"] .view-opt[data-opt="classic"] {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+/* Before hydration the Classic bar is already solid and shows its section links. */
+html[data-view="classic"] [data-topbar] {
+  border-bottom: 1px solid var(--color-line);
+  background: color-mix(in oklab, var(--color-ink) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+@media (min-width: 80rem) {
+  html[data-view="classic"] [data-portfolio-nav] {
+    display: block;
   }
 }
 
-/* Accessible focus styles */
-@layer base {
-  :focus-visible {
-    outline: 2px solid var(--forest-700);
-    outline-offset: 2px;
-    border-radius: 2px;
-  }
+html {
+  background: var(--color-ink);
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
 }
 
-/* Lenis smooth scrolling (one instance drives the whole page). */
+body {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+::selection {
+  background: rgb(126 224 207 / 0.28);
+  color: var(--color-paper);
+}
+
+/* One visible focus language everywhere. */
+:where(a, button, [role="button"], input, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Lenis */
 html.lenis,
 html.lenis body {
   height: auto;
@@ -155,42 +126,86 @@ html.lenis body {
 .lenis.lenis-smooth {
   scroll-behavior: auto !important;
 }
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
+.lenis.lenis-stopped {
+  overflow: hidden;
 }
 
-/* World overlay typography: legible over any frame without boxes. */
-.narration-shadow {
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 2px 22px rgba(0, 0, 0, 0.45);
+/* Small-caps label used for chapters, kinds and metadata. */
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-paper-dim);
 }
 
-@keyframes veil {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(320%);
+.hairline {
+  border-color: var(--color-line);
+}
+
+/* Visually hidden but available to screen readers. */
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-@keyframes cue {
-  0%,
-  100% {
-    transform: scaleY(0.35);
-    transform-origin: top;
-    opacity: 0.35;
-  }
-  50% {
-    transform: scaleY(1);
-    transform-origin: top;
-    opacity: 1;
-  }
-}
-
-@keyframes labelIn {
+@keyframes beat-in {
   from {
     opacity: 0;
     transform: translateY(10px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* Growth-ring caption: on wide but short screens the year's groups sit in two columns. */
+@media (min-width: 64rem) and (max-height: 880px) {
+  .ring-panel {
+    max-width: 47rem;
+  }
+  .ring-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 2rem;
+  }
+}
+
+/* Classic: sections rise into place as they enter the viewport (CSS only, no JS). */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    html[data-view="classic"] .reveal {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      /* A fixed distance, so tall blocks are fully visible as soon as they are being read. */
+      animation-range: entry 0% entry 160px;
+    }
+  }
+}
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
   }
   to {
     opacity: 1;
@@ -198,19 +213,18 @@ html.lenis body {
   }
 }
 
-/* Reduced motion for accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+/* Mode switch: a short cross-fade where View Transitions exist. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* iOS safe area support */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+@keyframes cue {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(300%);
   }
 }

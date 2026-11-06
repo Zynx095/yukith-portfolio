@@ -38,5 +38,5 @@ for (const y of [0, 12, 44, 92, 140, 172, 220, 280, 330]) {
   }
   console.log(`y=${y}`.padEnd(6), "outer", minR.toFixed(1), "-", maxR.toFixed(1), "minWall", minWall.toFixed(2), "cavity r", cavityAt(y).radius.toFixed(1));
 }
-for (const s of ARCHIVE_SLOTS) console.log(s.id.padEnd(17), s.mount.padEnd(9), slotPosition(s).toArray().map((v: number) => v.toFixed(1)).join(", "));
+for (const s of ARCHIVE_SLOTS) console.log(`slot ${s.index} θ=${s.theta.toFixed(2)}`, slotPosition(s).toArray().map((v: number) => v.toFixed(1)).join(", "));
 console.log("arch apex field", archField(0.5, ENTRANCE.height).toFixed(3));

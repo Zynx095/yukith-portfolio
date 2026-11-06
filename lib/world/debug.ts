@@ -4,8 +4,8 @@
  *   ?perf                 exposes `window.__world` (renderer, journey controls)
  *                         for the profiling workflow described in README.md
  *   ?off=tree,water,...   disables subsystems to isolate their cost:
- *                         tree, terrain, forest, water, family, artifacts,
- *                         post, shadows, html
+ *                         tree, terrain, grass, forest, water, camp,
+ *                         signal, artifacts, post, shadows, html
  *   ?quality=low|medium|high   forces a quality tier
  *   ?cam=x,y,z,lx,ly,lz   (with ?perf) pins the camera for inspection shots
  */
@@ -16,16 +16,18 @@ export const PERF_MODE = params.has("perf");
 
 const disabled = new Set((params.get("off") ?? "").split(",").map((s) => s.trim()).filter(Boolean));
 
-export type Subsystem = "tree" | "terrain" | "forest" | "water" | "family" | "artifacts" | "post" | "shadows" | "html";
+export type Subsystem = "tree" | "terrain" | "grass" | "forest" | "water" | "camp" | "signal" | "artifacts" | "post" | "shadows" | "html";
 
 export const isOff = (system: Subsystem) => disabled.has(system);
 
-/** Pinned inspection camera: position and look-at target, or null. */
-export const DEBUG_CAMERA = (() => {
-  if (!PERF_MODE) return null;
-  const v = (params.get("cam") ?? "").split(",").map(Number);
-  return v.length === 6 && v.every(Number.isFinite) ? v : null;
-})();
+/** Pinned inspection camera: [x, y, z, lookX, lookY, lookZ] or null. Settable at runtime in perf mode. */
+export const debugCamera: { value: number[] | null } = {
+  value: (() => {
+    if (!PERF_MODE) return null;
+    const v = (params.get("cam") ?? "").split(",").map(Number);
+    return v.length === 6 && v.every(Number.isFinite) ? v : null;
+  })(),
+};
 
 export const FORCED_QUALITY = (() => {
   const q = params.get("quality");

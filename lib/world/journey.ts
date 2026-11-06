@@ -1,16 +1,17 @@
 import * as THREE from "three";
-import { CAMP, TREE, TREE_GROUND, WATERFALL } from "./layout";
-import { ARCHIVE_SLOTS, cavityAt, slotPosition, spine, type MountKind } from "./tree";
-import type { ArtifactId } from "./archive";
+import { CAMP, LAKE, TREE, TREE_ENTRANCE_ANGLE, WAYSTONES, pathPoint, terrainHeight, waystonePosition } from "./layout";
+import { ARCHIVE, HALL_CENTER, hallAxis } from "./archive";
+import { CHAPTERS } from "./chapters";
+import { HALL_FLOOR, cavityAt, spine } from "./tree";
 
 /**
- * The journey: chapters, narration and the camera path, all keyed to scroll
- * progress (0 → 1). Positions are world coordinates.
+ * The camera path and the narration, keyed to journey progress (0 → 1).
+ * Chapter boundaries live in ./chapters so the HTML layer can use them.
  */
 
-export { JOURNEY_VH } from "./constants";
+export { CHAPTERS };
 
-// ─── Narration (one thought at a time; verified facts only) ──────────────────
+// ─── Narration: one thought at a time, verified facts only ──────────────────
 
 export interface Beat {
   start: number;
@@ -18,75 +19,67 @@ export interface Beat {
   kicker: string;
   line: string;
   sub?: string;
+  /** Show the contact links with this beat. */
+  contact?: boolean;
 }
 
 export const BEATS: Beat[] = [
-  { start: 0.0, end: 0.032, kicker: "Bengaluru", line: "Yukith M Joseph", sub: "Network security · Applied AI · Builder" },
-  { start: 0.038, end: 0.078, kicker: "Family", line: "My mom, my dad, my grandma, my aunt, her son — my brother — and Bella." },
-  { start: 0.082, end: 0.112, kicker: "Foundation", line: "They are my foundation, my strength, and the reason I keep going." },
-  { start: 0.118, end: 0.152, kicker: "And her", line: "My girlfriend — who keeps me growing into a better version of myself." },
-  { start: 0.165, end: 0.225, kicker: "Presidency University", line: "B.Tech in Computer Science & Engineering — networks and cybersecurity." },
-  { start: 0.235, end: 0.285, kicker: "The lesson", line: "Never give up." },
-  { start: 0.3, end: 0.345, kicker: "The World Tree", line: "Everything I have built grows here." },
-  { start: 0.355, end: 0.43, kicker: "What I build", line: "Security systems, AI, games and websites — each one a branch." },
-  { start: 0.445, end: 0.5, kicker: "The archive", line: "Step inside." },
-  { start: 0.962, end: 1.01, kicker: "Next", line: "The rest of the story, in the open." },
+  { start: 0.0, end: 0.045, kicker: "Bengaluru, India", line: "Yukith M Joseph", sub: "Computer Science & Engineering · Networks · Presidency University" },
+  { start: 0.075, end: 0.105, kicker: "Home", line: "Every build starts somewhere. Mine started at home — family, Bella, and a PC built from scrap parts." },
+  { start: 0.11, end: 0.14, kicker: "Off the clock", line: "Elden Ring, Valorant, Bleach, Lookism — and stories I write myself." },
+  { start: 0.145, end: 0.168, kicker: "The lesson", line: "Never give up." },
+  { start: 0.18, end: 0.215, kicker: "The path", line: "Four things I keep coming back to." },
+  { start: 0.295, end: 0.335, kicker: "The World Tree", line: "Everything I build connects here." },
+  { start: 0.345, end: 0.378, kicker: "The network", line: "Its roots carry the signal — like the networks I study." },
+  { start: 0.405, end: 0.44, kicker: "The archive", line: "Nine projects inside. Click any relic to open its record." },
+  { start: 0.806, end: 0.826, kicker: "The rings", line: "Every year leaves a ring.", sub: "2024 to 2026, read from the bottom up." },
+  { start: 0.948, end: 1.01, kicker: "The crown", line: "Let's build something.", sub: "Internships, research, projects or a hackathon team — write to me.", contact: true },
 ];
 
-export const CHAPTERS = [
-  { start: 0, label: "Home" },
-  { start: 0.15, label: "The river" },
-  { start: 0.23, label: "The falls" },
-  { start: 0.29, label: "The valley" },
-  { start: 0.44, label: "The World Tree" },
-  { start: 0.535, label: "The archive" },
-  { start: 0.955, label: "Ascent" },
-];
+// ─── Archive stops ──────────────────────────────────────────────────────────
 
-// ─── Archive focus windows ────────────────────────────────────────────────────
-
-export const ARCHIVE_START = 0.555;
-export const ARCHIVE_STEP = 0.0368;
+export const ARCHIVE_START = 0.49;
+export const ARCHIVE_STEP = 0.0375;
 
 export interface FocusStop {
-  id: ArtifactId;
+  id: string;
+  index: number;
   progress: number;
   /** World position of the relic. */
   target: THREE.Vector3;
-  /** Ideal camera position when focused. */
+  /** Camera position when focused on it. */
   camera: THREE.Vector3;
 }
 
-const treeWorld = (v: THREE.Vector3) => v.add(new THREE.Vector3(TREE.x, TREE_GROUND, TREE.z));
+/** Radius of the camera's orbit around the hall axis. */
+const ORBIT_R = 10.5;
+const EYE = HALL_FLOOR + 4.6;
 
-/** Radius of a relic medallion (world units). */
-export const RELIC_RADIUS = 1.55;
-
-/** Height of a relic's centre above its mount point (clear of the mount itself). */
-export function relicLift(mount: MountKind) {
-  switch (mount) {
-    case "alcove":
-      return 4.2; // above the carved plinth
-    case "branch":
-      return 2.05;
-    case "fungus":
-      return 2.15;
-    case "suspended":
-      return 2.6;
-    case "roots":
-    default:
-      return 2.0;
-  }
+function orbitPoint(theta: number, r = ORBIT_R, y = EYE) {
+  const c = hallAxis(y);
+  return new THREE.Vector3(c.x + Math.cos(theta) * r, c.y, c.z + Math.sin(theta) * r);
 }
 
-export const FOCUS_STOPS: FocusStop[] = ARCHIVE_SLOTS.map((slot, i) => {
-  const mount = treeWorld(slotPosition(slot));
-  const target = mount.clone().add(new THREE.Vector3(0, relicLift(slot.mount), 0));
-  const axis = spine(slot.y);
-  const toAxis = new THREE.Vector3(TREE.x + axis.x - target.x, 0, TREE.z + axis.y - target.z).normalize();
-  const camera = target.clone().addScaledVector(toAxis, 8.5).add(new THREE.Vector3(0, 1.4, 0));
-  return { id: slot.id, progress: ARCHIVE_START + i * ARCHIVE_STEP, target, camera };
-});
+export const FOCUS_STOPS: FocusStop[] = ARCHIVE.map((a, i) => ({
+  id: a.project.id,
+  index: i,
+  progress: ARCHIVE_START + i * ARCHIVE_STEP,
+  target: a.center.clone(),
+  camera: orbitPoint(a.slot.theta, ORBIT_R + 6.5, EYE - 0.9),
+}));
+
+/**
+ * Growth rings carved inside the trunk, one per year (content: lib/world/rings.ts).
+ * `theta` is the direction of the wall the camera looks at; the year's nodes
+ * are spread across that wall.
+ */
+export const RINGS = [
+  { year: "2024", localY: 58, progress: 0.838, theta: TREE_ENTRANCE_ANGLE + Math.PI * 0.35 },
+  { year: "2025", localY: 128, progress: 0.866, theta: TREE_ENTRANCE_ANGLE + Math.PI * 0.35 + 2.1 },
+  { year: "2026", localY: 198, progress: 0.894, theta: TREE_ENTRANCE_ANGLE + Math.PI * 0.35 + 4.2 },
+];
+/** Height of the camera below a ring, and how far across the hollow it stands (fraction of the radius). */
+export const RING_VIEW = { below: 9.5, across: 0.45 };
 
 // ─── Camera keyframes ─────────────────────────────────────────────────────────
 
@@ -98,76 +91,113 @@ export interface Keyframe {
 }
 
 const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
-const tz = TREE.z;
-const portal = (r: number, y: number) => {
-  // A point on the portal axis, r units out from the trunk axis.
-  const a = Math.PI / 2 - 0.12;
-  const sp = spine(Math.max(y - TREE_GROUND, 0));
-  return V(TREE.x + sp.x + Math.cos(a) * r, y, tz + sp.y + Math.sin(a) * r);
-};
+const onGround = (x: number, lift: number, z: number) => V(x, terrainHeight(x, z) + lift, z);
 
-function interiorKeyframes(): Keyframe[] {
+/** A point on the entrance axis, `r` units from the trunk axis, at world height `y`. */
+function portal(r: number, y: number) {
+  const a = TREE_ENTRANCE_ANGLE;
+  const sp = spine(Math.max(y - TREE.y, 0));
+  return V(TREE.x + sp.x + Math.cos(a) * r, y, TREE.z + sp.y + Math.sin(a) * r);
+}
+
+const entryTheta = TREE_ENTRANCE_ANGLE;
+
+function archiveKeyframes(): Keyframe[] {
   const out: Keyframe[] = [];
   FOCUS_STOPS.forEach((stop, i) => {
+    const theta = ARCHIVE[i].slot.theta;
     out.push({ p: stop.progress, pos: stop.camera.clone(), look: stop.target.clone(), fov: 46 });
     const next = FOCUS_STOPS[i + 1];
     if (next) {
-      // Between relics: drift towards the hall's axis and look up to the next one.
-      const midY = (stop.target.y + next.target.y) / 2;
-      const c = cavityAt(midY - TREE_GROUND);
-      const axis = V(TREE.x + c.x, midY, tz + c.z);
-      const from = stop.camera.clone().lerp(next.camera, 0.5);
-      const pos = axis.clone().lerp(from, 0.55);
-      out.push({ p: stop.progress + ARCHIVE_STEP * 0.5, pos, look: next.target.clone().lerp(stop.target, 0.25), fov: 50 });
+      // Between relics the camera keeps to its circle and turns along the wall.
+      const theta2 = ARCHIVE[i + 1].slot.theta;
+      for (const f of [0.35, 0.65]) {
+        const th = THREE.MathUtils.lerp(theta, theta2, f);
+        const pos = orbitPoint(th, ORBIT_R + 3.5, EYE - 0.3);
+        const look = stop.target.clone().lerp(next.target, f).add(V(0, 0.4, 0));
+        out.push({ p: stop.progress + ARCHIVE_STEP * f, pos, look, fov: 48 });
+      }
     }
   });
   return out;
 }
 
-const firstStop = FOCUS_STOPS[0];
-const lastStop = FOCUS_STOPS[FOCUS_STOPS.length - 1];
-const chimney = (y: number) => {
-  const c = cavityAt(y - TREE_GROUND);
-  return V(TREE.x + c.x, y, tz + c.z);
+const first = FOCUS_STOPS[0];
+const last = FOCUS_STOPS[FOCUS_STOPS.length - 1];
+const way = (i: number) => waystonePosition(i);
+/** A point in the World Tree's local frame (origin on the trunk axis at ground level). */
+const crown = (x: number, y: number, z: number) => V(TREE.x + x, TREE.y + y, TREE.z + z);
+const chimney = (localY: number, lookUp = 60, sideTheta = 0, side = 0) => {
+  const c = cavityAt(localY);
+  const pos = V(TREE.x + c.x + Math.cos(sideTheta) * side, TREE.y + localY, TREE.z + c.z + Math.sin(sideTheta) * side);
+  return { pos, look: hallAxis(localY + lookUp) };
 };
 
+const ringKeys = (): Keyframe[] =>
+  RINGS.flatMap((r, k) => {
+    // Stand below each ring on the near side of the hollow and look across and up at
+    // the far wall, so the ring sweeps over the frame as an arc with the year's nodes on it.
+    const th = r.theta;
+    const c = cavityAt(r.localY);
+    const look = V(TREE.x + c.x + Math.cos(th - 0.2) * c.radius, TREE.y + r.localY + 0.5, TREE.z + c.z + Math.sin(th - 0.2) * c.radius);
+    const pos = V(TREE.x + c.x - Math.cos(th) * c.radius * RING_VIEW.across, TREE.y + r.localY - RING_VIEW.below, TREE.z + c.z - Math.sin(th) * c.radius * RING_VIEW.across);
+    const keys: Keyframe[] = [{ p: r.progress, pos, look, fov: 62 }];
+    // Between two rings, rise up the axis looking up at the next one: the years above
+    // show as bands of light stacked up the hollow.
+    const next = RINGS[k + 1];
+    if (next) {
+      const midY = r.localY + (next.localY - r.localY) * 0.42;
+      keys.push({ p: (r.progress + next.progress) / 2, pos: hallAxis(midY).add(V(Math.cos(r.theta) * 2, 0, Math.sin(r.theta) * 2)), look: hallAxis(next.localY + 34), fov: 64 });
+    }
+    return keys;
+  });
+
 export const KEYFRAMES: Keyframe[] = [
-  // Home: the World Tree on the horizon, then down to the camp.
-  { p: 0.0, pos: V(19, 5.2, 24), look: V(0, 230, TREE.z), fov: 50 },
-  { p: 0.03, pos: V(17, 3.8, 13), look: V(5, 2.2, -18), fov: 48 },
-  // The whole family around the fire.
-  { p: 0.065, pos: V(6, 4.0, -1.5), look: V(6.5, 0.8, -16.5), fov: 46 },
-  // Closer, by the fire's warmth.
-  { p: 0.098, pos: V(12.5, 2.4, -6), look: V(4.5, 1.0, -16), fov: 46 },
-  // Her, at the lake's edge.
-  { p: 0.13, pos: V(-2.5, 1.9, -6.5), look: V(-11, 0.9, -17), fov: 46 },
-  // Along the shore and up the river.
-  { p: 0.17, pos: V(-13, 4.2, -43), look: V(-30, 5, -82), fov: 52 },
-  { p: 0.21, pos: V(-29, 5.4, -80), look: V(WATERFALL.lip.x, 14, WATERFALL.lip.z), fov: 52 },
-  // The falls.
-  { p: 0.255, pos: V(-38, 6.5, -100), look: V(WATERFALL.lip.x, 12, WATERFALL.lip.z), fov: 50 },
-  // Turn to the valley: the World Tree revealed.
-  { p: 0.295, pos: V(-33, 10, -118), look: V(-6, 120, TREE.z), fov: 52 },
-  // Valley flight.
-  { p: 0.34, pos: V(-16, 30, -230), look: V(0, 230, TREE.z), fov: 54 },
-  { p: 0.39, pos: V(-4, 52, -410), look: V(0, 250, TREE.z), fov: 54 },
-  { p: 0.44, pos: V(6, 42, -600), look: V(2, 170, TREE.z), fov: 52 },
-  // Down to the roots and the portal.
-  { p: 0.475, pos: portal(120, 15), look: portal(40, 14), fov: 50 },
-  { p: 0.5, pos: portal(72, 6.5), look: portal(30, 9), fov: 50 },
-  { p: 0.52, pos: portal(44, 5.5), look: portal(10, 8), fov: 52 },
+  // Arrival: the World Tree on the horizon, the camp below.
+  { p: 0.0, pos: V(34, 20, 72), look: V(4, 150, TREE.z), fov: 50 },
+  { p: 0.04, pos: V(30, 11, 40), look: V(10, 40, TREE.z * 0.5), fov: 50 },
+  // Home.
+  { p: 0.075, pos: onGround(24, 3.6, 12), look: V(CAMP.x - 1, CAMP.y + 1.2, CAMP.z - 2), fov: 46 },
+  { p: 0.105, pos: onGround(4, 2.0, 2), look: V(CAMP.x + 2, CAMP.y + 0.7, CAMP.z - 3), fov: 44 },
+  { p: 0.14, pos: onGround(-2, 2.6, -14), look: V(LAKE.x - 8, 0.5, LAKE.z - 6), fov: 46 },
+  { p: 0.168, pos: onGround(8, 3.4, -26), look: pathPoint(0.16, 2.5), fov: 50 },
+  // The path: low over the meadow, past each waystone.
+  ...WAYSTONES.map((w, i) => {
+    const before = pathPoint(w.t - 0.016, 2.1);
+    const stone = way(i).add(V(0, 2.2, 0));
+    return { p: 0.19 + i * 0.026, pos: before, look: stone, fov: 46 };
+  }),
+  { p: 0.29, pos: pathPoint(0.66, 9), look: V(TREE.x, 150, TREE.z), fov: 50 },
+  // The reveal: rising as the valley opens onto the World Tree.
+  { p: 0.32, pos: pathPoint(0.72, 34), look: V(TREE.x, 230, TREE.z), fov: 52 },
+  { p: 0.355, pos: V(30, 70, -600), look: V(TREE.x, 290, TREE.z), fov: 54 },
+  // The roots: down to the entrance between the great buttresses.
+  { p: 0.385, pos: portal(205, 42), look: portal(40, 26), fov: 52 },
+  { p: 0.415, pos: portal(120, 12), look: portal(30, 14), fov: 50 },
+  { p: 0.44, pos: portal(70, 6.2), look: portal(10, 8), fov: 50 },
+  { p: 0.458, pos: portal(42, 5.4), look: portal(0, 7), fov: 54 },
   // Into the hall.
-  { p: 0.538, pos: portal(18, 6), look: firstStop.target.clone().lerp(V(TREE.x, 20, tz), 0.4), fov: 54 },
-  ...interiorKeyframes(),
-  // Ascent through the chimney into the light.
-  { p: lastStop.progress + 0.022, pos: chimney(lastStop.target.y + 18), look: chimney(lastStop.target.y + 60).add(V(10, 0, 0)), fov: 54 },
-  { p: 0.975, pos: chimney(270), look: chimney(360).add(V(14, 0, 0)), fov: 56 },
-  { p: 1.0, pos: chimney(325), look: chimney(420).add(V(14, 0, 0)), fov: 58 },
+  { p: 0.472, pos: portal(22, 5.8), look: HALL_CENTER.clone().add(V(0, 3.5, 0)), fov: 56 },
+  { p: 0.482, pos: orbitPoint(entryTheta, 6, EYE + 0.6), look: first.target.clone().lerp(HALL_CENTER, 0.3).add(V(0, 2, 0)), fov: 54 },
+  ...archiveKeyframes(),
+  // The rings: up through the hollow.
+  { p: last.progress + 0.02, pos: orbitPoint(ARCHIVE[ARCHIVE.length - 1].slot.theta + 0.4, 4, EYE + 3), look: hallAxis(60), fov: 56 },
+  ...ringKeys(),
+  { p: 0.925, ...chimney(300, 80), fov: 56 },
+  // The crown: out of the broken top, up between the leaders (a corridor kept clear of
+  // foliage — see scripts/check-tree.ts), then above the tiers of the canopy with the
+  // valley below at night and the trail of signal leading home.
+  { p: 0.942, pos: hallAxis(372), look: crown(0, 640, 130), fov: 60 },
+  { p: 0.956, pos: crown(-30, 470, 110), look: crown(-60, 900, 260), fov: 60 },
+  { p: 0.97, pos: crown(-60, 640, 150), look: V(0, 300, -250), fov: 58 },
+  { p: 0.985, pos: crown(-60, 760, 155), look: V(0, 330, -120), fov: 57 },
+  { p: 1.0, pos: crown(-60, 860, 160), look: V(0, 360, 20), fov: 58 },
 ];
 
 // ─── Smooth pacing: monotone cubic (PCHIP) from progress to keyframe index ──
 
 const xs = KEYFRAMES.map((k) => k.p);
+for (let i = 1; i < xs.length; i++) if (!(xs[i] > xs[i - 1])) throw new Error(`journey keyframes out of order at ${i}: ${xs[i - 1]} ≥ ${xs[i]}`);
 const ys = KEYFRAMES.map((_, i) => i);
 const slopes = (() => {
   const n = xs.length;
@@ -176,12 +206,9 @@ const slopes = (() => {
   m[0] = d[0];
   m[n - 1] = d[n - 2];
   for (let i = 1; i < n - 1; i++) {
-    if (d[i - 1] * d[i] <= 0) m[i] = 0;
-    else {
-      const w1 = 2 * (xs[i + 1] - xs[i]) + (xs[i] - xs[i - 1]);
-      const w2 = (xs[i + 1] - xs[i]) + 2 * (xs[i] - xs[i - 1]);
-      m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i]);
-    }
+    const w1 = 2 * (xs[i + 1] - xs[i]) + (xs[i] - xs[i - 1]);
+    const w2 = xs[i + 1] - xs[i] + 2 * (xs[i] - xs[i - 1]);
+    m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i]);
   }
   return m;
 })();
@@ -197,15 +224,13 @@ export function keyframeParam(p: number) {
   const t = (p - xs[i]) / h;
   const t2 = t * t;
   const t3 = t2 * t;
-  return (
-    (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h * slopes[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h * slopes[i + 1]
-  );
+  return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h * slopes[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h * slopes[i + 1];
 }
 
 export const POSITION_CURVE = new THREE.CatmullRomCurve3(KEYFRAMES.map((k) => k.pos), false, "centripetal");
 export const LOOK_CURVE = new THREE.CatmullRomCurve3(KEYFRAMES.map((k) => k.look), false, "centripetal");
 
-/** Camera pose for a progress value. */
+/** Camera pose for a progress value; returns the field of view. */
 export function poseAt(p: number, pos: THREE.Vector3, look: THREE.Vector3) {
   const k = keyframeParam(p);
   const u = k / (KEYFRAMES.length - 1);
@@ -216,7 +241,7 @@ export function poseAt(p: number, pos: THREE.Vector3, look: THREE.Vector3) {
   return THREE.MathUtils.lerp(KEYFRAMES[i].fov, KEYFRAMES[i + 1].fov, f * f * (3 - 2 * f));
 }
 
-/** 0 outside the tree, 1 deep inside — drives lighting, exposure and fog. */
+/** 0 outside the tree → 1 inside the hall (drives light, fog and exposure). */
 export function interiorAmount(p: number) {
-  return THREE.MathUtils.smoothstep(p, 0.505, 0.54);
+  return THREE.MathUtils.smoothstep(p, 0.452, 0.476) * (1 - THREE.MathUtils.smoothstep(p, 0.935, 0.96));
 }

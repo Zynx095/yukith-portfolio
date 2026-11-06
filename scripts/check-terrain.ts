@@ -1,13 +1,22 @@
-import { terrainHeight, WATERFALL, CAMP, TREE, plateauSigned, riverInfo, lakeDistance, WATER_LEVEL } from "@/lib/world/layout";
+// Sanity checks for the world's geography: heights along the trail, river and valley.
+// Run: node --no-warnings --import ./scripts/ts-hooks.mjs scripts/check-terrain.ts
+import { terrainHeight, pathPoint, riverInfo, CAMP, TREE, LAKE, WATER_LEVEL, waystonePosition, WAYSTONES, PATH_CURVE } from "@/lib/world/layout";
+
 const t0 = performance.now();
-let n = 0; for (let i = 0; i < 20000; i++) { terrainHeight(Math.random()*400-200, Math.random()*-500); n++; }
-console.log("ms per 20k samples:", (performance.now()-t0).toFixed(1));
-console.log("CAMP", CAMP.toArray().map(v=>+v.toFixed(2)));
-console.log("LIP", WATERFALL.lip.toArray().map(v=>+v.toFixed(2)), "POOL", WATERFALL.pool.toArray().map(v=>+v.toFixed(2)), "normal", WATERFALL.normal.toArray().map(v=>+v.toFixed(2)));
-const pts = { camp: [7,-15], lakeC: [-17,-31], riverMid: [-35,-82], pool: [WATERFALL.pool.x, WATERFALL.pool.z], valley1: [0,-200], valley2: [4,-300], treeBase: [0,-420], beyondTree:[0,-520], start:[14,16] };
-for (const [k,[x,z]] of Object.entries(pts)) console.log(k.padEnd(10), "h=", terrainHeight(x,z).toFixed(2), "ps=", plateauSigned(x,z).toFixed(1), "river=", riverInfo(x,z).dist.toFixed(1), "lake=", lakeDistance(x,z).toFixed(2));
-// profile across valley at a few z
-for (const z of [-20, -80, -120, -160, -220, -300, -380]) {
-  const row = []; for (let x = -120; x <= 120; x += 15) row.push(terrainHeight(x, z).toFixed(0).padStart(4));
-  console.log(("z="+z).padEnd(7), row.join(""));
+let nan = 0;
+for (let i = 0; i < 200000; i++) {
+  const h = terrainHeight(Math.random() * 3200 - 1600, Math.random() * 3000 - 2600);
+  if (!Number.isFinite(h)) nan++;
 }
+console.log(`200k samples in ${(performance.now() - t0).toFixed(0)} ms, NaN: ${nan}`);
+console.log("camp", CAMP.toArray().map((v) => v.toFixed(2)).join(", "));
+console.log("lake centre h", terrainHeight(LAKE.x, LAKE.z).toFixed(2), "water", WATER_LEVEL);
+console.log("tree base h", terrainHeight(TREE.x + 60, TREE.z + 60).toFixed(2));
+for (let t = 0; t <= 1.0001; t += 0.1) {
+  const p = pathPoint(t);
+  const r = riverInfo(p.x, p.z);
+  console.log(`path t=${t.toFixed(1)} (${p.x.toFixed(0)}, ${p.y.toFixed(2)}, ${p.z.toFixed(0)}) river dist ${r.dist.toFixed(1)}`);
+}
+console.log("path length", PATH_CURVE.getLength().toFixed(0));
+WAYSTONES.forEach((w, i) => console.log("waystone", w.word, waystonePosition(i).toArray().map((v) => v.toFixed(1)).join(", ")));
+for (const x of [-600, -300, -150, 0, 150, 300, 600]) console.log(`valley x=${x}: z=-100 ${terrainHeight(x, -100).toFixed(1)}  z=-500 ${terrainHeight(x, -500).toFixed(1)}  z=-1500 ${terrainHeight(x, -1500).toFixed(1)}`);

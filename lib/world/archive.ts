@@ -1,93 +1,48 @@
-import { PROJECTS, type Project } from "@/src/data/projects";
-import { achievementsData } from "@/src/data/achievements";
-import { leadershipData } from "@/src/data/leadership";
-import { experienceData } from "@/src/data/experience";
+import * as THREE from "three";
+import { FEATURED, type Project } from "@/src/data/projects";
+import { ARCHIVE_SLOTS, HALL_FLOOR, spine, slotPosition, type ArchiveSlot } from "./tree";
+import { TREE } from "./layout";
 
 /**
- * The archive inside the World Tree: one sigil relic per body of work.
- * The relics are artistic — every word in their panels comes straight from
- * the verified data files in `src/data`.
+ * The archive hall: which project stands in which alcove, and where things are
+ * in world space. Every word shown about a relic comes from src/data/projects.
  */
 
-export type ArtifactId =
-  | "aura"
-  | "etth"
-  | "shadowguard"
-  | "qshield"
-  | "jiva"
-  | "sugarai"
-  | "street-hierarchy"
-  | "trc"
-  | "achievements"
-  | "leadership"
-  | "experience";
-
-export interface ArtifactInfo {
-  id: ArtifactId;
-  title: string;
-  /** One-line factual descriptor. */
-  subtitle: string;
-  /** Small caps category label. */
-  kind: string;
-  /** Accent colour for the relic's enamel/glow and its UI. */
-  accent: string;
-  project?: Project;
+export interface RelicPlacement {
+  project: Project;
+  slot: ArchiveSlot;
+  /** World position of the plinth top (the relic stands above it). */
+  base: THREE.Vector3;
+  /** World position of the relic's visual centre. */
+  center: THREE.Vector3;
+  /** Unit vector from the relic towards the hall's axis (the way it faces). */
+  facing: THREE.Vector3;
 }
 
-const project = (id: string) => {
-  const p = PROJECTS.find((x) => x.id === id);
-  if (!p) throw new Error(`Missing project data for ${id}`);
-  return p;
-};
+/** Height of the plinth above the alcove floor. */
+export const PLINTH_HEIGHT = 1.3;
+/** Height of a relic's centre above its plinth. */
+export const RELIC_LIFT = 2.1;
+/** Rough radius of a relic (for label placement and focus framing). */
+export const RELIC_RADIUS = 1.6;
 
-const fromProject = (id: ArtifactId): ArtifactInfo => {
-  const p = project(id);
-  return { id, title: p.title, subtitle: p.role, kind: `Project · ${p.year}`, accent: p.accent, project: p };
-};
+const toWorld = (v: THREE.Vector3) => v.add(new THREE.Vector3(TREE.x, TREE.y, TREE.z));
 
-export const ARTIFACTS: Record<ArtifactId, ArtifactInfo> = {
-  aura: fromProject("aura"),
-  etth: fromProject("etth"),
-  shadowguard: fromProject("shadowguard"),
-  qshield: fromProject("qshield"),
-  jiva: fromProject("jiva"),
-  sugarai: { ...fromProject("sugarai"), accent: "#f3c27a" },
-  "street-hierarchy": { ...fromProject("street-hierarchy"), kind: "Roblox game · 2026" },
-  trc: { ...fromProject("trc"), kind: "Client website · 2026" },
-  achievements: {
-    id: "achievements",
-    title: "Achievements",
-    subtitle: `${achievementsData.length} hackathon milestones`,
-    kind: "Recognition",
-    accent: "#e9c46a",
-  },
-  leadership: {
-    id: "leadership",
-    title: "Leadership",
-    subtitle: `${leadershipData[0].role} — ${leadershipData[0].eventOrClub}`,
-    kind: "Community",
-    accent: "#f0b27a",
-  },
-  experience: {
-    id: "experience",
-    title: "Experience",
-    subtitle: experienceData.map((e) => e.company.split(" ×")[0]).join(" · "),
-    kind: "Professional record",
-    accent: "#d9c7a3",
-  },
-};
+/** World position of the hall's axis at local height y. */
+export function hallAxis(localY: number, out = new THREE.Vector3()) {
+  const sp = spine(localY);
+  return out.set(TREE.x + sp.x, TREE.y + localY, TREE.z + sp.y);
+}
 
-/** Order of discovery while ascending the tree. */
-export const ARCHIVE_ORDER: ArtifactId[] = [
-  "aura",
-  "etth",
-  "shadowguard",
-  "qshield",
-  "jiva",
-  "sugarai",
-  "street-hierarchy",
-  "trc",
-  "achievements",
-  "leadership",
-  "experience",
-];
+export const HALL_CENTER = hallAxis(HALL_FLOOR);
+
+export const ARCHIVE: RelicPlacement[] = FEATURED.slice(0, ARCHIVE_SLOTS.length).map((project, i) => {
+  const slot = ARCHIVE_SLOTS[i];
+  const floor = toWorld(slotPosition(slot));
+  const base = floor.clone().add(new THREE.Vector3(0, PLINTH_HEIGHT, 0));
+  const center = base.clone().add(new THREE.Vector3(0, RELIC_LIFT, 0));
+  const facing = HALL_CENTER.clone().sub(center).setY(0).normalize();
+  return { project, slot, base, center, facing };
+});
+
+export const archiveIndexOf = (id: string) => ARCHIVE.findIndex((a) => a.project.id === id);

@@ -1,8 +1,7 @@
 import * as THREE from "three";
 import { SimplexNoise, clamp, createRng, lerp, range, smoothstep } from "./noise";
 import { buildTube, resampleCurve } from "./geometry";
-import { TREE_ENTRANCE_ANGLE } from "./layout";
-import type { ArtifactId } from "./archive";
+import { TREE, TREE_ENTRANCE_ANGLE, terrainHeight } from "./layout";
 
 /**
  * The World Tree generator — an Erdtree-scale colossus.
@@ -83,20 +82,30 @@ export interface LimbSpec {
   sweep: number; // sideways curl
 }
 
+/**
+ * The crown is built in tiers, not as one dome: long, low limbs that run out
+ * almost level and carry broad pads of foliage, a middle tier, and a few
+ * steep leaders that lift the top of the silhouette. Deliberately uneven —
+ * the left side (seen from the approach) reaches further and lower than the
+ * right — so the tree reads as one ancient individual rather than an oak.
+ * θ = 0 is +x (right of the approach), θ ≈ 1.45 faces the approach (the
+ * entrance), θ = π is left.
+ */
 export const LIMBS: LimbSpec[] = [
-  { angle: 0.3, y: 286, elevation: 0.55, length: 470, radius: 18, sweep: 0.25 },
-  { angle: 1.15, y: 330, elevation: 0.95, length: 370, radius: 15, sweep: -0.3 },
-  { angle: 2.0, y: 250, elevation: 0.38, length: 510, radius: 19.5, sweep: 0.2 },
-  { angle: 2.85, y: 318, elevation: 0.72, length: 430, radius: 16.5, sweep: -0.22 },
-  { angle: 3.75, y: 268, elevation: 0.46, length: 495, radius: 18.5, sweep: 0.3 },
-  { angle: 4.6, y: 336, elevation: 0.9, length: 360, radius: 14, sweep: -0.18 },
-  { angle: 5.45, y: 296, elevation: 0.6, length: 445, radius: 17, sweep: 0.22 },
-  { angle: 1.6, y: 222, elevation: 0.3, length: 330, radius: 13, sweep: 0.35 },
-  { angle: 5.0, y: 240, elevation: 0.34, length: 380, radius: 14, sweep: -0.25 },
-  // Near-vertical leaders raise the crown into a dome.
-  { angle: 0.9, y: 338, elevation: 1.2, length: 300, radius: 13.5, sweep: 0.15 },
-  { angle: 4.0, y: 330, elevation: 1.15, length: 290, radius: 13, sweep: -0.12 },
-  { angle: 2.45, y: 334, elevation: 1.25, length: 270, radius: 12, sweep: 0.1 },
+  // Tier 1 — long, nearly level limbs (the aerial roots hang from these).
+  { angle: 2.55, y: 214, elevation: 0.2, length: 640, radius: 21, sweep: 0.3 },
+  { angle: 3.55, y: 236, elevation: 0.26, length: 560, radius: 19.5, sweep: -0.25 },
+  { angle: 0.12, y: 226, elevation: 0.24, length: 520, radius: 19, sweep: -0.32 },
+  { angle: 5.05, y: 248, elevation: 0.3, length: 480, radius: 17.5, sweep: 0.28 },
+  // Tier 2 — the middle storey.
+  { angle: 1.05, y: 292, elevation: 0.56, length: 420, radius: 16, sweep: 0.22 },
+  { angle: 2.1, y: 300, elevation: 0.5, length: 430, radius: 15.5, sweep: -0.3 },
+  { angle: 4.25, y: 286, elevation: 0.52, length: 440, radius: 16.5, sweep: 0.2 },
+  { angle: 5.75, y: 306, elevation: 0.62, length: 380, radius: 14.5, sweep: -0.2 },
+  // Tier 3 — leaders rising out of the broken crown.
+  { angle: 0.6, y: 334, elevation: 1.18, length: 380, radius: 14, sweep: 0.12 },
+  { angle: 3.05, y: 338, elevation: 1.28, length: 430, radius: 15, sweep: -0.1 },
+  { angle: 4.7, y: 332, elevation: 1.12, length: 330, radius: 12.5, sweep: 0.18 },
 ];
 
 interface Burl {
@@ -189,36 +198,29 @@ function cavityProfile(y: number) {
   return pts[pts.length - 1][1];
 }
 
-// ─── Archive slots (artifact mounts inside the hall) ────────────────────────
+// ─── Archive slots (relic alcoves around the hall) ──────────────────────────
 
-export type MountKind = "roots" | "alcove" | "branch" | "fungus" | "suspended";
+/**
+ * The archive hall at the foot of the hollow: relics stand in alcoves carved
+ * into the wall all round the hall, leaving the side facing the entrance open.
+ * Slot i is assigned to a project by lib/world/archive.ts.
+ */
+export const ARCHIVE_COUNT = 9;
+/** Angular gap kept free on each side of the entrance. */
+const ENTRANCE_CLEAR = 0.95;
+const ALCOVE = { y: 2.2, centerY: 7.2, halfWidth: 4.2, halfHeight: 5.6, depth: 5.4 };
 
 export interface ArchiveSlot {
-  id: ArtifactId;
-  y: number;
+  index: number;
   theta: number;
-  mount: MountKind;
+  /** Local Y of the alcove floor (plinths stand on it). */
+  y: number;
 }
 
-const FAR = ENTRANCE.angle + Math.PI;
-const SLOT_ORDER: [ArtifactId, MountKind][] = [
-  ["aura", "roots"],
-  ["etth", "alcove"],
-  ["shadowguard", "branch"],
-  ["qshield", "fungus"],
-  ["jiva", "alcove"],
-  ["sugarai", "fungus"],
-  ["street-hierarchy", "alcove"],
-  ["trc", "branch"],
-  ["achievements", "alcove"],
-  ["leadership", "suspended"],
-  ["experience", "alcove"],
-];
-export const ARCHIVE_SLOTS: ArchiveSlot[] = SLOT_ORDER.map(([id, mount], i) => ({
-  id,
-  mount,
-  y: 12 + i * 16,
-  theta: FAR + 0.25 + i * 1.72,
+export const ARCHIVE_SLOTS: ArchiveSlot[] = Array.from({ length: ARCHIVE_COUNT }, (_, i) => ({
+  index: i,
+  y: ALCOVE.y,
+  theta: ENTRANCE.angle + ENTRANCE_CLEAR + (i * (TAU - 2 * ENTRANCE_CLEAR)) / (ARCHIVE_COUNT - 1),
 }));
 
 /** Inner (cavity) wall radius at (θ, y), clamped so the wall keeps a minimum thickness. */
@@ -233,12 +235,13 @@ export function innerRadius(theta: number, y: number, outer?: number) {
   // An antechamber opening towards the portal at floor level.
   const de = angleDiff(theta, ENTRANCE.angle);
   r += 8 * Math.exp(-(de * de) / (0.42 * 0.42)) * Math.exp(-Math.max(y, 0) / 32);
-  // Niches carved into the wall behind alcove-mounted artifacts.
+  // Alcoves carved into the wall behind every relic: round-topped arches with a flat floor.
   for (const slot of ARCHIVE_SLOTS) {
-    if (slot.mount !== "alcove") continue;
-    const da = angleDiff(theta, slot.theta) * r;
-    const dy = y - (slot.y + 2);
-    r += 4.6 * Math.exp(-(da * da) / 26 - (dy * dy) / 30);
+    const da = (angleDiff(theta, slot.theta) * r) / ALCOVE.halfWidth;
+    const dy = (y - ALCOVE.centerY) / ALCOVE.halfHeight;
+    const below = y < ALCOVE.y ? (ALCOVE.y - y) / 0.6 : 0;
+    const shape = Math.pow(Math.abs(da), 3) + Math.pow(Math.max(dy, -0.85), 2) + below * below;
+    r += ALCOVE.depth * Math.exp(-Math.pow(shape, 2.2) * 1.4);
   }
   const o = outer ?? outerRadius(theta, y);
   return Math.min(r, o - TRUNK.wallMin);
@@ -284,8 +287,9 @@ function entranceField(px: number, pz: number, y: number) {
 
 // ─── Lofted shells ────────────────────────────────────────────────────────────
 
-const COLS = 360;
-const ROWS = 230;
+/** Shell resolution; lowered for the low quality tier (see generateWorldTree). */
+let COLS = 360;
+let ROWS = 230;
 const OUTER_U_TILES = 28;
 const INNER_U_TILES = 24;
 const OUTER_V_TILE = 15;
@@ -599,66 +603,142 @@ function buildEntranceTunnel(): THREE.BufferGeometry {
 
 // ─── Roots ────────────────────────────────────────────────────────────────────
 
-function buildRoots(): THREE.BufferGeometry[] {
+/** A root's centre line in the tree's local frame (shared with the signal veins). */
+export interface RootPath {
+  points: THREE.Vector3[];
+  radii: number[];
+  /** Cross-section squash per point: [side, up]. */
+  ellipse: [number, number][];
+  /** Main roots carry a vein of signal light along their crest. */
+  main: boolean;
+}
+
+/** Local ground height under a point of the tree's frame (the clearing is not perfectly flat). */
+function groundLocal(x: number, z: number) {
+  return terrainHeight(TREE.x + x, TREE.z + z) - TREE.y;
+}
+
+let rootPathCache: RootPath[] | null = null;
+
+/**
+ * The exposed root system: from every buttress lobe one or two great roots run
+ * out across the clearing — arching clear of the ground, diving under it and
+ * surfacing again — with side roots branching off the largest. Roots beside
+ * the entrance corridor stay low so the approach is never blocked.
+ */
+export function rootPaths(): RootPath[] {
+  if (rootPathCache) return rootPathCache;
   const rng = createRng(3131);
-  const geos: THREE.BufferGeometry[] = [];
+  const out: RootPath[] = [];
   const sp = new THREE.Vector2();
-  const at = (theta: number, r: number, y: number) => {
-    spine(Math.max(y, 0), sp);
-    return new THREE.Vector3(sp.x + Math.cos(theta) * r, y, sp.y + Math.sin(theta) * r);
+  const at = (theta: number, r: number, lift: number) => {
+    spine(Math.max(lift, 0), sp);
+    const x = sp.x + Math.cos(theta) * r;
+    const z = sp.y + Math.sin(theta) * r;
+    return new THREE.Vector3(x, groundLocal(x, z) + lift, z);
   };
+  const taper = (n: number, base: number, end = 0.5) => Array.from({ length: n }, (_, i) => base * (1 - 0.85 * Math.pow(i / (n - 1), 0.85)) + end);
+
   for (const lobe of LOBES) {
     const rootCount = lobe.strength > 22 ? 2 : 1;
     for (let rc = 0; rc < rootCount; rc++) {
       const theta0 = lobe.angle + (rc === 0 ? 0 : range(rng, -0.22, 0.22));
-      // Keep the entrance corridor open.
-      if (Math.abs(angleDiff(theta0, ENTRANCE.angle)) < 0.3) continue;
-      const reach = range(rng, 80, 150) + lobe.strength * 1.6;
+      const de = Math.abs(angleDiff(theta0, ENTRANCE.angle));
+      if (de < 0.3) continue;
+      const arch = de < 0.6 ? 0.15 : range(rng, 0.65, 1);
+      const reach = range(rng, 130, 200) + lobe.strength * 2.2;
       const r0 = baseRadius(8) + lobe.strength * 0.4;
-      const drift = range(rng, -0.16, 0.16);
+      const drift = range(rng, -0.18, 0.18);
+      const base = rc === 0 ? 6.5 + lobe.strength * 0.2 : 4.2;
+      const peak = (rc === 0 ? 8 + lobe.strength * 0.38 : 5.5) * arch;
+      const rAt = (t: number) => base * (1 - 0.85 * Math.pow(t, 0.85)) + 0.5;
       const ctrl = [
         at(theta0, r0 - 14, 16 + lobe.strength * 0.35),
-        at(theta0 + drift * 0.2, r0 + 6, 9),
-        at(theta0 + drift * 0.5, r0 + reach * 0.35, 4 + range(rng, 0, 3)),
-        at(theta0 + drift * 0.8, r0 + reach * 0.62, rc === 1 ? 6 : 1.4),
-        at(theta0 + drift, r0 + reach * 0.85, 0.2),
-        at(theta0 + drift * 1.1, r0 + reach, -5),
+        at(theta0 + drift * 0.15, r0 + 6, 9 + peak * 0.35),
+        at(theta0 + drift * 0.4, r0 + reach * 0.27, 2 + peak), // the arch
+        at(theta0 + drift * 0.58, r0 + reach * 0.48, rAt(0.48) * 0.3 + peak * 0.2),
+        at(theta0 + drift * 0.74, r0 + reach * 0.66, -rAt(0.66) * 0.95), // under the ground
+        at(theta0 + drift * 0.88, r0 + reach * 0.82, rAt(0.82) * (0.15 + 0.6 * arch)), // and out again
+        at(theta0 + drift, r0 + reach, -rAt(1) * 2.5),
       ];
-      const pts = resampleCurve(ctrl, 56);
-      const base = rc === 0 ? 6.5 + lobe.strength * 0.18 : 4;
-      const radii = pts.map((_, i) => base * (1 - 0.85 * Math.pow(i / (pts.length - 1), 0.85)) + 0.5);
-      const ellipse = pts.map((_, i) => {
-        const t = i / (pts.length - 1);
+      const points = resampleCurve(ctrl, 64);
+      const radii = taper(points.length, base);
+      const ellipse = points.map((_, i) => {
+        const t = i / (points.length - 1);
         return [lerp(0.5, 1.0, smoothstep(0, 0.5, t)), lerp(1.55, 0.85, smoothstep(0, 0.6, t))] as [number, number];
       });
-      geos.push(buildTube({ points: pts, radii, ellipse, radialSegments: 16, bumpiness: 0.12, noise: N, vScale: 9, uRepeats: 8 }));
+      out.push({ points, radii, ellipse, main: rc === 0 });
+
+      // Side roots off the great arching roots.
+      if (rc === 0 && arch > 0.5) {
+        for (const side of [-1, 1]) {
+          if (rng() < 0.35) continue;
+          const i0 = Math.floor(range(rng, 0.4, 0.56) * (points.length - 1));
+          const start = points[i0].clone();
+          const r = Math.hypot(start.x, start.z);
+          const th = Math.atan2(start.z, start.x) + side * range(rng, 0.22, 0.38);
+          const len = range(rng, 45, 85);
+          const s0 = radii[i0] * 0.55;
+          const c = [start, at(th - side * 0.12, r + len * 0.35, s0 * 0.6), at(th, r + len * 0.7, -s0 * 0.4), at(th + side * 0.05, r + len, -s0 * 2)];
+          const pts = resampleCurve(c, 22);
+          out.push({ points: pts, radii: taper(pts.length, s0, 0.3), ellipse: pts.map(() => [1, 0.9] as [number, number]), main: false });
+        }
+      }
     }
   }
-  return geos;
+  rootPathCache = out;
+  return out;
 }
 
-// ─── Branches & canopy anchors ───────────────────────────────────────────────
+function buildRoots(): THREE.BufferGeometry[] {
+  return rootPaths().map((r) =>
+    buildTube({ points: r.points, radii: r.radii, ellipse: r.ellipse, radialSegments: r.main ? 16 : 10, bumpiness: 0.12, noise: N, vScale: 9, uRepeats: r.main ? 8 : 4 })
+  );
+}
+
+// ─── Branches, canopy and aerial roots ───────────────────────────────────────
 
 export interface LeafAnchor {
   position: THREE.Vector3;
   scale: number;
   tint: number;
+  /** Vertical squash of the leaf volume (pads are broad and shallow). */
+  flat: number;
 }
 
-interface BranchResult {
-  geometries: THREE.BufferGeometry[][]; // by level
+interface Tube {
+  pts: THREE.Vector3[];
+  radii: number[];
+  /** 0 limb · 1 branch · 2 twig · 3 aerial root. */
+  level: 0 | 1 | 2 | 3;
+}
+
+interface Skeleton {
+  tubes: Tube[];
   anchors: LeafAnchor[];
+  /** Aerial roots that reach the ground; the signal climbs some of them into the crown. */
+  props: { points: THREE.Vector3[]; radii: number[] }[];
 }
 
-function buildBranches(): BranchResult {
+let skeletonCache: Skeleton | null = null;
+
+/**
+ * Limbs, branches and twigs; the foliage pads at their ends; and the aerial
+ * roots that hang from the long lower limbs — some reaching the ground and
+ * thickening into pillars, like a banyan's. Deterministic and cached.
+ */
+export function treeSkeleton(): Skeleton {
+  if (skeletonCache) return skeletonCache;
   const rng = createRng(6060);
-  const geometries: THREE.BufferGeometry[][] = [[], [], []];
+  const tubes: Tube[] = [];
   const anchors: LeafAnchor[] = [];
+  const props: Skeleton["props"] = [];
   const sp = new THREE.Vector2();
   const up = new THREE.Vector3(0, 1, 0);
+  const golden = Math.PI * (3 - Math.sqrt(5));
 
-  const grow = (start: THREE.Vector3, dir: THREE.Vector3, length: number, radius: number, level: number, sweep: number) => {
-    const segs = level === 0 ? 8 : level === 1 ? 5 : 4;
+  const grow = (start: THREE.Vector3, dir: THREE.Vector3, length: number, radius: number, level: 0 | 1 | 2, sweep: number, lift = 0) => {
+    const segs = level === 0 ? 9 : level === 1 ? 5 : 4;
     const ctrl: THREE.Vector3[] = [start.clone()];
     const d = dir.clone().normalize();
     const p = start.clone();
@@ -666,32 +746,39 @@ function buildBranches(): BranchResult {
     if (side.lengthSq() < 1e-4) side.set(1, 0, 0);
     for (let s = 1; s <= segs; s++) {
       const t = s / segs;
-      // Limbs rise, then spread and arc outward under their own weight.
-      const droop = level === 0 ? 0.12 : 0.1;
-      d.addScaledVector(up, -droop * t).addScaledVector(side, sweep * 0.12 + range(rng, -0.08, 0.08));
+      // Limbs run out under their own weight, then turn up towards the light at the end.
+      const droop = level === 0 ? 0.13 : 0.1;
+      // Old limbs wander: a slow S-curve plus small random turns.
+      const wander = level === 0 ? 0.11 * Math.sin(t * 5.2 + sweep * 9) + range(rng, -0.1, 0.1) : range(rng, -0.08, 0.08);
+      d.addScaledVector(up, -droop * t + lift * t * t).addScaledVector(side, sweep * 0.12 + wander);
       d.y += range(rng, -0.05, 0.08);
       d.normalize();
       p.addScaledVector(d, length / segs);
       ctrl.push(p.clone());
     }
-    const pts = resampleCurve(ctrl, level === 0 ? 56 : level === 1 ? 24 : 10);
+    const pts = resampleCurve(ctrl, level === 0 ? 60 : level === 1 ? 24 : 10);
     const tipR = level === 0 ? 3 : level === 1 ? 1.1 : 0.35;
     const radii = pts.map((_, i) => lerp(radius, tipR, Math.pow(i / (pts.length - 1), 0.75)));
-    geometries[level].push(
-      buildTube({
-        points: pts,
-        radii,
-        radialSegments: level === 0 ? 18 : level === 1 ? 10 : 6,
-        bumpiness: level === 0 ? 0.07 : 0.05,
-        noise: N,
-        vScale: level === 0 ? 11 : 7,
-        capEnd: level === 2,
-      })
-    );
+    tubes.push({ pts, radii, level });
     return { pts, radii };
   };
 
-  const canopyCenter = new THREE.Vector3(0, 470, 0);
+  /** A broad, shallow pad of foliage: anchors on a disc, domed slightly on top. */
+  const pad = (centre: THREE.Vector3, radius: number, scale: [number, number], flat: number, density = 1) => {
+    const n = Math.max(1, Math.round(((radius * radius) / 650) * density));
+    const spin = rng() * Math.PI * 2;
+    for (let k = 0; k < n; k++) {
+      const rr = radius * Math.sqrt((k + 0.5) / n) * range(rng, 0.9, 1.05);
+      const a = spin + k * golden + range(rng, -0.25, 0.25);
+      const dome = 1 - (rr / radius) * (rr / radius);
+      anchors.push({
+        position: new THREE.Vector3(centre.x + Math.cos(a) * rr, centre.y + dome * radius * 0.12 + range(rng, -3, 3), centre.z + Math.sin(a) * rr),
+        scale: range(rng, scale[0], scale[1]) * (0.8 + 0.25 * dome),
+        tint: rng(),
+        flat,
+      });
+    }
+  };
 
   for (const limb of LIMBS) {
     const y = limb.y;
@@ -702,11 +789,19 @@ function buildBranches(): BranchResult {
     const centerR = Math.max(ri + limb.radius * Math.sin(limb.elevation) + 2.0, ro - limb.radius * 0.75);
     const start = new THREE.Vector3(sp.x + Math.cos(limb.angle) * centerR, y, sp.y + Math.sin(limb.angle) * centerR);
     const dir = new THREE.Vector3(Math.cos(limb.angle) * Math.cos(limb.elevation), Math.sin(limb.elevation), Math.sin(limb.angle) * Math.cos(limb.elevation));
-    const primary = grow(start, dir, limb.length, limb.radius, 0, limb.sweep);
+    const low = limb.elevation < 0.35;
+    const primary = grow(start, dir, limb.length, limb.radius, 0, limb.sweep, low ? 0.32 : 0.12);
+    const tip = primary.pts[primary.pts.length - 1];
+    pad(tip.clone().add(new THREE.Vector3(0, 14, 0)), 84 + limb.length * 0.15, [52, 70], 0.5, 1.35);
+    // Further pads along the outer limb, so each tier reads as one broad layer.
+    for (const f of [0.62, 0.82]) {
+      const q = primary.pts[Math.floor(f * (primary.pts.length - 1))];
+      pad(q.clone().add(new THREE.Vector3(0, 18, 0)), 44 + limb.length * 0.07, [46, 62], 0.5, 1.1);
+    }
 
     const childCount = 5 + Math.floor(rng() * 2);
     for (let c = 0; c < childCount; c++) {
-      const t = lerp(0.28, 0.94, (c + rng() * 0.6) / childCount);
+      const t = lerp(0.3, 0.92, (c + rng() * 0.6) / childCount);
       const i = Math.floor(t * (primary.pts.length - 1));
       const base = primary.pts[i];
       const tangent = primary.pts[Math.min(i + 1, primary.pts.length - 1)].clone().sub(primary.pts[Math.max(i - 1, 0)]).normalize();
@@ -715,67 +810,106 @@ function buildBranches(): BranchResult {
         .clone()
         .applyAxisAngle(around, range(rng, -0.9, -0.35))
         .applyAxisAngle(tangent, range(rng, -1.6, 1.6));
-      childDir.y = Math.abs(childDir.y) * 0.8 + 0.12;
-      const len = limb.length * range(rng, 0.3, 0.46) * (1.1 - t * 0.4);
+      childDir.y = Math.abs(childDir.y) * 0.7 + 0.14;
+      const len = limb.length * range(rng, 0.26, 0.4) * (1.1 - t * 0.4);
       const rad = primary.radii[i] * range(rng, 0.42, 0.56);
-      const secondary = grow(base, childDir, len, rad, 1, range(rng, -0.4, 0.4));
+      const secondary = grow(base, childDir, len, rad, 1, range(rng, -0.4, 0.4), 0.1);
+      pad(secondary.pts[secondary.pts.length - 1].clone().add(new THREE.Vector3(0, 9, 0)), 40 + len * 0.2, [42, 58], 0.55, 1.2);
 
-      const grand = 4 + Math.floor(rng() * 2);
+      const grand = 3 + Math.floor(rng() * 2);
       for (let g = 0; g < grand; g++) {
-        const tg = lerp(0.42, 1.0, (g + rng() * 0.7) / grand);
+        const tg = lerp(0.45, 1.0, (g + rng() * 0.7) / grand);
         const gi = Math.floor(tg * (secondary.pts.length - 1));
         const gb = secondary.pts[gi];
         const gt = secondary.pts[Math.min(gi + 1, secondary.pts.length - 1)].clone().sub(secondary.pts[Math.max(gi - 1, 0)]).normalize();
         const gAround = new THREE.Vector3().crossVectors(gt, up).normalize();
         const gDir = gt.clone().applyAxisAngle(gAround, range(rng, -0.8, 0.3)).applyAxisAngle(gt, range(rng, -2, 2));
-        gDir.y = gDir.y * 0.6 + 0.15;
-        const tertiary = grow(gb, gDir, range(rng, 34, 62), secondary.radii[gi] * 0.5, 2, 0);
-        const tip = tertiary.pts[tertiary.pts.length - 1];
-        anchors.push({ position: tip.clone(), scale: range(rng, 36, 52), tint: rng() });
-        if (rng() < 0.75) anchors.push({ position: tertiary.pts[Math.floor(tertiary.pts.length * 0.45)].clone().add(new THREE.Vector3(0, 6, 0)), scale: range(rng, 28, 40), tint: rng() });
-      }
-      anchors.push({ position: secondary.pts[secondary.pts.length - 1].clone(), scale: range(rng, 40, 56), tint: rng() });
-      for (const f of [0.55, 0.8]) {
-        const p = secondary.pts[Math.floor(f * (secondary.pts.length - 1))].clone().add(new THREE.Vector3(0, 7, 0));
-        anchors.push({ position: p, scale: range(rng, 30, 44), tint: rng() });
+        gDir.y = gDir.y * 0.5 + 0.12;
+        const tertiary = grow(gb, gDir, range(rng, 30, 56), secondary.radii[gi] * 0.5, 2, 0);
+        const tt = tertiary.pts[tertiary.pts.length - 1];
+        anchors.push({ position: tt.clone().add(new THREE.Vector3(0, 5, 0)), scale: range(rng, 40, 56), tint: rng(), flat: 0.6 });
       }
     }
-    // Clumps hugging the outer half of each limb fill the crown's core.
-    for (let k = 0; k < 4; k++) {
-      const i = Math.floor(lerp(0.5, 0.97, k / 3) * (primary.pts.length - 1));
-      const p = primary.pts[i].clone();
-      const out = p.clone().sub(canopyCenter).setY(0).normalize();
-      p.addScaledVector(out, 10).add(new THREE.Vector3(0, 16, 0));
-      anchors.push({ position: p, scale: range(rng, 44, 60), tint: rng() });
+
+    // Aerial roots from the long lower limbs: hanging strands, and pillars that reached the ground.
+    if (low) {
+      for (let t = 0.26; t < 0.92; t += range(rng, 0.06, 0.1)) {
+        const i = Math.floor(t * (primary.pts.length - 1));
+        const top = primary.pts[i].clone().add(new THREE.Vector3(0, -primary.radii[i] * 0.55, 0));
+        const r = Math.hypot(top.x, top.z);
+        const th = Math.atan2(top.z, top.x);
+        const nearEntrance = Math.abs(angleDiff(th, ENTRANCE.angle)) < 0.55;
+        const ground = groundLocal(top.x, top.z);
+        const reachesGround = !nearEntrance && t < 0.8 && r > 90 && rng() < 0.5;
+        if (!reachesGround && rng() < 0.4) continue;
+        const jx = range(rng, -7, 7);
+        const jz = range(rng, -7, 7);
+        if (reachesGround) {
+          const drop = top.y - ground;
+          const ctrl = [
+            top,
+            top.clone().add(new THREE.Vector3(jx * 0.6, -drop * 0.3, jz * 0.6)),
+            top.clone().add(new THREE.Vector3(-jx * 0.3, -drop * 0.62, jz * 0.2)),
+            top.clone().add(new THREE.Vector3(jx * 0.8, -drop * 0.86, jz)),
+            new THREE.Vector3(top.x + jx, ground - 1.5, top.z + jz * 1.1),
+          ];
+          const pts = resampleCurve(ctrl, 26);
+          const r0 = range(rng, 1.5, 2.6);
+          // Thickens downwards and flares where it has rooted.
+          const radii = pts.map((_, k) => {
+            const f = k / (pts.length - 1);
+            return r0 * (1 + f * 0.7) * (1 + 1.6 * smoothstep(0.86, 1, f));
+          });
+          tubes.push({ pts, radii, level: 3 });
+          props.push({ points: pts, radii });
+        } else {
+          // Hanging strands: short and swaying, mostly, in loose curtains of two or three.
+          const strands = 1 + Math.floor(rng() * 3);
+          for (let k = 0; k < strands; k++) {
+            const len = range(rng, 18, Math.max(24, Math.min(110, (top.y - ground) * 0.55))) * (k === 0 ? 1 : 0.7);
+            const o = new THREE.Vector3(range(rng, -3, 3), 0, range(rng, -3, 3));
+            const ctrl = [top.clone().add(o), top.clone().add(o).add(new THREE.Vector3(jx * 0.5, -len * 0.45, jz * 0.5)), top.clone().add(o).add(new THREE.Vector3(-jx * 0.2, -len, jz * 0.8))];
+            const pts = resampleCurve(ctrl, 12);
+            const r0 = range(rng, 0.4, 0.85);
+            tubes.push({ pts, radii: pts.map((_, i2) => lerp(r0, 0.1, i2 / (pts.length - 1))), level: 3 });
+          }
+        }
+      }
     }
   }
 
-  // The dome: cumulus-like billows of foliage over the limbs, so from afar the
-  // crown reads as one vast golden mass spread across the sky.
-  const BILLOWS = 72;
-  const golden = Math.PI * (3 - Math.sqrt(5));
-  const u = new THREE.Vector3();
-  for (let b = 0; b < BILLOWS; b++) {
-    const yN = 1 - (b / (BILLOWS - 1)) * 1.2;
-    const ring = Math.sqrt(Math.max(0, 1 - yN * yN));
-    const th = b * golden + range(rng, -0.2, 0.2);
-    const dir = new THREE.Vector3(Math.cos(th) * ring, yN, Math.sin(th) * ring);
-    const centre = new THREE.Vector3(dir.x * 430, 470 + dir.y * 200, dir.z * 430);
-    const rb = range(rng, 70, 110);
-    for (let m = 0; m < 11; m++) {
-      u.set(range(rng, -1, 1), range(rng, -1, 1), range(rng, -1, 1)).normalize();
-      // Keep masses on the billow's outer side.
-      if (u.dot(dir) < -0.1) u.addScaledVector(dir, -2 * u.dot(dir));
-      anchors.push({ position: centre.clone().addScaledVector(u, rb * range(rng, 0.5, 0.95)), scale: range(rng, 56, 76), tint: rng() });
-    }
-  }
-
-  // Thin the anchor cloud where clumps would overlap heavily.
+  // Thin the anchor cloud where masses would overlap heavily.
   const kept: LeafAnchor[] = [];
   for (const a of anchors) {
     if (kept.every((k) => k.position.distanceToSquared(a.position) > Math.pow((k.scale + a.scale) * 0.15, 2))) kept.push(a);
   }
-  return { geometries, anchors: kept };
+  skeletonCache = { tubes, anchors: kept, props };
+  return skeletonCache;
+}
+
+interface BranchResult {
+  geometries: THREE.BufferGeometry[][]; // by level
+  anchors: LeafAnchor[];
+}
+
+function buildBranches(): BranchResult {
+  const sk = treeSkeleton();
+  const geometries: THREE.BufferGeometry[][] = [[], [], [], []];
+  const SEGMENTS = [18, 10, 6, 7];
+  for (const tube of sk.tubes) {
+    geometries[tube.level].push(
+      buildTube({
+        points: tube.pts,
+        radii: tube.radii,
+        radialSegments: SEGMENTS[tube.level],
+        bumpiness: tube.level === 0 ? 0.07 : 0.05,
+        noise: N,
+        vScale: tube.level === 0 ? 11 : 7,
+        capEnd: tube.level >= 2,
+      })
+    );
+  }
+  return { geometries, anchors: sk.anchors };
 }
 
 // ─── Interior structures ─────────────────────────────────────────────────────
@@ -786,7 +920,7 @@ export function wallPoint(theta: number, y: number, inset: number) {
   return new THREE.Vector3(sp.x + Math.cos(theta) * r, y, sp.y + Math.sin(theta) * r);
 }
 
-/** Root tendrils climbing the hall walls, floor roots, and the branch stubs that carry artifacts. */
+/** Root tendrils climbing the hall walls and roots running across the hall floor. */
 function buildInterior(): THREE.BufferGeometry[] {
   const rng = createRng(5151);
   const geos: THREE.BufferGeometry[] = [];
@@ -795,8 +929,8 @@ function buildInterior(): THREE.BufferGeometry[] {
     let theta = (k / 20) * TAU + range(rng, -0.12, 0.12);
     if (Math.abs(angleDiff(theta, ENTRANCE.angle)) < 0.45) theta += 0.7;
     const top = range(rng, 40, 230);
-    // Never let a tendril hang between a relic and the hall.
-    if (ARCHIVE_SLOTS.some((s) => s.y - 8 < top && Math.abs(angleDiff(theta, s.theta)) < 0.5)) continue;
+    // Never let a tendril hang in front of a relic's alcove.
+    if (ARCHIVE_SLOTS.some((s) => Math.abs(angleDiff(theta, s.theta)) < 0.3)) continue;
     const ctrl: THREE.Vector3[] = [];
     const steps = 9;
     for (let s = 0; s <= steps; s++) {
@@ -812,24 +946,16 @@ function buildInterior(): THREE.BufferGeometry[] {
   for (let k = 0; k < 12; k++) {
     let theta = (k / 12) * TAU + 0.3;
     if (Math.abs(angleDiff(theta, ENTRANCE.angle)) < 0.4) theta += 0.5;
+    // Roots grow between the alcoves, never out of one.
+    if (ARCHIVE_SLOTS.some((s) => Math.abs(angleDiff(theta, s.theta)) < 0.16)) continue;
+    // Short: they buttress the wall but stay clear of the camera's circle around the hall.
     const a = wallPoint(theta, 5, 0.5);
-    const b = wallPoint(theta + 0.12, 2.6, 8);
-    const c = wallPoint(theta + 0.2, 1.6, 15);
-    const d = wallPoint(theta + 0.26, -0.8, 20);
-    const pts = resampleCurve([a, b, c, d], 26);
-    const r0 = range(rng, 1.6, 2.8);
+    const b = wallPoint(theta + 0.06, 2.6, 4);
+    const c = wallPoint(theta + 0.1, 1.4, 7.5);
+    const d = wallPoint(theta + 0.13, -0.8, 10);
+    const pts = resampleCurve([a, b, c, d], 22);
+    const r0 = range(rng, 1.3, 2.2);
     geos.push(buildTube({ points: pts, radii: pts.map((_, i) => lerp(r0, 0.5, i / (pts.length - 1))), radialSegments: 10, bumpiness: 0.12, noise: N, vScale: 5, uRepeats: 2 }));
-  }
-  // Branch stubs growing inward from the wall: artifacts rest at their tips.
-  for (const slot of ARCHIVE_SLOTS) {
-    if (slot.mount !== "branch") continue;
-    const a = wallPoint(slot.theta, slot.y - 3.2, -3);
-    const b = wallPoint(slot.theta + 0.04, slot.y - 2.2, 4);
-    const c = wallPoint(slot.theta + 0.02, slot.y - 1.6, 7.5);
-    const pts = resampleCurve([a, b, c], 20);
-    geos.push(
-      buildTube({ points: pts, radii: pts.map((_, i) => lerp(3.2, 1.6, i / (pts.length - 1))), radialSegments: 14, bumpiness: 0.1, noise: N, vScale: 5, uRepeats: 3, capEnd: true })
-    );
   }
   return geos;
 }
@@ -847,7 +973,9 @@ export interface WorldTreeData {
   anchors: LeafAnchor[];
 }
 
-export function generateWorldTree(): WorldTreeData {
+export function generateWorldTree(detail = 1): WorldTreeData {
+  COLS = Math.round(360 * detail);
+  ROWS = Math.round(230 * detail);
   const outer = buildShellGrid("outer");
   const inner = buildShellGrid("inner", outer.radii);
   const branches = buildBranches();
@@ -909,26 +1037,33 @@ export function buildHallFloor(): THREE.BufferGeometry {
   return geo;
 }
 
-export function cavityAt(y: number) {
-  const sp = spine(y);
+/** Exact hollow radius at height y: the narrowest of 64 wall samples. */
+function cavityRadiusExact(y: number) {
   let min = Infinity;
   for (let k = 0; k < 64; k++) min = Math.min(min, innerRadius((k / 64) * TAU, y));
-  return { x: sp.x, z: sp.y, radius: min };
+  return min;
 }
 
-/** Local position where an archive slot's artifact rests. */
-export function slotPosition(slot: ArchiveSlot) {
-  switch (slot.mount) {
-    case "branch":
-      return wallPoint(slot.theta + 0.02, slot.y + 0.2, 7.5);
-    case "alcove":
-      return wallPoint(slot.theta, slot.y + 1.2, 2.2);
-    case "fungus":
-      return wallPoint(slot.theta, slot.y + 0.8, 5.2);
-    case "suspended":
-      return wallPoint(slot.theta, slot.y + 1, 7);
-    case "roots":
-    default:
-      return wallPoint(slot.theta, slot.y + 0.6, 6);
+/** Hollow radius sampled every metre once, then interpolated (motes, threads and rings call this thousands of times). */
+const CAVITY_STEP = 1;
+const CAVITY_MIN = -12;
+const CAVITY_MAX = 420;
+let cavityTable: Float32Array | null = null;
+
+/** Hall axis and the hollow's smallest radius at local height y. */
+export function cavityAt(y: number) {
+  const sp = spine(y);
+  if (!cavityTable) {
+    cavityTable = new Float32Array(Math.round((CAVITY_MAX - CAVITY_MIN) / CAVITY_STEP) + 1);
+    for (let i = 0; i < cavityTable.length; i++) cavityTable[i] = cavityRadiusExact(CAVITY_MIN + i * CAVITY_STEP);
   }
+  const f = (clamp(y, CAVITY_MIN, CAVITY_MAX) - CAVITY_MIN) / CAVITY_STEP;
+  const i = Math.min(Math.floor(f), cavityTable.length - 2);
+  const t = f - i;
+  return { x: sp.x, z: sp.y, radius: cavityTable[i] + (cavityTable[i + 1] - cavityTable[i]) * t };
+}
+
+/** Local position of a relic's plinth (the alcove floor, a little inside the hall). */
+export function slotPosition(slot: ArchiveSlot) {
+  return wallPoint(slot.theta, slot.y, 2.6);
 }
