@@ -50,8 +50,6 @@ export interface UiState {
   ready: boolean;
   /** Real asset loading progress, 0..1. */
   loaded: number;
-  /** WebGL could not start; the HTML portfolio stands alone. */
-  noWebgl: boolean;
   chapter: number;
   focusId: string | null;
   focusPhase: FocusPhase;
@@ -70,7 +68,6 @@ type Listener = () => void;
 const initial: UiState = {
   ready: false,
   loaded: 0,
-  noWebgl: false,
   chapter: 0,
   focusId: null,
   focusPhase: "moving",
@@ -115,6 +112,19 @@ export function useUi<T>(selector: (s: UiState) => T): T {
     () => selector(state),
     () => selector(initial)
   );
+}
+
+/** Default values of the per-frame state (a fresh journey). */
+const FRAME_DEFAULTS = { ...frame };
+
+/**
+ * Return the world's shared state to a fresh journey. Called when the
+ * Immersive presentation mounts and unmounts, so switching modes never leaves
+ * stale progress, focus or readiness behind.
+ */
+export function resetWorldState(overrides: Partial<UiState> = {}) {
+  Object.assign(frame, FRAME_DEFAULTS);
+  ui.set({ ready: false, loaded: 0, chapter: 0, focusId: null, focusPhase: "moving", hoverId: null, inWorld: true, sound: false, ...overrides });
 }
 
 export const openRecord = (id: string) => ui.set({ openId: id, indexOpen: false });

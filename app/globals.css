@@ -30,6 +30,66 @@
   --focus: var(--color-signal);
 }
 
+/*
+ * Classic presentation — the same tokens re-cut for a light, editorial page
+ * (warm paper, near-black ink, one ochre and one deep-teal accent). Every
+ * component is written against the tokens, so the whole site follows.
+ * The server renders data-view="classic"; the boot script in <head> switches
+ * to "immersive" before the first paint when that is the visitor's mode.
+ */
+html[data-view="classic"] {
+  color-scheme: light;
+  --color-ink: #f4efe6;
+  --color-ink-2: #ebe4d8;
+  --color-ink-3: #e1d8c9;
+  --color-paper: #17140f;
+  --color-paper-dim: #574f43;
+  --color-paper-faint: #6f6657;
+  --color-sap: #8a5a12;
+  --color-signal: #0e6a5d;
+  --color-ember: #a8461a;
+  --color-line: rgb(23 20 15 / 0.13);
+  --color-line-strong: rgb(23 20 15 / 0.26);
+}
+
+/* Classic never shows the journey, its loader or its overlays. */
+html[data-view="classic"] #journey,
+html[data-view="classic"] #loader,
+html[data-view="classic"] [data-immersive-only] {
+  display: none !important;
+}
+html[data-view="immersive"] [data-classic-only] {
+  display: none !important;
+}
+/* Controls that need JavaScript are hidden in a no-JS visit. */
+html:not(.js) [data-js-only] {
+  display: none !important;
+}
+/* The presentation switcher's pressed state follows the document's mode. */
+.view-opt {
+  color: var(--color-paper-dim);
+}
+.view-opt:hover {
+  color: var(--color-paper);
+}
+html[data-view="immersive"] .view-opt[data-opt="immersive"],
+html[data-view="classic"] .view-opt[data-opt="classic"] {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+/* Before hydration the Classic bar is already solid and shows its section links. */
+html[data-view="classic"] [data-topbar] {
+  border-bottom: 1px solid var(--color-line);
+  background: color-mix(in oklab, var(--color-ink) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+@media (min-width: 80rem) {
+  html[data-view="classic"] [data-portfolio-nav] {
+    display: block;
+  }
+}
+
 html {
   background: var(--color-ink);
   -webkit-text-size-adjust: 100%;
@@ -118,6 +178,35 @@ html.lenis body {
     transform: none;
     filter: none;
   }
+}
+
+/* Classic: sections rise into place as they enter the viewport (CSS only, no JS). */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    html[data-view="classic"] .reveal {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      /* A fixed distance, so tall blocks are fully visible as soon as they are being read. */
+      animation-range: entry 0% entry 160px;
+    }
+  }
+}
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Mode switch: a short cross-fade where View Transitions exist. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes cue {

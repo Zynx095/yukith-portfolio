@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUi } from "@/lib/world/store";
-import { scrollToId } from "@/components/providers/smooth-scroll";
+import { switchView } from "@/components/view/switchView";
 
 /**
  * The loading screen: the World Tree drawn as a single ink line, its stroke
@@ -23,7 +23,6 @@ const LIMBS = "M112 104 C104 92 94 84 82 78 M136 100 C146 90 158 84 170 80 M118 
 export function Loader() {
   const ready = useUi((s) => s.ready);
   const loaded = useUi((s) => s.loaded);
-  const noWebgl = useUi((s) => s.noWebgl);
   const [gone, setGone] = useState(false);
   const [slow, setSlow] = useState(false);
 
@@ -32,14 +31,14 @@ export function Loader() {
     return () => window.clearTimeout(t);
   }, []);
   useEffect(() => {
-    if (!ready && !noWebgl) return;
+    if (!ready) return;
     const t = window.setTimeout(() => setGone(true), 1300);
     return () => window.clearTimeout(t);
-  }, [ready, noWebgl]);
+  }, [ready]);
   if (gone) return null;
 
   const pct = Math.round(loaded * 100);
-  const hidden = ready || noWebgl;
+  const hidden = ready;
   return (
     <div
       id="loader"
@@ -58,19 +57,18 @@ export function Loader() {
         {pct < 95 ? `Growing the world · ${pct}%` : "Preparing the light…"}
       </p>
       <p role="status" className="sr-only">
-        {hidden ? "The 3D World Tree is ready." : "Loading the 3D World Tree. The written portfolio below is available now."}
+        {hidden ? "The 3D World Tree is ready." : "Loading the 3D World Tree. The Classic portfolio is available now from the switcher."}
       </p>
-      <p className="mt-6 max-w-sm text-xs leading-relaxed text-paper-faint">Scroll to travel. Click a relic to open its record. Press / for the index.</p>
-      <a
-        href="#record"
-        onClick={(e) => {
-          e.preventDefault();
-          scrollToId("record");
-        }}
-        className={`mt-6 rounded-full border border-line px-4 py-2 text-sm transition-colors hover:border-signal hover:text-signal ${slow ? "text-paper" : "text-paper-dim"}`}
-      >
-        {slow ? "Taking a while? Read the portfolio now" : "Skip to the portfolio"}
-      </a>
+      <p className="mt-6 max-w-sm text-xs leading-relaxed text-paper-faint">Scroll to travel. Click a relic to open its record. Press / for the index, V for the Classic view.</p>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => switchView("classic")}
+          className={`rounded-full border px-4 py-2 text-sm transition-colors hover:border-signal hover:text-signal ${slow ? "border-paper/60 text-paper" : "border-line text-paper-dim"}`}
+        >
+          {slow ? "Taking a while? Open the Classic portfolio" : "Open the Classic portfolio instead"}
+        </button>
+      </div>
     </div>
   );
 }

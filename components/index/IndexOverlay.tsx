@@ -5,19 +5,13 @@ import { closeIndex, openIndex, openRecord, ui, useUi } from "@/lib/world/store"
 import { getLenis, scrollToId } from "@/components/providers/smooth-scroll";
 import { scrollToProgress } from "@/lib/world/scroll";
 import { CHAPTERS } from "@/lib/world/chapters";
-import { FEATURED, MORE_WORK } from "@/src/data/projects";
+import { COLLABORATIONS, FEATURED, MORE_WORK } from "@/src/data/projects";
+import { SECTIONS } from "@/components/portfolio/sections";
+import { useView } from "@/lib/view";
+import { switchView } from "@/components/view/switchView";
 import { SocialLinks } from "@/components/shared/SocialLinks";
 import { CloseIcon } from "@/components/shared/Icons";
 
-export const SECTIONS = [
-  { id: "record", label: "Introduction" },
-  { id: "work", label: "Projects" },
-  { id: "experience", label: "Experience" },
-  { id: "recognition", label: "Achievements & leadership" },
-  { id: "skills", label: "Skills" },
-  { id: "about", label: "About" },
-  { id: "contact", label: "Contact" },
-];
 
 /**
  * The index: everything in one place for visitors who would rather not travel
@@ -25,7 +19,7 @@ export const SECTIONS = [
  */
 export function IndexOverlay() {
   const open = useUi((s) => s.indexOpen);
-  const noWebgl = useUi((s) => s.noWebgl);
+  const view = useView();
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -91,7 +85,7 @@ export function IndexOverlay() {
                 Projects — open a record
               </h3>
               <ul className="mt-3 divide-y divide-line border-y border-line">
-                {[...FEATURED, ...MORE_WORK].map((p) => (
+                {[...FEATURED, ...MORE_WORK, ...COLLABORATIONS].map((p) => (
                   <li key={p.id}>
                     <button type="button" onClick={() => openRecord(p.id)} className="group flex w-full items-baseline justify-between gap-4 py-2.5 text-left">
                       <span className="font-display text-lg group-hover:text-signal">{p.title}</span>
@@ -103,7 +97,16 @@ export function IndexOverlay() {
             </nav>
 
             <div className="space-y-10">
-              {!noWebgl && (
+              {view === "classic" && (
+                <div>
+                  <h3 className="label">Presentation</h3>
+                  <p className="mt-3 text-sm text-paper-dim">You are reading the Classic portfolio. The same work is also an explorable 3D World Tree.</p>
+                  <button type="button" onClick={() => go(() => switchView("immersive"))} className="mt-3 inline-flex min-h-11 items-center rounded-full border border-line-strong px-4 text-sm hover:border-signal hover:text-signal">
+                    Enter the World Tree
+                  </button>
+                </div>
+              )}
+              {view === "immersive" && (
                 <nav aria-labelledby="idx-journey">
                   <h3 id="idx-journey" className="label">
                     The journey — jump to a chapter
@@ -125,7 +128,7 @@ export function IndexOverlay() {
               )}
               <nav aria-labelledby="idx-sections">
                 <h3 id="idx-sections" className="label">
-                  The written portfolio
+                  {view === "classic" ? "Sections" : "The written portfolio"}
                 </h3>
                 <ul className="mt-3 space-y-1">
                   {SECTIONS.map((s) => (
@@ -144,7 +147,7 @@ export function IndexOverlay() {
             </div>
           </div>
           <p className="border-t border-line px-6 py-3 text-xs text-paper-faint md:px-8">
-            Press <kbd className="rounded border border-line px-1 font-mono">/</kbd> anywhere to open the index, <kbd className="rounded border border-line px-1 font-mono">Esc</kbd> to close it.
+            Press <kbd className="rounded border border-line px-1 font-mono">/</kbd> anywhere to open the index, <kbd className="rounded border border-line px-1 font-mono">Esc</kbd> to close it, <kbd className="rounded border border-line px-1 font-mono">V</kbd> to switch between Immersive and Classic.
           </p>
         </div>
       )}

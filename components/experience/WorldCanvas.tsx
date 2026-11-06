@@ -11,7 +11,9 @@ import { QUALITY, TIER_ORDER, detectInitialTier } from "@/lib/world/quality";
 import { FORCED_QUALITY, PERF_MODE, debugCamera, isOff } from "@/lib/world/debug";
 import { frame, ui, useUi, type QualityTier } from "@/lib/world/store";
 import { scrollToProgress } from "@/lib/world/scroll";
-import { WorldContext, type WorldContextValue } from "./scene/WorldContext";
+import { fallBackToClassic } from "@/lib/view";
+import { scrollPageToTop } from "@/components/view/switchView";
+import { WorldContext, useWorld, type WorldContextValue } from "./scene/WorldContext";
 import { Atmosphere } from "./scene/Atmosphere";
 import { CameraRig } from "./scene/CameraRig";
 import { Terrain } from "./scene/Terrain";
@@ -68,6 +70,7 @@ function buildInteriorEnvironment(gl: THREE.WebGLRenderer) {
 /** Loads every asset, then provides them (with the generated textures) to the scene. */
 function WorldLoader({ quality }: { quality: QualityTier }) {
   const gl = useThree((s) => s.gl);
+  const ready = useUi((s) => s.ready);
   const [assets, setAssets] = useState<WorldAssets | null>(null);
 
   useEffect(() => {
@@ -79,8 +82,10 @@ function WorldLoader({ quality }: { quality: QualityTier }) {
         setAssets(a);
       })
       .catch((err) => {
+        if (!alive) return;
         console.error("World assets failed to load", err);
-        ui.set({ noWebgl: true, inWorld: false });
+        fallBackToClassic("error", "world assets failed to load");
+        scrollPageToTop();
       });
     return () => {
       alive = false;
@@ -109,6 +114,10 @@ function WorldLoader({ quality }: { quality: QualityTier }) {
     <WorldContext.Provider value={value}>
       <Atmosphere />
       <CameraRig />
+      {/* Hidden until every program has compiled: R3F may still draw a few frames before
+          then, and drawing a material whose program is still compiling blocks until it is
+          done — one program after another — instead of letting them compile in parallel. */}
+      <group visible={ready}>
       <Outdoors>
         {!isOff("terrain") && <Terrain />}
         {!isOff("water") && <Water />}
@@ -120,6 +129,7 @@ function WorldLoader({ quality }: { quality: QualityTier }) {
       {!isOff("signal") && <SignalNetwork />}
       {!isOff("tree") && <WorldTree />}
       {!isOff("artifacts") && <ArchiveHall />}
+      </group>
       <WorldReady />
     </WorldContext.Provider>
   );
@@ -139,6 +149,8 @@ function WorldReady() {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
+  const { quality } = useWorld();
+  const post = quality.postprocessing && !isOff("post");
   useEffect(() => {
     let cancelled = false;
     const done = () =>
@@ -148,7 +160,17 @@ function WorldReady() {
         })
       );
     ui.set({ loaded: 0.95 });
-    gl.compileAsync(scene, camera).then(done, done);
+    // Compile the variants the frames will actually use. With post-processing the scene is
+    // drawn into the composer's off-screen buffer, where three bakes no tone mapping and a
+    // linear output into each program — compiling for the screen would compile everything
+    // twice, the second time synchronously on the first frame.
+    const target = post ? new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }) : null;
+    const previous = gl.getRenderTarget();
+    if (target) gl.setRenderTarget(target);
+    const compiled = gl.compileAsync(scene, camera);
+    gl.setRenderTarget(previous);
+    target?.dispose();
+    compiled.then(done, done);
     if (PERF_MODE) {
       window.__world = {
         gl,
@@ -171,17 +193,65 @@ function WorldReady() {
     }
     return () => {
       cancelled = true;
+      if (PERF_MODE) delete window.__world;
     };
-  }, [gl, scene, camera]);
+  }, [gl, scene, camera, post]);
   return null;
 }
 
-/** Stops rendering entirely while the portfolio covers the world. */
-function FrameloopGate() {
-  const setFrameloop = useThree((s) => s.setFrameloop);
-  const inWorld = useUi((s) => s.inWorld);
-  const open = useUi((s) => s.openId !== null || s.indexOpen);
-  useEffect(() => setFrameloop(inWorld && !open ? "always" : "never"), [inWorld, open, setFrameloop]);
+/**
+ * Fatal-failure watchdog. A lost WebGL context that is not restored, or a
+ * render loop that has stopped advancing while it should be running (an
+ * exception inside a frame callback ends R3F's loop), sends the visitor to
+ * the Classic portfolio instead of leaving a frozen or blank canvas.
+ */
+function Watchdog() {
+  const gl = useThree((s) => s.gl);
+  const last = useRef(performance.now());
+  useFrame(() => {
+    last.current = performance.now();
+  });
+  useEffect(() => {
+    const canvas = gl.domElement;
+    let unmounting = false;
+    let restoreTimer = 0;
+    const fail = (detail: string) => {
+      if (unmounting) return;
+      fallBackToClassic("error", detail);
+      scrollPageToTop();
+    };
+    const onLost = (e: Event) => {
+      e.preventDefault(); // allow the browser to restore it
+      if (unmounting) return;
+      restoreTimer = window.setTimeout(() => fail("WebGL context lost and not restored"), 3000);
+    };
+    const onRestored = () => window.clearTimeout(restoreTimer);
+    canvas.addEventListener("webglcontextlost", onLost);
+    canvas.addEventListener("webglcontextrestored", onRestored);
+    let lastTick = performance.now();
+    const interval = window.setInterval(() => {
+      const now = performance.now();
+      // A long synchronous task (e.g. regenerating the tree for a lower tier) also delays
+      // this timer; that is not a stalled loop.
+      const blocked = now - lastTick > 2500;
+      lastTick = now;
+      const s = ui.get();
+      const shouldRun = s.ready && s.inWorld && s.openId === null && !s.indexOpen && document.visibilityState === "visible";
+      if (!shouldRun || blocked) {
+        last.current = now;
+        return;
+      }
+      if (now - last.current > 5000) fail("render loop stopped");
+    }, 1000);
+    return () => {
+      // R3F forces a context loss when the canvas unmounts; that one is expected.
+      unmounting = true;
+      window.clearTimeout(restoreTimer);
+      window.clearInterval(interval);
+      canvas.removeEventListener("webglcontextlost", onLost);
+      canvas.removeEventListener("webglcontextrestored", onRestored);
+    };
+  }, [gl]);
   return null;
 }
 
@@ -192,6 +262,20 @@ export default function WorldCanvas() {
   const maxDpr = Math.min(QUALITY[tier].maxDpr, typeof window !== "undefined" ? Math.max(1, window.devicePixelRatio) : 1);
   const [dpr, setDpr] = useState(() => Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, maxDpr));
   useEffect(() => ui.set({ quality: tier }), [tier]);
+  const open = useUi((s) => s.openId !== null || s.indexOpen);
+  // Controlled frameloop (R3F re-applies this prop on every render). No frames until every
+  // shader has compiled — a frame drawn mid-compile blocks on each program in turn and
+  // defeats the driver's parallel compilation — and none while the portfolio or a dialog
+  // covers the world.
+  const frameloop = ready && inWorld && !open ? "always" : "never";
+  // The first seconds after loading include one-off work (shadow and post programs); do not
+  // let them lower the quality tier.
+  const readyAt = useRef(0);
+  useEffect(() => {
+    if (ready) readyAt.current = performance.now();
+  }, [ready]);
+  const dprRef = useRef(dpr);
+  dprRef.current = dpr;
 
   const camera = useMemo(() => ({ fov: 50, near: 0.3, far: 6000, position: [34, 20, 72] as [number, number, number] }), []);
 
@@ -202,6 +286,7 @@ export default function WorldCanvas() {
       aria-hidden="true"
     >
       <Canvas
+        frameloop={frameloop}
         dpr={dpr}
         camera={camera}
         shadows={QUALITY[tier].shadowMapSize > 0 ? "percentage" : false}
@@ -215,18 +300,18 @@ export default function WorldCanvas() {
           bounds={(refresh) => (refresh > 90 ? [50, 90] : [45, 58])}
           flipflops={3}
           onDecline={() => {
+            if (!readyAt.current || performance.now() - readyAt.current < 4000) return;
             // Lower resolution first, then drop a quality tier.
-            setDpr((d) => {
-              if (d > 1.01) return Math.max(1, d - 0.25);
+            if (dprRef.current > 1.01) setDpr((d) => Math.max(1, d - 0.25));
+            else {
               const i = TIER_ORDER.indexOf(tier);
               if (!FORCED_QUALITY && i > 0) setTier(TIER_ORDER[i - 1]);
-              return d;
-            });
+            }
           }}
           onIncline={() => setDpr((d) => Math.min(maxDpr, d + 0.25))}
         >
           <WorldLoader quality={tier} />
-          <FrameloopGate />
+          <Watchdog />
         </PerformanceMonitor>
       </Canvas>
     </div>
