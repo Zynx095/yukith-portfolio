@@ -32,7 +32,8 @@ export interface TournamentRecord {
   game: string;
   /** Placement or result exactly as known. */
   result: string;
-  level: "School" | "College" | "Open";
+  /** School or college level; unknown for the AMD tournament, so not stated. */
+  level?: "School" | "College";
   detail: string;
   evidence: Evidence;
 }
@@ -43,7 +44,6 @@ export const TOURNAMENTS: TournamentRecord[] = [
     title: "AMD Valorant tournament",
     game: "Valorant",
     result: "4th place",
-    level: "Open",
     detail: "Finished fourth in an AMD Valorant tournament. The year, who ran it and the bracket details are not on record, so they are not shown.",
     evidence: "owner-reported",
   },
