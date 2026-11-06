@@ -1,8 +1,62 @@
-# Deployment — World Tree rebuild
+# Deployment
 
-How the rebuilt portfolio reached production, how it was verified, and how to undo it.
+How each version of the portfolio reached production, how it was verified, and how to undo it.
+Newest first. The setup and the rollback tag are described once, below.
 
-## Setup (unchanged)
+## Living-world expansion (2026-11-06)
+
+| | |
+|---|---|
+| Feature branch | `feat/complete-personal-world` (commits `9d60884` … `6b1feab`, none squashed or rewritten; pushed to `origin`) |
+| Integration | two normal merge commits into `main` (no fast-forward, no force push) |
+| First merge | `2ac30b6ef36fcc5e0e5e673996e5fc25406db5b6` — Vercel deployment `7599092245`, Production, success, 2026-11-06 11:33 UTC (`yukith-portfolio-dlclthn5k-zynx095s-projects.vercel.app`) |
+| Follow-up merge (deployed now) | **`6bd652724c0001e124d1c5d016023a7ef902b88d`** — Vercel deployment `7599345602`, Production, success, 2026-11-06 11:48 UTC (`yukith-portfolio-m9khi7ic9-zynx095s-projects.vercel.app`). One wording fix found while verifying the first deployment: the arena called the AMD tournament "Open", which nothing on record supports. |
+| Previous production | `fc673ff` (World Tree rebuild, below) |
+| Rollback tag | `portfolio-pre-world-tree-production` → `964d396`, unchanged |
+
+Before merging, on the production build of the branch tip: `npm ci` (with
+`PUPPETEER_SKIP_DOWNLOAD=true`; the QA scripts drive the installed Edge) and `npm run build`
+succeeded, and every suite passed (below).
+
+### Verification log
+
+Checks of the **live** site after deployment `7599345602` (commit `6bd6527`). Browser: Microsoft
+Edge (headless, Chromium) on Windows 11, RTX 5050 Laptop GPU (ANGLE/D3D11).
+
+| Check | Result |
+|---|---|
+| `https://www.yukithjoseph.me/`, `https://yukithjoseph.me/` (redirects), `https://yukith-portfolio.vercel.app/`, `/?view=classic` | HTTP 200, the new build (the HTML carries the new Competitions, Gaming and Library sections and the corrected wording) |
+| `scripts/qa-world.mjs --url https://www.yukithjoseph.me` | **8/8 passed** |
+| `scripts/qa-view.mjs --url https://www.yukithjoseph.me` | **34/34 passed** — including 10 round trips (34 WebGL 2 contexts created, 34 lost; heap 65.4 → 69.3 MB after full GC), the no-JS page with all ten Classic sections, all 20 events and the gaming records, phones in both modes, no console errors, no failed requests |
+| `scripts/qa-aim.mjs --url https://www.yukithjoseph.me` | **16/16 passed** — from Classic (loaded on demand) and from the Immersive index (the world stops rendering while it is open and resumes after) |
+| `scripts/qa-regions.mjs --url https://www.yukithjoseph.me` | **22/22 passed** — 11 chapters; all 20 district exhibits and all 8 library volumes open their records; the arena's four achievements; the booth opens the aim trainer; family tags; discoveries persist; full fades at region edges; heap 89.1 → 87.3 MB over repeated region switching |
+| The same four suites on the first deployment (`2ac30b6`) | 8/8, 34/34, 16/16, 22/22 |
+| Live screenshots (home, district, arena, booth, library, roots) | rendered as on the local build |
+| Time to a ready world over the network (three cold browser starts, `2ac30b6`) | 5.2–6.9 s, ≈ 9.9 MB transferred |
+
+Not verified: physical phones, Safari, Firefox, integrated GPUs.
+
+### Undo this expansion only (back to the World Tree rebuild at `fc673ff`)
+
+Revert every merge since `fc673ff`, newest first, keeping `main`'s side; nothing is rewritten:
+
+```bash
+git checkout main && git pull --ff-only origin main
+git log --merges --oneline fc673ff..main   # 6bd6527, 2ac30b6 and this file's docs merge
+git revert -m 1 --no-edit <newest-merge-sha>
+git revert -m 1 --no-edit <next-merge-sha> # … down to 2ac30b6
+git diff fc673ff --stat                    # prints nothing
+git push origin main                       # normal push — Vercel deploys the rebuild again
+```
+
+To go further back, to the version before the World Tree rebuild, follow "Restore the previous
+production version globally" below — it compares against the tag, so it covers both.
+
+---
+
+## World Tree rebuild (2026-11-06)
+
+### Setup (unchanged)
 
 Production is the Vercel project **zynx095s-projects / yukith-portfolio**, connected to
 `github.com/Zynx095/yukith-portfolio` through Vercel's GitHub integration: every push to `main`
@@ -15,7 +69,7 @@ and it was not changed.
 | <https://www.yukithjoseph.me> | production (custom domain; `yukithjoseph.me` redirects here) |
 | <https://yukith-portfolio.vercel.app> | production (Vercel domain) |
 
-## The version that was in production before
+### The version that was in production before
 
 | | |
 |---|---|
@@ -25,7 +79,7 @@ and it was not changed.
 
 The tag is never moved. `main` at `964d396` can be restored on its own at any time (below).
 
-## This deployment
+### This deployment
 
 | | |
 |---|---|
@@ -35,7 +89,7 @@ The tag is never moved. `main` at `964d396` can be restored on its own at any ti
 | Follow-up | this file's verification log, merged the same way (docs only; the app is identical) |
 | Date | 2026-11-06 |
 
-## Verification log
+### Verification log
 
 Checks of the **live** site, 2026-11-06, after deployment `7592992776` (commit `971c029`) finished.
 Browser: Microsoft Edge (headless, Chromium) on Windows 11, RTX 5050 Laptop GPU (ANGLE/D3D11).
@@ -52,7 +106,7 @@ Browser: Microsoft Edge (headless, Chromium) on Windows 11, RTX 5050 Laptop GPU 
 
 Not verified: physical phones, Safari, Firefox, integrated GPUs.
 
-## If you don't like the new visuals
+### If you don't like the new visuals
 
 You do not have to change production to get a conventional site:
 
@@ -61,13 +115,13 @@ You do not have to change production to get a conventional site:
 2. **Use the switcher** — "Immersive / Classic" in the top bar (or press <kbd>V</kbd>). The choice is
    remembered in that browser.
 
-### Make Classic the default for everyone (keeps the 3D world one click away)
+#### Make Classic the default for everyone (keeps the 3D world one click away)
 
 In `lib/view-boot.ts`, in `VIEW_BOOT_SCRIPT`, change the default in `v=u||s||"immersive"` to
 `v=u||s||"classic"`. Commit and push `main`; Vercel deploys it. Visitors can still choose Immersive,
 and `?view=immersive` still opens it.
 
-### Restore the previous production version globally (safe revert, no history rewrite)
+#### Restore the previous production version globally (safe revert, no history rewrite)
 
 The rebuild arrives on `main` as merge commits. Revert them with a normal revert commit, newest
 first, so the tree returns exactly to the tagged version:
