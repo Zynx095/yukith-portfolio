@@ -8,3 +8,7 @@ node_modules/
 tsconfig.tsbuildinfo
 
 .cache/
+
+# Local environment and Vercel project links
+.env*
+.vercel/

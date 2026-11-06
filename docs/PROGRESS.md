@@ -2,85 +2,97 @@
 
 Living document. If a session ends, the next one resumes from **Next action**.
 
-Brief: "Ultimate portfolio transformation — master engineering directive" (2026-11-06).
-Branch: `feat/world-tree-rebuild`.
+Briefs: "Ultimate portfolio transformation — master engineering directive" (2026-11-06) and
+"Final execution — World Tree rebuild, visual fallback & production deployment" (2026-11-06).
+Branch: `feat/world-tree-rebuild`, merged into `main` for production (see `docs/DEPLOYMENT.md`).
 
 ## Phase status
 
 | Phase | Status | Notes |
 |---|---|---|
-| A — Research & audit | ✅ done | `docs/research/REFERENCES.md`, `docs/AUDIT.md` |
-| B — Reference comparison & art direction | ✅ done | `docs/ART_DIRECTION.md` |
-| C — Content & data verification | ✅ done | `src/data/*` rewritten from the October 2026 resume + source trees |
-| D — Architecture cleanup | ✅ done | old world/UI removed; 49 unused runtime deps pruned (59 → 10); dead helpers removed |
-| E — Rendering pipeline | ✅ done | WebGL2, MSAA composer, ACES, dithering, PMREM sky IBL rebuilt as the day ends, moonlight |
-| F — World Tree rebuild | ✅ first pass | photo bark, heartwood, instanced crown; further silhouette tuning possible |
-| G — Environment & journey | ✅ first pass | valley, river, lake, meadow, forest, camp, waystones, network, rings, crown |
-| H — Project discovery & interactions | ✅ | nine relic sculptures, click → record, Bella, index (/) |
-| I — UI/UX & responsive | ✅ | portfolio, record dialog, index, journey UI; phone layout checked at 390×844 |
-| J — Performance | ✅ measured | see below |
-| K — Browser testing | ✅ | `scripts/qa-world.mjs` 8/8 pass; screenshot sets per chapter (desktop + phone) |
-| L — Cleanup & documentation | ✅ | README, ASSETS, this file |
+| A — Research & audit | ✅ | `docs/research/REFERENCES.md`, `docs/AUDIT.md` |
+| B — Art direction | ✅ | `docs/ART_DIRECTION.md` |
+| C — Content verification | ✅ | owner decisions applied; `docs/CONTENT_VERIFICATION.md` §11 |
+| D — Architecture cleanup | ✅ | 10 runtime dependencies |
+| E — Rendering pipeline | ✅ | WebGL2, MSAA composer, ACES, dithering, sky IBL, moonlight |
+| F — World Tree | ✅ second pass | tiered banyan-like crown, aerial and pillar roots, arching root system, veins of signal |
+| G — Environment & journey | ✅ second pass | growth rings rebuilt; crown ascent rebuilt; actionable ending |
+| H — Interactions | ✅ | relics, Bella, index (`/`), contact links in the last beat |
+| I — UI/UX & responsive | ✅ | phone layouts checked at 390×844 (emulated) |
+| J — Performance | ✅ measured | see below; load time fixed (~35 s → ~7–9 s to a ready world) |
+| K — Browser testing | ✅ | `qa-world.mjs` 8/8, `qa-view.mjs` 34/34 |
+| L — Documentation | ✅ | README, ASSETS, this file, DEPLOYMENT |
+| M — Presentations | ✅ | Immersive / Classic, switcher, `?view=`, fallbacks, no-JS Classic |
+| N — Production | see `docs/DEPLOYMENT.md` | rollback tag `portfolio-pre-world-tree-production` |
 
 ## Decisions
 
-- **Stay on WebGL2** (three r185 `WebGLRenderer`). Six of the sixteen live references use WebGPU,
-  but this codebase's materials are GLSL `onBeforeCompile` patches and its post stack is
-  `postprocessing` (WebGL-only); a WebGPU port means rewriting every shader in TSL for no measured
-  bottleneck (GPU time was 1.7–6.5 ms). WebGL2 is universally available, including the phones
-  where Samsy itself falls back to WebGL2.
-- **Scroll-driven journey stays** (recruiter-friendly, works with keyboard/touch/scrollbar), with
-  optional one-gesture interactions and a full HTML index.
-- **The archive becomes a circular hall** orbited by scroll (from Aimee's papercraft room), so every
-  relic is framed.
-- **CC0 photo-scanned textures/models from Poly Haven** replace the procedural bark/rock look;
-  provenance in `docs/ASSETS.md`.
-- **No people models.** Family is present through the home camp, light and words; Bella is the only
-  character.
+- **Stay on WebGL2** (three r185). Unchanged from the first pass.
+- **Two presentations, one written portfolio.** `components/portfolio/Portfolio.tsx` is the Classic
+  page on its own (light editorial theme) and the record after the journey in Immersive (dark
+  theme): the same server-rendered markup, re-themed through CSS tokens on `html[data-view]`. No
+  duplicated content, nothing to fall out of sync, and the no-JS page is the Classic page.
+- **The server renders `data-view="classic"`;** an inline `<head>` script (`lib/view-boot.ts`)
+  resolves the mode before the first paint: `?view=` (this visit only) → stored choice → Immersive.
+  Choosing a mode stores it and drops `?view=` so the two never disagree.
+- **Classic never loads three.js.** The world (canvas, overlays, sound) is one lazily loaded chunk
+  mounted only in Immersive. Leaving Immersive unmounts it; R3F disposes the renderer and forces a
+  context loss. Shared state is reset on mount and unmount.
+- **Fallbacks end in Classic, with a notice**: no WebGL 2 API (before paint), WebGL failing to
+  start, asset failure, a render error (error boundary), a lost and unrestored context, or a stalled
+  render loop (watchdog). Not stored, so the next visit tries Immersive again.
+- **Loading**: the R3F frameloop is a controlled prop (R3F re-applies the prop on every render, which
+  had silently re-enabled frames during loading); the world stays hidden until its programs have
+  compiled; they are compiled for the composer's off-screen target that frames actually use (three
+  bakes tone mapping / output colour space per render target, so compiling for the screen compiled
+  everything twice, the second time synchronously). CPU generation is cached per visit.
+- **The tree's network is part of the tree**: veins along the roots and pillar roots, faint nodes on
+  the crown at night — instead of lines drawn on the ground.
+- **Growth rings are data**: `lib/world/rings.ts` builds each year from `src/data`; one node per item.
 
 ## Where things live
 
-- `components/experience/WorldCanvas.tsx` — canvas, quality tiers, asset loading, ready signal, `?perf` hooks.
-- `components/experience/scene/*` — Atmosphere (sky/sun/fog/post), CameraRig, Terrain, Water, Grass, Forest,
-  Props (waystones, scans, lanterns), Camp (+ Bella), WorldTree, SignalNetwork, ArchiveHall, Relics, Glows.
-- `components/experience/ui/*` — Loader, JourneyOverlay (narration, chapter rail, relic label, ring cards).
-- `lib/world/*` — layout (geography), journey (camera keys, beats), chapters, archive, signal, rings, tree
-  (generator), materials, atmosphere, assets, procedural, store, scroll, quality, debug.
-- QA scripts: `scripts/shoot-cams.mjs` (shots at progress / pinned cameras), `scripts/scene-stats.mjs`
-  (heaviest meshes), `scripts/profile-world.mjs` (frame/GPU timing), `scripts/shoot-page.mjs` (HTML sections).
+- `lib/view.ts`, `lib/view-boot.ts`, `components/view/*` — presentation state, boot script, switcher,
+  V shortcut, fallback notice.
+- `components/experience/Experience.tsx` (shell, WebGL check, error boundary) →
+  `ExperienceRuntime.tsx` (lazy) → `WorldCanvas.tsx` (canvas, compile, watchdog), `ui/*`.
+- `components/experience/scene/GrowthRings.tsx` — the rings chapter; `lib/world/tree.ts` —
+  `rootPaths()`, `treeSkeleton()` (limbs, pads, aerial roots).
+- QA: `scripts/qa-world.mjs`, `scripts/qa-view.mjs`, `scripts/shoot-cams.mjs`, `scripts/profile-world.mjs`,
+  `scripts/shoot-page.mjs`.
 
-## Measurements (production build, 2026-11-06)
+## Measurements (production build, 2026-11-06, second pass)
 
-Machine: i7-13700HX, RTX 5050 Laptop GPU (ANGLE/D3D11), Edge 156 headless, 1920×1080, DPR 1,
-`scripts/profile-world.mjs --uncapped`, 2.5 s settle + 2 s sample per checkpoint.
+Machine: i7-13700HX, RTX 5050 Laptop GPU (ANGLE/D3D11), Edge headless, 1920×1080, DPR 1, high tier,
+`scripts/profile-world.mjs --uncapped`. To separate the effect of this pass from the machine's state
+on the day, the previous branch tip (`819ae92`) was built and measured in the same session:
 
-| Tier | Outdoors (p 0 – 0.42) | Archive hall (p 0.53 – 0.85) | Crown (p 0.97) |
+| Checkpoint | before (819ae92) | after | GPU ms before → after |
 |---|---|---|---|
-| high | 104 – 172 fps · GPU 4.7 – 8.6 ms · 5.8 – 6.8 M tris (all passes) · 80 – 270 calls | 350 – 415 fps · GPU 1.6 – 1.7 ms · 0.93 M tris | 95 fps · GPU 7.2 ms |
-| medium | 154 – 179 fps · GPU 3.3 – 6.1 ms | 274 fps · GPU 2.3 ms | 147 fps · GPU 5.4 ms |
-| low | 169 – 489 fps · GPU 1.8 – 5.7 ms | 672 fps · GPU 1.0 ms | 271 fps · GPU 3.8 ms |
+| p 0 (arrival) | 85 fps | 81 fps | 11.4 → 11.8 |
+| p 0.2 (path) | 105 fps | 116 fps | 8.4 → 8.0 |
+| p 0.42 (roots, dusk — heaviest) | 81 fps | 78 fps | 10.3 → 10.3 |
+| p 0.53 (archive hall) | 163 fps | 159 fps | 1.8 → 1.8 |
+| p 0.866 (rings) | 274 fps | 183 fps | 1.6 → 2.1 |
+| p 0.97 (crown) | 111 fps | 111 fps | 7.3 → 7.5 |
 
-- 60 fps (16.7 ms) is met with a wide margin on this GPU at 1080p in every tier. **Not measured on an
-  integrated GPU or a real phone** (none available); tiers are chosen for them by `detectInitialTier`
-  and lowered further at runtime by the PerformanceMonitor.
-- Subsystem isolation (`?off=`) at the arrival shot: forest ≈ 2.5 ms GPU (reduced since with lighter
-  leaf masses and shadow casting only near the trail), World Tree ≈ 1.2 ms, shadows ≈ 1 M triangles.
-- Load: world assets ≈ 9.4 MB after the HTML; page `load` ≈ 0.6 s locally.
-- Console: no errors. Known warnings: `THREE.Clock` deprecation (emitted by R3F itself), and D3D
-  shader-compiler precision notes from ANGLE.
+- 60 fps is held everywhere on this GPU at 1080p; the slowest checkpoint (roots at dusk) has a p95
+  frame time of 15.2 ms, so the margin there is small. With vsync on, the outdoor checkpoints run at
+  77–110 fps.
+- The first pass recorded 104–172 fps outdoors on the same laptop; the before/after pair above shows
+  the drop is the machine's state that day (power/thermal), not this pass (≤ 5 % outdoors).
+- Time to a ready world (navigation → loader gone): **~35 s before → 8–9 s after** (assets ≈ 1.8 s,
+  generation ≈ 4 s, parallel shader compile ≈ 2 s). Re-entering Immersive reuses cached generation.
+- Repeated switching (10 round trips): every WebGL 2 context created is lost on exit; JS heap after a
+  full GC 53.8 → 56.7 MB. troika-three-text keeps one small WebGL 1 glyph canvas for the visit.
+- **Not measured** on an integrated GPU, a real phone, Safari or Firefox (none available).
 
 ## Open items / owner review
 
-- Content flagged `review` in `docs/CONTENT_VERIFICATION.md`: InTech Club role (not on the current
-  resume), PromptWars organiser, family details, projects with no repository (PRANA as a lead
-  project, Food Waste Rescue, Rural Bus Tracker, Deepfake Detector, EDITH AR).
-- Copy written for the site that the owner should approve: the intro line ("I build security
-  systems, applied-AI tools and the occasional robot — and I like them to explain themselves"), the
-  about paragraphs and the narration lines in `lib/world/journey.ts`.
-- Visual polish worth another pass: the rings/chimney chapter is dark and spare; the World Tree's
-  silhouette reads as a colossal oak rather than something more mythic; KTX2 textures for phones.
-- Not tested: real phones, Safari/Firefox, integrated GPUs.
+- Visual review on the live site (both presentations) — the owner's call.
+- Mobile performance on physical devices is unverified.
+- ESLint is referenced by `npm run lint` but not installed (pre-existing).
 
 ## Next action
 
-Owner review of the flagged content, then deploy.
+Owner review on production; rollback steps are in `docs/DEPLOYMENT.md`.

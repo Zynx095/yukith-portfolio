@@ -9,9 +9,15 @@ Yukith studies **computer networks**. Forests have one too: the mycorrhizal "woo
 connects trees through their roots and carries signals between them. The portfolio fuses the two.
 
 - **The World Tree** is natural and ancient: brown bark, moss, roots like cliffs, a green canopy
-  catching the evening sun. It is the landmark, the destination and the archive.
+  catching the evening sun. It is the landmark, the destination and the archive. Its silhouette is
+  deliberately not an oak's dome: the crown grows in **tiers** of broad, shallow foliage pads (long
+  low limbs, a middle storey, steep leaders out of the broken top) with sky between them, and
+  **aerial roots** hang from the lower limbs — some have reached the ground and become pillars, as on
+  an old banyan. The great roots arch clear of the ground, dive under it and surface again.
 - **The signal** is the only "technological" element: thin threads of cool bioluminescent light
-  running through the soil and roots, with pulses travelling along them like packets. It starts
+  running along the crests of the roots, up the pillar roots and through the soil, with pulses
+  travelling along them like packets — the veins of the tree, not lines drawn on the ground. After
+  dark the tops of the crown's pads carry faint nodes of the same light. It starts
   as a single seed in the loading screen and is present until the end (the persistent motif,
   learned from The Monolith Project).
 - **Inside the tree** the roots converge in a round heartwood hall. The threads form a star
@@ -46,8 +52,8 @@ belongs to a networks student and no one else.
 | The reveal | sunset rim light on the tree | Awe |
 | The roots | dusk, cool shadows, warm sky | The signal becomes clearly visible |
 | The archive hall | amber heartwood + cool signal | Focused, sacred, quiet |
-| The rings | warm sap light rising | Accumulation of years |
-| The crown | blue hour, first stars, valley below dotted with signal | Connection — contact |
+| The rings | three stages: 2024 amber (Roots), 2025 gold with shafts of daylight (Reach), 2026 signal-teal (Branching) | Growth — one node per item, the years stacked up the hollow as halos |
+| The crown | night: out of the broken top between the leaders, above the tiers, stars, the crown's nodes | Connection — contact links in the last beat |
 
 ## Palette
 
@@ -63,6 +69,13 @@ belongs to a networks student and no one else.
 | `--ember` | `#e0703a` | rare warnings ("blocked", "simulated") |
 
 Scene colours are physical (linear, tone-mapped); UI colours never glow.
+
+**Classic presentation** — the same tokens re-cut for a light editorial page (set on
+`html[data-view="classic"]` in `app/globals.css`): ink `#f4efe6` (warm paper), paper `#17140f`
+(text), paper-dim `#574f43`, sap `#8a5a12` (deep ochre), signal `#0e6a5d` (deep teal), ember
+`#a8461a`. Every text colour meets WCAG AA on the paper background. Layout: a sticky numbered label
+column beside each section, Fraunces display headings, generous measure, project records opening
+inline.
 
 ## Typography
 

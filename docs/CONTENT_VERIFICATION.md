@@ -1,7 +1,7 @@
 # Content verification
 
 Every fact the portfolio shows, where it came from, and what still needs the owner's review.
-Checked on **2026-11-06** against: the GitHub API (account `Zynx095`, including source trees, not
+Re-checked on **2026-11-06 (second pass)** after the owner's content decisions (§11). Checked against: the GitHub API (account `Zynx095`, including source trees, not
 only READMEs), both resumes in this repository's history, and live HTTP checks of every link.
 
 **Rule:** the site may only state what one of these sources supports. If a source is missing, the
@@ -58,7 +58,7 @@ site now uses those names and never says "internship at NVIDIA".
 | **ShadowGuard** | `proxy.py`: a **mitmproxy** addon that intercepts ChatGPT / OpenAI chat traffic and hard-blocks keywords. `main.py`: FastAPI + **Microsoft Presidio** PII analysis → BLOCK / REDACT / ALLOW, SQLite log, WebSocket alerts; React + Tauri dashboard. The deepfake / media scores are **simulated with random numbers** in the code, so they are not claimed. **No USB/storage monitoring exists in the code.** | Prototype · rework started 2026-09-14 | repo ✔ |
 | **Sugar AI** | V2 rework (Oct 2026): `sugar/audio/{stt,tts,vad,endpointing}`, faster-whisper, bundled MeloTTS, provider pool (Ollama, optional Claude / OpenAI-compatible), tool registry, Windows control (Win32, UI Automation, media sessions), Spotify + YouTube, token-protected WebSocket UI, tests. (Repository README still describes V1.) | V2 in development | repo ✔ |
 | **STP BOT** | `arduino/stp_robot_controller.ino`: Arduino Mega differential drive, **auger** motor with pulse mode, ultrasonic ranging + proximity buzzer, serial telemetry. `ai-vision/yolo_detection.py`: YOLOv8n tracking that sends auger commands over serial (demo mapping of COCO classes to waste types). `dashboard/dashboard.html`: manual/AI modes, gamepad input, SOS buttons. **The Unity simulation is not in the repository → not claimed.** | Prototype | repo ✔ |
-| FairShift | Next.js PWA for frontline workers: HMAC work receipts + Merkle checkpoints, Money Jar, wage-discrepancy notices, Accountability Loop, rotating QR + WebAuthn check-in, six languages. Built for PromptWars (submitted to `Dr-M-Suchithra-lab/ACM-SRM-PromptWars-2026`). | Hackathon build, synthetic data | repo ✔ · `fairshift-nine-red.vercel.app` ✔ |
+| FairShift | Next.js PWA for frontline workers: HMAC work receipts + Merkle checkpoints, Money Jar, wage-discrepancy notices, Accountability Loop, rotating QR + WebAuthn check-in, six languages. Built solo for **PromptWars × ACM SRM Student Chapter** (SRM Institute of Science and Technology): the submission repository `Dr-M-Suchithra-lab/ACM-SRM-PromptWars-2026` describes itself as "Student submissions for the PromptWars workshop – ACM SRM Student Chapter" (created 2026-10-27); `Zynx095/promptwarsXACM` was created the same day. | Hackathon build, synthetic data | repo ✔ · `fairshift-nine-red.vercel.app` ✔ |
 | WATERWEAVE | Water-rationing optimisation solved three ways (greedy, exhaustive, 12-qubit QAOA in Qiskit), React web app. Qiskit Fall Fest 2026 (IIIT Kottayam) Track 2; solo. README: all data synthetic. | Hackathon build | repo ✔ |
 | STREET HIERARCHY | 72 Luau scripts, server-authoritative economy, 8 zones, 34 fighters, 49 pets (README). | Playable alpha | repo ✔ |
 | T R Constructions | Next.js 16 / Tailwind v4 / GSAP / R3F client site. | Live | repo ✔ · `trcstructures.vercel.app` ✔ |
@@ -68,8 +68,8 @@ site now uses those names and never says "internship at NVIDIA".
 
 | Name in the brief | Finding |
 |---|---|
-| PRANA | Lives in `nagabhushanapranathi-droid/NvidiaProject` (Pranathi's repository). Yukith authored 2 of 5 commits ("integrate local ComfyUI FLUX generation", "initialize project foundation"). Collaboration — mentioned only as such, not featured. |
-| Food Waste Rescue, Rural Bus Tracker, Deepfake Detector, EDITH AR | **No repository found** on the account or its collaborations. Not shown. `review` |
+| PRANA | **Now shown under "Collaborations"** (owner decision, §11), explicitly as collaborative work. Lives in `nagabhushanapranathi-droid/NvidiaProject` (Pranathi's repository). Yukith authored 2 of 5 commits (2026-07-10 "feat: integrate local ComfyUI FLUX generation", 2026-07-11 "chore: initialize Campusanalyzer project foundation"). What is stated comes from that repository's README and description (Next.js client, FastAPI server, local ComfyUI generation, Gemini Vision analysis, local storage). No link to the NVIDIA capstone is claimed. |
+| Food Waste Rescue, Rural Bus Tracker, Deepfake Detector, EDITH AR | **No repository found** on the account or its collaborations. **Excluded until verifiable repository evidence exists** (owner decision, §11). |
 | Smart Dustbin IoT (`Smart-Waste_Management`) | Repository is documentation plus two firmware stubs (707 B and 968 B). Not featured. |
 | NIDS (`network-intrusion-detection-system`) | Single-commit scaffold of README stubs. Not featured. |
 | `kipkip` | Private, personal. Never shown. |
@@ -82,8 +82,8 @@ site now uses those names and never says "internship at NVIDIA".
 | Nirmith 2026 — National Finalist, NITTE Meenakshi Institute of Technology | resume | |
 | InnovateX 4.0 Hardware Hackathon — Runner-Up, Presidency University | resume | **Year corrected to 2026.** InnovateX 4.0 was held in April 2026 (Careers360 report); the old data said 2024. |
 | InnovateX 4.0 Hardware Expo — Runner-Up | resume | same |
-| PromptWars 2026 — Top 15 of 180 teams | resume | `review`: the resume names "Prompt Wars, Presidency University"; the submission repository belongs to the ACM SRM Student Chapter (SRMIST). The site names the event without the organiser until confirmed. |
-| Participant — ISAKA Hackathon; Odoo × NMIT Hackathon 2026 | resume | |
+| Prompt Wars — Top 15 of 180 teams, **Presidency University** | resume | Resolved. The resume (committed 2026-10-07) states "Prompt Wars, Presidency University - Top 15 of 180 teams". The ACM SRM PromptWars event that FairShift was submitted to started on 2026-10-27, **after** that resume — they are different events, so the result is attributed to Presidency University as the resume says, and FairShift to ACM SRM. **No year is shown** because the resume gives none. |
+| Participant — ISAKA Hackathon; Odoo × NMIT Hackathon 2026 | resume | The "2026" on that resume line belongs to the Odoo × NMIT entry; **ISAKA is shown without a year**. |
 | Built WARDEN for Fetch-A-Thon 3.0; WATERWEAVE for Qiskit Fall Fest 2026 | repositories | participation only; no placement claimed |
 | Microsoft Azure AI Fundamentals (**AI-900**) | resume | Corrected: the old data said "AZ-900", which is a different exam. |
 
@@ -91,10 +91,10 @@ site now uses those names and never says "internship at NVIDIA".
 
 | Role | Source | Note |
 |---|---|---|
-| Student Coordinator, 30-hour AWS Innovation Challenge, Presidency University (2026) | resume | new in the current resume |
-| Organiser, InnovateX Tech Fest (2024 – present): 10 concurrent events, ~280 participants, 60–70 teams, World Record recognition | resume | |
+| Student Coordinator, 30-hour AWS Innovation Challenge, Presidency University | resume | The resume gives **no date** for this line (layout-aware extraction: the "2026" sits on the InnovateX line). Shown without a date and not placed on a growth ring. |
+| Organiser, InnovateX Tech Fest: 10 concurrent events, ~280 participants, 60–70 teams, World Record recognition | resume | **Corrected to 2026.** Both resumes date this role 2026; the earlier site data said "2024 – present". |
 | Event Head, Build Club · Core Coordinator, One-O-One Club · Event Head, Informatica Club | resume | |
-| Social Media Head, InTech Club (June 2026 – present) | owner's brief + earlier data | `review`: **not on the current resume**. Kept, as the owner restated it on 2026-11-06. |
+| Social Media Head, InTech Club (June 2026 – present) | owner-provided: `src/data/personal.ts` and `leadership.ts` before the rebuild ("June 2026 – Present"; "Posting content given and ensuring reach across LinkedIn and Instagram") and the owner's brief | Kept (owner decision, §11) with **only that verified responsibility**. Not on the current resume. |
 | "Magic Shop" | old `personal.ts` only | dropped — no details anywhere |
 
 ## 7. Links (HTTP-checked 2026-11-06)
@@ -117,6 +117,40 @@ storytelling, food; languages — English, Telugu, Hindi, Kannada, French; the l
 currently learning threat management and intrusion detection.
 
 Removed from the site: date of birth, school marks, relationship details and the list of
-family members. `review`: the two sources disagree about the family (`personal.ts` says three
-members and no siblings; the old narration listed six people), so the site speaks of family
-without naming anyone.
+family members. Resolved by the owner's decision (§11): the site uses only the generic word
+"family" — no names, numbers or relationships (the two old sources disagreed anyway).
+
+## 9. Growth rings (lib/world/rings.ts)
+
+The three rings in the journey are generated from `src/data`, never written by hand:
+
+| Ring | Items (one glowing node each) | Rule |
+|---|---|---|
+| 2024 · Roots | Started the B.Tech (education period 2024 – 2028); Event Head, Build Club; Core Coordinator, One-O-One Club; Event Head, Informatica Club (all "2024 – present") | start year = 2024 |
+| 2025 · Reach | Smart India Hackathon 2025 — Top 30 Finalist; the three 2024 roles shown as still running | year = 2025 |
+| 2026 · Branching | 14 projects (every own project's period is in 2026); Elevance Skills internship; Presidency University × NVIDIA capstone; Nirmith finalist; InnovateX 4.0 runner-up ×2; InnovateX Tech Fest organiser; InTech Club Social Media Head | year = 2026 |
+
+Undated items — AI-900, Prompt Wars, ISAKA, the AWS coordinator role — are not placed on a ring.
+Stage names ("Roots", "Reach", "Branching") are descriptive labels, not claims.
+
+## 10. Copy written for the site
+
+| Text | What it rests on |
+|---|---|
+| Intro: "I build working systems across security, applied AI, networking and hardware — and I'm precise about what each one does." | the projects in §4 (security: WARDEN, Q-SHIELD, ALIAS, ShadowGuard; applied AI: AURA, Sugar AI, AUTOHIRE; networking: ETTH; hardware: STP BOT) and the "honest limits" each record carries |
+| About ¶1 — the three example systems | Q-SHIELD (continuous trust), WARDEN (agent actions checked before they run), ETTH (no decryption) |
+| About ¶2 — "Several of these projects began at hackathons… Top 30 national final at Smart India Hackathon 2025, national finalist at Nirmith 2026, runner-up twice at InnovateX 4.0… organised the InnovateX Tech Fest and lead events for three university clubs." | WARDEN, Q-SHIELD, FairShift, WATERWEAVE and Dayflow are hackathon builds (§4); results §5; roles §6 |
+| Home narration — "family, Bella, and a PC built from scrap parts" | `src/data/about.ts` (owner-provided `firstMachine`); family is named generically (§8) |
+| Classic stats — 14 projects, 2 industry engagements, 5 finals and placings, 6 roles | counted from `src/data` at build time |
+
+## 11. Owner decisions applied (2026-11-06)
+
+| Item | Decision | Applied |
+|---|---|---|
+| InTech Club Social Media Head | keep, with verified responsibilities only | ✔ §6 |
+| PromptWars | keep, with accurate institutional attribution | ✔ §5 (result → Presidency University per the resume; FairShift → ACM SRM) |
+| PRANA | keep under Collaborations, explicitly collaborative | ✔ §4 |
+| Food Waste Rescue, Rural Bus Tracker, Deepfake Detector, EDITH AR | exclude until repository evidence exists | ✔ not on the site |
+| Family | the generic word "family" only | ✔ no names or relationships anywhere |
+| Earlier corrections (ETTH 459 tests, InnovateX 4.0 in 2026, AI-900, Elevance Skills, ShadowGuard scope, no STP BOT Unity claim) | keep | ✔ re-checked in `src/data` |
+
