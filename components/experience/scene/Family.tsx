@@ -10,6 +10,8 @@ import { registerTags } from "@/lib/world/tags";
 import { shared } from "@/lib/world/materials";
 import { frame } from "@/lib/world/store";
 import { useWorld } from "./WorldContext";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { mergeStatic } from "@/lib/world/mergeStatic";
 
 /**
  * Family at the home camp: an afternoon by the lake — someone at the grill,
@@ -24,17 +26,17 @@ const ground = (x: number, z: number) => terrainHeight(CAMP.x + x, CAMP.z + z) -
 
 interface Rig {
   root: THREE.Group;
-  hips: THREE.Group;
-  torso: THREE.Group;
-  head: THREE.Group;
-  armL: THREE.Group;
-  armR: THREE.Group;
-  foreL: THREE.Group;
-  foreR: THREE.Group;
-  legL: THREE.Group;
-  legR: THREE.Group;
-  shinL: THREE.Group;
-  shinR: THREE.Group;
+  hips: THREE.Object3D;
+  torso: THREE.Object3D;
+  head: THREE.Object3D;
+  armL: THREE.Object3D;
+  armR: THREE.Object3D;
+  foreL: THREE.Object3D;
+  foreR: THREE.Object3D;
+  legL: THREE.Object3D;
+  legR: THREE.Object3D;
+  shinL: THREE.Object3D;
+  shinR: THREE.Object3D;
 }
 
 interface Look {
@@ -50,38 +52,43 @@ interface Look {
 
 const capsule = (r: number, len: number) => new THREE.CapsuleGeometry(r, len, 6, 14);
 
-/** A jointed, faceless figure (metres). Pivots sit at the joints so poses are rotations. */
-function figure(o: Look): Rig {
+const SKIN_MATERIAL = () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.78 });
+
+/**
+ * A jointed, faceless figure (metres). Pivots sit at the joints so poses are
+ * rotations. Every part is rigidly bound to one bone of a skeleton and the
+ * whole figure is a single skinned mesh with baked colours: one draw call per
+ * figure in the main pass and one in the shadow pass.
+ */
+function figure(o: Look, material: THREE.Material): Rig {
   const s = o.height / 1.72;
   const b = o.build;
+  const bones: THREE.Bone[] = [];
+  const parts: { bone: THREE.Bone; geo: THREE.BufferGeometry; color: THREE.Color; local: THREE.Matrix4 }[] = [];
+  const colorOf = (m: THREE.Material) => (m as THREE.MeshStandardMaterial).color.clone();
   const joint = (parent: THREE.Object3D, x: number, y: number, z: number) => {
-    const g = new THREE.Group();
+    const g = new THREE.Bone();
     g.position.set(x, y, z);
     parent.add(g);
+    bones.push(g);
     return g;
   };
-  const part = (parent: THREE.Object3D, geo: THREE.BufferGeometry, mat: THREE.Material, y: number, x = 0, z = 0) => {
-    const m = new THREE.Mesh(geo, mat);
-    m.position.set(x, y, z);
-    m.castShadow = true;
-    parent.add(m);
-    return m;
+  const part = (bone: THREE.Bone, geo: THREE.BufferGeometry, mat: THREE.Material, y: number, x = 0, z = 0, scale: [number, number, number] = [1, 1, 1], rotX = 0) => {
+    const local = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), rotX), new THREE.Vector3(...scale));
+    parts.push({ bone, geo, color: colorOf(mat), local });
   };
   const root = new THREE.Group();
-  const hips = joint(root, 0, 0.94 * s, 0);
-  part(hips, capsule(0.15 * s * b, 0.12 * s), o.bottom, 0.02 * s).scale.set(1.15, 1, 0.8);
+  const rootBone = new THREE.Bone();
+  bones.push(rootBone);
+  const hips = joint(rootBone, 0, 0.94 * s, 0);
+  part(hips, capsule(0.15 * s * b, 0.12 * s), o.bottom, 0.02 * s, 0, 0, [1.15, 1, 0.8]);
   const torso = joint(hips, 0, 0.08 * s, 0);
-  const chest = part(torso, capsule(0.165 * s * b, 0.32 * s), o.top, 0.25 * s);
-  chest.scale.set(1.12, 1, 0.72);
+  part(torso, capsule(0.165 * s * b, 0.32 * s), o.top, 0.25 * s, 0, 0, [1.12, 1, 0.72]);
   part(torso, capsule(0.05 * s, 0.06 * s), o.skin, 0.55 * s);
   const head = joint(torso, 0, 0.6 * s, 0);
-  part(head, new THREE.SphereGeometry(0.105 * s, 20, 16), o.skin, 0.1 * s).scale.set(0.92, 1.08, 1);
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.112 * s, 20, 12, 0, Math.PI * 2, 0, Math.PI * (o.hairStyle === "long" ? 0.68 : 0.52)), o.hair);
-  hair.position.set(0, 0.115 * s, -0.008 * s);
-  hair.rotation.x = -0.25;
-  hair.castShadow = true;
-  head.add(hair);
-  if (o.hairStyle === "long") part(head, capsule(0.075 * s, 0.16 * s), o.hair, -0.02 * s, 0, -0.06 * s).scale.set(1.3, 1, 0.6);
+  part(head, new THREE.SphereGeometry(0.105 * s, 20, 16), o.skin, 0.1 * s, 0, 0, [0.92, 1.08, 1]);
+  part(head, new THREE.SphereGeometry(0.112 * s, 20, 12, 0, Math.PI * 2, 0, Math.PI * (o.hairStyle === "long" ? 0.68 : 0.52)), o.hair, 0.115 * s, 0, -0.008 * s, [1, 1, 1], -0.25);
+  if (o.hairStyle === "long") part(head, capsule(0.075 * s, 0.16 * s), o.hair, -0.02 * s, 0, -0.06 * s, [1.3, 1, 0.6]);
   if (o.hairStyle === "bun") part(head, new THREE.SphereGeometry(0.05 * s, 12, 10), o.hair, 0.16 * s, 0, -0.09 * s);
   if (o.hairStyle === "cap") part(head, new THREE.CylinderGeometry(0.12 * s, 0.12 * s, 0.02 * s, 20), o.hair, 0.15 * s, 0, 0.04 * s);
   const arm = (side: number) => {
@@ -99,12 +106,37 @@ function figure(o: Look): Rig {
     part(l, capsule(0.07 * s * b, 0.32 * s), o.bottom, -0.22 * s);
     const sh = joint(l, 0, -0.44 * s, 0);
     part(sh, capsule(0.055 * s, 0.32 * s), o.bottom, -0.21 * s);
-    const foot = part(sh, new THREE.BoxGeometry(0.1 * s, 0.07 * s, 0.24 * s), o.shoes, -0.44 * s, 0, 0.05 * s);
-    foot.geometry.translate(0, 0, 0);
+    part(sh, new THREE.BoxGeometry(0.1 * s, 0.07 * s, 0.24 * s), o.shoes, -0.44 * s, 0, 0.05 * s);
     return { l, sh };
   };
   const LL = leg(-1);
   const RL = leg(1);
+
+  // Bake every part into the skeleton's rest space, rigidly weighted to its bone.
+  rootBone.updateMatrixWorld(true);
+  const baked = parts.map(({ bone, geo, color, local }) => {
+    let g = geo.index ? geo.toNonIndexed() : geo;
+    if (g !== geo) geo.dispose();
+    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(bone.matrixWorld, local));
+    const n = g.attributes.position.count;
+    const bi = bones.indexOf(bone);
+    g.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(new Uint16Array(n * 4).fill(0).map((_, i) => (i % 4 === 0 ? bi : 0)), 4));
+    g.setAttribute("skinWeight", new THREE.Float32BufferAttribute(new Float32Array(n * 4).map((_, i) => (i % 4 === 0 ? 1 : 0)), 4));
+    const c = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) c.set([color.r, color.g, color.b], i * 3);
+    g.setAttribute("color", new THREE.Float32BufferAttribute(c, 3));
+    for (const name of Object.keys(g.attributes)) if (!["position", "normal", "uv", "skinIndex", "skinWeight", "color"].includes(name)) g.deleteAttribute(name);
+    return g;
+  });
+  const geometry = mergeGeometries(baked)!;
+  baked.forEach((g) => g.dispose());
+  const mesh = new THREE.SkinnedMesh(geometry, material);
+  mesh.add(rootBone);
+  mesh.bind(new THREE.Skeleton(bones));
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.frustumCulled = false;
+  root.add(mesh);
   return { root, hips, torso, head, armL: L.a, armR: R.a, foreL: L.f, foreR: R.f, legL: LL.l, legR: RL.l, shinL: LL.sh, shinR: RL.sh };
 }
 
@@ -176,7 +208,8 @@ export function Family() {
     }
     root.add(grill);
 
-    const rigs: Rig[] = looks.map(figure);
+    const skin = SKIN_MATERIAL();
+    const rigs: Rig[] = looks.map((l) => figure(l, skin));
     // Grill: standing over the kettle, one arm working.
     place(rigs[0], grillPos.x, grillPos.z + 0.75, grillPos.x, grillPos.z);
     rigs[0].torso.rotation.x = 0.12;
@@ -290,7 +323,9 @@ export function Family() {
       `,
     });
     const smokePts = new THREE.Points(sg, sm);
-    return { root, rigs, smokePts, materials: [...skins, hairDark, hairGrey, shoes, steel, tableM, sm] };
+    // The grill, tables and memory objects are static: merge them by material.
+    const statics = mergeStatic(root, (o) => o instanceof THREE.SkinnedMesh || o.type === "Bone" || rigs.some((r) => r.root === o));
+    return { root: statics, rigs, smokePts, materials: [...skins, hairDark, hairGrey, shoes, steel, tableM, sm, skin] };
   }, [glow]);
 
   useEffect(() => {

@@ -11,6 +11,7 @@ import { openRecord, useUi } from "@/lib/world/store";
 export function WorldTags() {
   const pool = useRef<(HTMLButtonElement | null)[]>([]);
   const ids = useRef<string[]>([]);
+  const last = useRef<string[]>([]);
   const open = useUi((s) => s.openId !== null || s.indexOpen || s.gameOpen);
 
   useEffect(() => {
@@ -34,10 +35,18 @@ export function WorldTags() {
           el.dataset.id = t.id;
           el.setAttribute("aria-label", `${t.title} — open`);
         }
-        el.style.opacity = String(Math.min(1, 0.35 + t.near * 1.2));
-        el.style.pointerEvents = "auto";
-        el.tabIndex = 0;
-        el.style.transform = `translate3d(${Math.round(t.x)}px, ${Math.round(t.y)}px, 0) translate(-50%, -140%)`;
+        // Write only what changed: opacity is a two-state fade (a CSS transition), the
+        // position a whole-pixel transform — no style work on frames where nothing moved.
+        if (el.style.opacity !== "1") {
+          el.style.opacity = "1";
+          el.style.pointerEvents = "auto";
+          el.tabIndex = 0;
+        }
+        const tr = `translate3d(${Math.round(t.x)}px, ${Math.round(t.y)}px, 0) translate(-50%, -140%)`;
+        if (tr !== last.current[i]) {
+          last.current[i] = tr;
+          el.style.transform = tr;
+        }
       }
       raf = requestAnimationFrame(tick);
     };
@@ -57,7 +66,7 @@ export function WorldTags() {
             const id = (e.currentTarget as HTMLButtonElement).dataset.id;
             if (id) openRecord(id);
           }}
-          className="absolute left-0 top-0 whitespace-nowrap rounded-full border border-paper/25 bg-ink/65 px-2.5 py-1 text-xs text-paper backdrop-blur-sm transition-opacity duration-200 hover:border-signal hover:text-signal"
+          className="absolute left-0 top-0 whitespace-nowrap rounded-full border border-paper/25 bg-ink/80 px-2.5 py-1 text-xs text-paper transition-opacity duration-200 will-change-transform hover:border-signal hover:text-signal"
           style={{ opacity: 0, pointerEvents: "none" }}
         />
       ))}

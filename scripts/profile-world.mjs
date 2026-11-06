@@ -17,7 +17,8 @@ const args = Object.fromEntries(
 
 const url = (args.url || "http://localhost:3000") + (args.query ? `/?${args.query}` : "");
 const outDir = args.out || "./profile-out";
-const checkpoints = (args.checkpoints || "0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.98").split(",").map(Number);
+// Story times (numbers) and region stops ("district:0.5").
+const checkpoints = (args.checkpoints || "0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,0.98").split(",").map((c) => (c.includes(":") ? c : Number(c)));
 const settle = Number(args.settle || 3000);
 const sample = Number(args.sample || 2500);
 const width = Number(args.width || 1920);
@@ -80,6 +81,7 @@ const gpuInfo = await page.evaluate(() => {
 
 async function setProgress(p) {
   await page.evaluate(async (p) => {
+    if (typeof p === "string" && window.__world?.setRegion) { const [r, t] = p.split(":"); window.__world.setRegion(r, Number(t)); return; }
     if (window.__world?.setProgress) { window.__world.setProgress(p); return; }
     // Fallback: largest scrollable element
     let best = document.scrollingElement, bestRange = best.scrollHeight - best.clientHeight;
@@ -208,10 +210,10 @@ for (const p of checkpoints) {
   m.progress = p;
   results.push(m);
   if (shots) {
-    await page.screenshot({ path: path.join(outDir, `p${String(Math.round(p * 1000)).padStart(4, "0")}.jpg`), type: "jpeg", quality: 88 });
+    await page.screenshot({ path: path.join(outDir, `p${typeof p === "string" ? p.replace(":", "-") : String(Math.round(p * 1000)).padStart(4, "0")}.jpg`), type: "jpeg", quality: 88 });
   }
   console.log(
-    `p=${p.toFixed(3)} fps=${m.fps.toFixed(1)} frame=${m.frameMs.toFixed(2)}ms p95=${m.p95Ms.toFixed(2)} gpu=${m.gpuMs?.toFixed(2) ?? "n/a"}ms calls=${m.calls?.toFixed(0)} tris=${m.triangles?.toFixed(0)} script=${m.scriptMsPerSec.toFixed(1)}ms/s dom=${m.domMutationsPerSec.toFixed(1)}/s`
+    `p=${typeof p === "string" ? p : p.toFixed(3)} fps=${m.fps.toFixed(1)} frame=${m.frameMs.toFixed(2)}ms p95=${m.p95Ms.toFixed(2)} gpu=${m.gpuMs?.toFixed(2) ?? "n/a"}ms calls=${m.calls?.toFixed(0)} tris=${m.triangles?.toFixed(0)} script=${m.scriptMsPerSec.toFixed(1)}ms/s dom=${m.domMutationsPerSec.toFixed(1)}/s`
   );
 }
 

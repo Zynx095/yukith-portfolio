@@ -16,7 +16,7 @@ export const PERF_MODE = params.has("perf");
 
 const disabled = new Set((params.get("off") ?? "").split(",").map((s) => s.trim()).filter(Boolean));
 
-export type Subsystem = "tree" | "terrain" | "grass" | "forest" | "water" | "camp" | "signal" | "artifacts" | "regions" | "post" | "shadows" | "html";
+export type Subsystem = "tree" | "terrain" | "grass" | "forest" | "water" | "camp" | "signal" | "artifacts" | "regions" | "family" | "ecosystem" | "post" | "shadows" | "html";
 
 export const isOff = (system: Subsystem) => disabled.has(system);
 

@@ -7,6 +7,7 @@ import { ARENA, ARENA_SPOTS } from "@/lib/world/regions";
 import { RANKS, TOURNAMENTS } from "@/src/data/gaming";
 import { makeLevelsPanel, makeRankPanel } from "@/lib/world/emblemCanvas";
 import { makeSignTexture } from "@/lib/world/labelTexture";
+import { mergeStatic } from "@/lib/world/mergeStatic";
 import { registerTags } from "@/lib/world/tags";
 import { shared } from "@/lib/world/materials";
 import { frame, openRecord, ui } from "@/lib/world/store";
@@ -317,7 +318,8 @@ export function Arena() {
       { position: ARENA_SPOTS.amd.clone().add(new THREE.Vector3(0, 1.2, 0)), size: 2.2, color: "#e8465a", night: 0, pulse: 0.3 },
       ...[ARENA_SPOTS.valorant, ARENA_SPOTS.csgo, ARENA_SPOTS.mlbb].map((p, i) => ({ position: p.clone().add(new THREE.Vector3(0, -1.9, 0)), size: 3.2, color: RANKS[i].accent, night: 0, pulse: i })),
     ];
-    return { m, root, screens, sculptures, glows, textures: [screens.tex, plate, ...panels, levels, monitor, sign] };
+    const merged = mergeStatic(root, (o) => o.name === "spin" || o instanceof THREE.LineSegments || (o instanceof THREE.Mesh && !Array.isArray(o.material) && o.material.visible === false));
+    return { m, root: merged, screens, sculptures, glows, textures: [screens.tex, plate, ...panels, levels, monitor, sign] };
   }, []);
 
   useEffect(() => {

@@ -12,6 +12,10 @@ import { FORCED_QUALITY, PERF_MODE, debugCamera, isOff } from "@/lib/world/debug
 import { frame, ui, useUi, type QualityTier } from "@/lib/world/store";
 import { scrollToProgress } from "@/lib/world/scroll";
 import { REGIONS, storyToScroll } from "@/lib/world/chapters";
+import { REGION_FOCUS } from "@/lib/world/regions";
+
+/** Exhibit stops per region (for the QA scripts). */
+const REGION_FOCUS_IDS = Object.fromEntries(Object.entries(REGION_FOCUS).map(([k, v]) => [k, v.map((s) => ({ id: s.focus!, t: s.t }))]));
 import { fallBackToClassic } from "@/lib/view";
 import { scrollPageToTop } from "@/components/view/switchView";
 import { WorldContext, useWorld, type WorldContextValue } from "./scene/WorldContext";
@@ -42,6 +46,8 @@ declare global {
       setProgress: (p: number) => void;
       setScroll: (s: number) => void;
       setRegion: (id: string, t: number) => void;
+      frame: typeof frame;
+      focusIds: () => Record<string, { id: string; t: number }[]>;
       setCamera: (v: number[] | null) => void;
     };
   }
@@ -161,10 +167,10 @@ function WorldLoader({ quality }: { quality: QualityTier }) {
         {!isOff("water") && <Water />}
         {!isOff("grass") && <Grass />}
         {!isOff("forest") && <Forest />}
-        {!isOff("forest") && <Ecosystem />}
+        {!isOff("forest") && !isOff("ecosystem") && <Ecosystem />}
         {!isOff("camp") && <Props />}
         {!isOff("camp") && <Camp />}
-        {!isOff("camp") && <Family />}
+        {!isOff("camp") && !isOff("family") && <Family />}
         {!isOff("regions") && <District />}
       </Outdoors>
       {!isOff("regions") && <Arena />}
@@ -256,6 +262,8 @@ function WorldReady() {
         setCamera(v: number[] | null) {
           debugCamera.value = v;
         },
+        frame,
+        focusIds: () => REGION_FOCUS_IDS,
       };
     }
     return () => {

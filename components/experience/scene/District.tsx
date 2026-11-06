@@ -9,6 +9,7 @@ import { terrainHeight } from "@/lib/world/layout";
 import { createBarkMaterial } from "@/lib/world/materials";
 import { createRng, range } from "@/lib/world/noise";
 import { makeSignTexture } from "@/lib/world/labelTexture";
+import { hitBox, mergeStatic } from "@/lib/world/mergeStatic";
 import { registerTags } from "@/lib/world/tags";
 import { frame, openRecord, ui } from "@/lib/world/store";
 import { Glows, type GlowPoint } from "./Glows";
@@ -508,8 +509,10 @@ export function District() {
       obj.position.copy(x.base);
       obj.rotation.y = -x.facing + Math.PI / 2;
       if (x.zone === "gate") obj.position.y = x.base.y;
-      obj.userData.id = x.id;
       root.add(obj);
+      obj.updateMatrixWorld(true);
+      // Picking survives the merge through an invisible box round each exhibit.
+      root.add(hitBox(obj, x.id));
       clickables.push({ id: x.id, obj });
     });
     // Lanterns round the ring.
@@ -527,7 +530,9 @@ export function District() {
       glows.push({ position: new THREE.Vector3(x, y + 2.5, z), size: 1.3, color: "#ffb066", night: 0.9, pulse: rng() * 6 });
     }
     // A thread of signal under the paving, from the trail to the pavilion.
-    return { m, root, clickables, animated, glows, signs };
+    // Hundreds of small static parts → one mesh per material (main and shadow passes).
+    const merged = mergeStatic(root, (o) => o.name === "spin" || o instanceof THREE.LineSegments || (o instanceof THREE.Mesh && !Array.isArray(o.material) && o.material.visible === false));
+    return { m, root: merged, clickables, animated, glows, signs };
   }, [assets]);
 
   useEffect(() => {
