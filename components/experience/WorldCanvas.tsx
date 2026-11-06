@@ -11,6 +11,7 @@ import { QUALITY, TIER_ORDER, detectInitialTier } from "@/lib/world/quality";
 import { FORCED_QUALITY, PERF_MODE, debugCamera, isOff } from "@/lib/world/debug";
 import { frame, ui, useUi, type QualityTier } from "@/lib/world/store";
 import { scrollToProgress } from "@/lib/world/scroll";
+import { REGIONS, storyToScroll } from "@/lib/world/chapters";
 import { fallBackToClassic } from "@/lib/view";
 import { scrollPageToTop } from "@/components/view/switchView";
 import { WorldContext, useWorld, type WorldContextValue } from "./scene/WorldContext";
@@ -25,6 +26,11 @@ import { Forest } from "./scene/Forest";
 import { SignalNetwork } from "./scene/SignalNetwork";
 import { Props } from "./scene/Props";
 import { Camp } from "./scene/Camp";
+import { District } from "./scene/District";
+import { Family } from "./scene/Family";
+import { Ecosystem } from "./scene/Ecosystem";
+import { Arena } from "./scene/Arena";
+import { Library } from "./scene/Library";
 
 declare global {
   interface Window {
@@ -34,6 +40,8 @@ declare global {
       camera: THREE.Camera;
       readonly ready: boolean;
       setProgress: (p: number) => void;
+      setScroll: (s: number) => void;
+      setRegion: (id: string, t: number) => void;
       setCamera: (v: number[] | null) => void;
     };
   }
@@ -67,6 +75,34 @@ function buildInteriorEnvironment(gl: THREE.WebGLRenderer) {
   return target;
 }
 
+/** A cool, dark studio for the arena: steel all round, strip lights overhead, a red accent band. */
+function buildArenaEnvironment(gl: THREE.WebGLRenderer) {
+  const scene = new THREE.Scene();
+  const material = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `
+      varying vec3 vDir;
+      void main() {
+        vec3 d = normalize(vDir);
+        vec3 col = vec3(0.035, 0.04, 0.05) * (0.6 + 0.4 * smoothstep(-1.0, 1.0, d.y));
+        float strips = smoothstep(0.92, 1.0, abs(sin(atan(d.z, d.x) * 6.0))) * smoothstep(0.55, 0.8, d.y);
+        col += vec3(0.85, 0.9, 1.0) * strips * 2.2;
+        col += vec3(0.9, 0.18, 0.25) * smoothstep(0.06, 0.0, abs(d.y - 0.12)) * 0.6;
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `,
+  });
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(50, 48, 24), material);
+  scene.add(dome);
+  const pmrem = new THREE.PMREMGenerator(gl);
+  const target = pmrem.fromScene(scene, 0.02, 0.1, 200, { size: 128 });
+  pmrem.dispose();
+  dome.geometry.dispose();
+  material.dispose();
+  return target;
+}
+
 /** Loads every asset, then provides them (with the generated textures) to the scene. */
 function WorldLoader({ quality }: { quality: QualityTier }) {
   const gl = useThree((s) => s.gl);
@@ -94,19 +130,21 @@ function WorldLoader({ quality }: { quality: QualityTier }) {
 
   const generated = useMemo(() => {
     const interior = buildInteriorEnvironment(gl);
-    return { leaves: createLeafAtlas(gl), glow: createGlowTexture(), interior };
+    const arena = buildArenaEnvironment(gl);
+    return { leaves: createLeafAtlas(gl), glow: createGlowTexture(), interior, arena };
   }, [gl]);
   useEffect(
     () => () => {
       generated.leaves.dispose();
       generated.glow.dispose();
       generated.interior.dispose();
+      generated.arena.dispose();
     },
     [generated]
   );
 
   const value: WorldContextValue | null = useMemo(
-    () => (assets ? { assets, leaves: generated.leaves, glow: generated.glow, interiorEnv: generated.interior.texture, quality: QUALITY[quality] } : null),
+    () => (assets ? { assets, leaves: generated.leaves, glow: generated.glow, interiorEnv: generated.interior.texture, arenaEnv: generated.arena.texture, quality: QUALITY[quality] } : null),
     [assets, generated, quality]
   );
   if (!value) return null;
@@ -123,11 +161,18 @@ function WorldLoader({ quality }: { quality: QualityTier }) {
         {!isOff("water") && <Water />}
         {!isOff("grass") && <Grass />}
         {!isOff("forest") && <Forest />}
+        {!isOff("forest") && <Ecosystem />}
         {!isOff("camp") && <Props />}
         {!isOff("camp") && <Camp />}
+        {!isOff("camp") && <Family />}
+        {!isOff("regions") && <District />}
       </Outdoors>
-      {!isOff("signal") && <SignalNetwork />}
-      {!isOff("tree") && <WorldTree />}
+      {!isOff("regions") && <Arena />}
+      <NotInPocket>
+        {!isOff("signal") && <SignalNetwork />}
+        {!isOff("tree") && <WorldTree />}
+        {!isOff("regions") && <Library />}
+      </NotInPocket>
       {!isOff("artifacts") && <ArchiveHall />}
       </group>
       <WorldReady />
@@ -139,7 +184,16 @@ function WorldLoader({ quality }: { quality: QualityTier }) {
 function Outdoors({ children }: { children: ReactNode }) {
   const ref = useRef<THREE.Group>(null);
   useFrame(() => {
-    if (ref.current) ref.current.visible = !(frame.interior > 0.995 && frame.progress < 0.93);
+    if (ref.current) ref.current.visible = !(frame.interior > 0.995 && frame.progress < 0.93) && !frame.pocket;
+  });
+  return <group ref={ref}>{children}</group>;
+}
+
+/** The tree and its network are skipped while the camera is in the sealed arena. */
+function NotInPocket({ children }: { children: ReactNode }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame(() => {
+    if (ref.current) ref.current.visible = !frame.pocket;
   });
   return <group ref={ref}>{children}</group>;
 }
@@ -180,11 +234,24 @@ function WorldReady() {
           return ui.get().ready;
         },
         setProgress(p: number) {
-          scrollToProgress(p, true);
+          // Story time (the original journey clock) — kept for the QA scripts.
+          const s = storyToScroll(p);
+          scrollToProgress(s, true);
+          frame.scroll = frame.scrollTarget = s;
           frame.progress = p;
           frame.target = p;
           frame.idle = 10;
           frame.velocity = 0;
+        },
+        setScroll(s: number) {
+          scrollToProgress(s, true);
+          frame.scroll = frame.scrollTarget = s;
+          frame.idle = 10;
+          frame.velocity = 0;
+        },
+        setRegion(id: string, t: number) {
+          const r = REGIONS.find((x) => x.id === id);
+          if (r) this.setScroll(r.start + (r.end - r.start) * t);
         },
         setCamera(v: number[] | null) {
           debugCamera.value = v;

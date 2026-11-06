@@ -10,6 +10,8 @@ export interface WorldContextValue {
   leaves: THREE.Texture;
   glow: THREE.Texture;
   interiorEnv: THREE.Texture;
+  /** Image-based light for the arena. */
+  arenaEnv: THREE.Texture;
   quality: QualitySettings;
 }
 
