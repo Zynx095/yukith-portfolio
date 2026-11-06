@@ -155,14 +155,25 @@ await sleep(300);
 // ── Cuts and region switching ───────────────────────────────────────────────
 const cut = await page.evaluate(async () => {
   const w = window.__world;
-  w.setRegion("arena", 0);
-  await new Promise((r) => setTimeout(r, 300));
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  // Jump, then read once the scroll position has settled there (right after a reload the
+  // browser's scroll restoration can still move the page for a moment).
+  const settleAt = async (region, t) => {
+    for (let i = 0; i < 10; i++) {
+      w.setRegion(region, t);
+      const s = w.frame.scroll;
+      await wait(300);
+      if (Math.abs(w.frame.scroll - s) < 1e-6) return;
+    }
+  };
+  await settleAt("arena", 0);
   const atEdge = w.frame.cut;
-  w.setRegion("arena", 0.5);
-  await new Promise((r) => setTimeout(r, 300));
-  return { atEdge, mid: w.frame.cut };
+  await settleAt("arena", 0.5);
+  const mid = w.frame.cut;
+  await settleAt("library", 1);
+  return { atEdge, mid, libraryExit: w.frame.cut };
 });
-check("cuts fade at a region's edge and clear inside it", cut.atEdge > 0.5 && cut.mid === 0, JSON.stringify(cut));
+check("cuts fade fully at a region's edge and clear inside it", cut.atEdge > 0.95 && cut.mid === 0 && cut.libraryExit > 0.95, JSON.stringify(cut));
 const heap = async () => {
   for (let i = 0; i < 3; i++) {
     await page.evaluate(() => window.gc?.());

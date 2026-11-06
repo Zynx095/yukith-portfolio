@@ -44,7 +44,7 @@ export const TOURNAMENTS: TournamentRecord[] = [
     game: "Valorant",
     result: "4th place",
     level: "Open",
-    detail: "Finished fourth in a Valorant tournament run by AMD. The year and bracket details are not on record, so they are not shown.",
+    detail: "Finished fourth in an AMD Valorant tournament. The year, who ran it and the bracket details are not on record, so they are not shown.",
     evidence: "owner-reported",
   },
   {
