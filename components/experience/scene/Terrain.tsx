@@ -36,9 +36,9 @@ function axis(denseMin: number, denseMax: number, step: number, outerMin: number
   return [...low.reverse(), ...out];
 }
 
-function buildTerrain() {
-  const xs = axis(-200, 230, 2.5, -2600, 2600, 1.1, 34);
-  const zs = axis(-1060, 100, 2.5, -3000, 900, 1.1, 34);
+function buildTerrain(step = 2.5) {
+  const xs = axis(-200, 230, step, -2600, 2600, 1.1, 34);
+  const zs = axis(-1060, 100, step, -3000, 900, 1.1, 34);
   const cols = xs.length;
   const rows = zs.length;
   const n = cols * rows;
@@ -105,8 +105,8 @@ function buildTerrain() {
 }
 
 export function Terrain() {
-  const { assets } = useWorld();
-  const geometry = useMemo(() => buildTerrain(), []);
+  const { assets, quality } = useWorld();
+  const geometry = useMemo(() => buildTerrain(quality.foliage < 0.4 ? 4 : 2.5), [quality.foliage]);
   const material = useMemo(() => createGroundMaterial(assets), [assets]);
   useEffect(
     () => () => {

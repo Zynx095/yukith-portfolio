@@ -15,8 +15,12 @@ import { useWorld } from "./WorldContext";
  * thousands of instanced leaf masses shaded as one living volume.
  */
 
-let cached: WorldTreeData | null = null;
-const treeData = () => (cached ??= generateWorldTree());
+const cache = new Map<number, WorldTreeData>();
+const treeData = (detail: number) => {
+  let d = cache.get(detail);
+  if (!d) cache.set(detail, (d = generateWorldTree(detail)));
+  return d;
+};
 
 /** Keep only the attributes every bark piece shares, so they merge into one draw call. */
 function prepare(g: THREE.BufferGeometry) {
@@ -94,7 +98,8 @@ function buildCanopy(data: WorldTreeData, density: number): Canopy {
 
 export function WorldTree() {
   const { assets, leaves, quality } = useWorld();
-  const data = treeData();
+  // Phones get coarser trunk shells; the silhouette survives, the vertex count drops ~3x.
+  const data = treeData(quality.foliage < 0.4 ? 0.55 : 1);
 
   const parts = useMemo(() => {
     const barkPieces = [data.outerShell, data.crownRim, data.tunnel, ...data.roots, ...data.branches.flat(), ...data.interior].map(prepare);

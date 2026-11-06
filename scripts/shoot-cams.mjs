@@ -28,7 +28,7 @@ const browser = await puppeteer.launch({
   executablePath: process.env.CHROME_PATH || "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
   headless: true,
   args: ["--ignore-gpu-blocklist", "--use-angle=d3d11", "--force_high_performance_gpu", `--window-size=${width},${height}`],
-  defaultViewport: { width, height, deviceScaleFactor: Number(args.dpr || 1) },
+  defaultViewport: { width, height, deviceScaleFactor: Number(args.dpr || 1), isMobile: args.mobile === "true", hasTouch: args.mobile === "true" },
   protocolTimeout: 240000,
 });
 const page = await browser.newPage();

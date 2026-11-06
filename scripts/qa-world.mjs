@@ -1,103 +1,70 @@
-// Interaction QA for the World Tree journey (needs the dev server and ?perf).
-// Checks: relic label → detail panel opens/closes (button + Esc), focus magnet
-// engages when idle and releases on scroll, reverse scrolling, skip link.
-// Usage: node scripts/qa-world.mjs --out <dir> [--url http://localhost:3000]
+// Interaction QA for the journey and the portfolio. Exits non-zero on any failure.
+// Usage: node scripts/qa-world.mjs [--url http://localhost:3000]
+// Checks: skip link is the first tab stop; "/" opens the index with focus inside it; Esc closes it;
+// a relic click opens its record; chapter rail jumps; the page works without JavaScript; no console errors.
 import { createRequire } from "module";
-import fs from "fs";
-import path from "path";
-
 const require = createRequire(new URL("../package.json", import.meta.url));
 const puppeteer = require("puppeteer");
+
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, a, i, arr) => {
     if (a.startsWith("--")) acc.push([a.slice(2), arr[i + 1] && !arr[i + 1].startsWith("--") ? arr[i + 1] : "true"]);
     return acc;
   }, [])
 );
-const outDir = args.out || "./qa-out";
-fs.mkdirSync(outDir, { recursive: true });
+const url = args.url || "http://localhost:3000";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const results = [];
+const check = (name, ok, detail = "") => results.push({ name, ok: !!ok, detail });
 
 const browser = await puppeteer.launch({
-  executablePath: process.env.CHROME_PATH || "C:/Users/Yukith M Joseph/.cache/puppeteer/chrome/win64-152.0.7977.54/chrome-win64/chrome.exe",
+  executablePath: process.env.CHROME_PATH || "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
   headless: true,
-  args: ["--ignore-gpu-blocklist", "--use-angle=d3d11", "--window-size=1920,1080", "--force_high_performance_gpu"],
-  defaultViewport: { width: 1920, height: 1080 },
-  protocolTimeout: 240000,
+  args: ["--ignore-gpu-blocklist", "--use-angle=d3d11"],
+  defaultViewport: { width: 1440, height: 900 },
 });
 const page = await browser.newPage();
-const log = [];
-page.on("console", (m) => log.push(`[${m.type()}] ${m.text()}`));
-page.on("pageerror", (e) => log.push(`[pageerror] ${e.message}`));
-await page.goto((args.url || "http://localhost:3000") + "/?perf", { waitUntil: "networkidle2", timeout: 120000 });
-await page.waitForFunction(() => window.__world && window.__world.ready, { timeout: 120000 });
+const errors = [];
+page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+page.on("pageerror", (e) => errors.push(e.message));
+await page.goto(`${url}/?perf`, { waitUntil: "load", timeout: 120000 });
+await page.waitForFunction(() => window.__world?.ready, { timeout: 120000 });
 
-const results = [];
-const check = (name, ok, detail = "") => {
-  results.push({ name, ok, detail });
-  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? "  — " + detail : ""}`);
-};
-const shot = (name) => page.screenshot({ path: path.join(outDir, name + ".jpg"), type: "jpeg", quality: 80 });
+await page.keyboard.press("Tab");
+const first = await page.evaluate(() => document.activeElement?.textContent?.trim());
+check("skip link is the first tab stop", /Skip the 3D journey/.test(first || ""), first);
 
-// 1 — focus magnet at the Street Hierarchy relic
-const stops = await page.evaluate(() => {
-  const p = 0.555 + 6 * 0.0368;
-  window.__world.setProgress(p);
-  return p;
-});
+await page.keyboard.press("/");
+await sleep(600);
+check("'/' opens the index with focus inside", await page.evaluate(() => !!document.activeElement?.closest("dialog[open]")));
+await page.keyboard.press("Escape");
+await sleep(500);
+check("Esc closes the index", await page.evaluate(() => !document.querySelector("dialog[open]")));
+
+await page.evaluate(() => window.__world.setProgress(0.5275));
 await sleep(2500);
-const phase = await page.evaluate(() => document.querySelector("[data-focus-phase]")?.getAttribute("data-focus-phase") ?? null);
-const label = await page.$("::-p-text(Open the record)");
-check("relic label visible near a stop", !!label, `progress ${stops.toFixed(4)}${phase ? ", phase " + phase : ""}`);
-await shot("01-relic");
-
-// 2 — open the record, then close with Esc
-if (label) {
-  await label.click();
-  await sleep(1200);
-  const panel = await page.$("[role=dialog], aside[aria-label]");
-  check("detail panel opens from the label", !!panel);
-  await shot("02-panel");
-  await page.keyboard.press("Escape");
-  await sleep(900);
-  const after = await page.$("[role=dialog], aside[aria-label]");
-  check("Esc closes the panel", !after);
-}
-
-// 3 — scrolling is never locked: wheel moves the page forward and back
-const y0 = await page.evaluate(() => window.scrollY);
-await page.mouse.move(960, 540);
-for (let i = 0; i < 6; i++) {
-  await page.mouse.wheel({ deltaY: 400 });
-  await sleep(120);
-}
+const hasLabel = await page.evaluate(() => [...document.querySelectorAll("button")].some((b) => /Open the record/.test(b.textContent || "")));
+check("relic label offers 'Open the record'", hasLabel);
+// Click the relic itself (left of centre: the camera frames relics off-centre for their label).
+const box = await page.evaluate(() => ({ w: innerWidth, h: innerHeight }));
+await page.mouse.click(box.w / 3, box.h * 0.52);
 await sleep(900);
-const y1 = await page.evaluate(() => window.scrollY);
-check("wheel scrolls forward", y1 > y0 + 200, `${y0} → ${y1}`);
-for (let i = 0; i < 6; i++) {
-  await page.mouse.wheel({ deltaY: -400 });
-  await sleep(120);
-}
-await sleep(900);
-const y2 = await page.evaluate(() => window.scrollY);
-check("wheel scrolls back (reverse journey)", y2 < y1 - 200, `${y1} → ${y2}`);
+const title = await page.evaluate(() => document.querySelector("dialog[open] #record-title")?.textContent);
+check("clicking a relic opens its record", !!title, title || "");
+await page.keyboard.press("Escape");
+await sleep(500);
 
-// 4 — skip link lands in the portfolio
-const skip = await page.$("::-p-text(Skip to portfolio)");
-if (skip) {
-  await skip.click();
-  await sleep(2500);
-  const atHero = await page.evaluate(() => {
-    const h = document.getElementById("hero");
-    if (!h) return false;
-    const r = h.getBoundingClientRect();
-    return Math.abs(r.top) < window.innerHeight * 0.6;
-  });
-  check("skip link reaches the portfolio", atHero);
-  await shot("03-skip");
-}
+await page.evaluate(() => [...document.querySelectorAll("button")].find((b) => /chapter 2/.test(b.getAttribute("aria-label") || ""))?.click());
+await sleep(3500);
+check("chapter rail jumps", await page.evaluate(() => window.scrollY > 100));
 
-fs.writeFileSync(path.join(outDir, "qa.json"), JSON.stringify({ results, log }, null, 2));
-const errors = log.filter((l) => /\[error\]|\[pageerror\]/.test(l));
-console.log(errors.length ? errors.slice(0, 10).join("\n") : "no console errors");
+const nojs = await browser.newPage();
+await nojs.setJavaScriptEnabled(false);
+await nojs.goto(url, { waitUntil: "load" });
+const n = await nojs.evaluate(() => ({ h1: document.querySelector("h1")?.textContent, journey: getComputedStyle(document.getElementById("journey")).display, projects: document.querySelectorAll("#work article").length }));
+check("portfolio readable without JavaScript", n.h1 && n.journey === "none" && n.projects >= 9, JSON.stringify(n));
+
+check("no console errors", errors.length === 0, errors.slice(0, 3).join(" | "));
 await browser.close();
+for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}${r.detail ? `  (${r.detail})` : ""}`);
+process.exit(results.every((r) => r.ok) ? 0 : 1);

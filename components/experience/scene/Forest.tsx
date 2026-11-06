@@ -63,7 +63,7 @@ const CELL_UV: [number, number][] = [
 ];
 
 function cellMass(cell: number, seed: number) {
-  const g = buildLeafMass(cell === 2 ? 14 : 16, seed, 0.42);
+  const g = buildLeafMass(cell === 2 ? 10 : 11, seed, 0.5);
   const uv = g.getAttribute("uv") as THREE.BufferAttribute;
   const [u0, v0] = CELL_UV[cell];
   for (let i = 0; i < uv.count; i++) uv.setXY(i, u0 + uv.getX(i) * 0.5, v0 + uv.getY(i) * 0.5);
@@ -135,22 +135,24 @@ export function Forest() {
       depth: createFoliageDepthMaterial(leaves, opts),
     };
   }, [assets, leaves]);
-  const meshes = useMemo(
-    () =>
-      variants
-        .map((v, i) =>
-          buildVariant(
-            v,
-            trees.filter((t) => t.variant === i),
-            mats.wood,
-            mats.leaves,
-            mats.depth,
-            31 + i * 7
-          )
-        )
-        .filter((m): m is VariantMeshes => m !== null),
-    [variants, trees, mats]
-  );
+  const meshes = useMemo(() => {
+    // Only trees near the trail can throw a shadow the camera will see; the
+    // rest skip the shadow pass (an instanced mesh is culled as a whole).
+    const near = (t: Placement) => {
+      const p = new THREE.Vector3().setFromMatrixPosition(t.matrix);
+      return pathInfo(p.x, p.z).dist < 90 || Math.hypot(p.x - CAMP.x, p.z - CAMP.z) < 90;
+    };
+    const out: VariantMeshes[] = [];
+    variants.forEach((v, i) => {
+      for (const cast of [true, false]) {
+        const m = buildVariant(v, trees.filter((t) => t.variant === i && near(t) === cast), mats.wood, mats.leaves, mats.depth, 31 + i * 7);
+        if (!m) continue;
+        m.foliage.castShadow = cast;
+        out.push(m);
+      }
+    });
+    return out;
+  }, [variants, trees, mats]);
   useEffect(
     () => () => {
       meshes.forEach((m) => {

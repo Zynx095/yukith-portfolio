@@ -277,8 +277,9 @@ function entranceField(px: number, pz: number, y: number) {
 
 // ─── Lofted shells ────────────────────────────────────────────────────────────
 
-const COLS = 360;
-const ROWS = 230;
+/** Shell resolution; lowered for the low quality tier (see generateWorldTree). */
+let COLS = 360;
+let ROWS = 230;
 const OUTER_U_TILES = 28;
 const INNER_U_TILES = 24;
 const OUTER_V_TILE = 15;
@@ -832,7 +833,9 @@ export interface WorldTreeData {
   anchors: LeafAnchor[];
 }
 
-export function generateWorldTree(): WorldTreeData {
+export function generateWorldTree(detail = 1): WorldTreeData {
+  COLS = Math.round(360 * detail);
+  ROWS = Math.round(230 * detail);
   const outer = buildShellGrid("outer");
   const inner = buildShellGrid("inner", outer.radii);
   const branches = buildBranches();

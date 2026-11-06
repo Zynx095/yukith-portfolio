@@ -7,6 +7,7 @@ import { readScroll } from "@/lib/world/scroll";
 import { ui, useUi } from "@/lib/world/store";
 import { Loader } from "./ui/Loader";
 import { JourneyOverlay } from "./ui/JourneyOverlay";
+import { Sound } from "./ui/Sound";
 
 const WorldCanvas = dynamic(() => import("./WorldCanvas"), { ssr: false });
 
@@ -53,6 +54,7 @@ export function Experience() {
       <div id="journey" aria-hidden="true" style={{ height: `${JOURNEY_VH * 100}svh` }} />
       {mounted && <WorldCanvas />}
       {mounted && <JourneyOverlay />}
+      {mounted && <Sound />}
       <Loader />
     </>
   );
