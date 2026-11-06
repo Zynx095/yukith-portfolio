@@ -104,9 +104,20 @@ function buildTerrain(step = 2.5) {
   return geo;
 }
 
+/**
+ * The heightfield is pure CPU work: build it once per resolution for the visit.
+ * Unmounting releases its GPU buffers (dispose); a later mount re-uploads them.
+ */
+const terrainCache = new Map<number, THREE.BufferGeometry>();
+const terrainGeometry = (step: number) => {
+  let g = terrainCache.get(step);
+  if (!g) terrainCache.set(step, (g = buildTerrain(step)));
+  return g;
+};
+
 export function Terrain() {
   const { assets, quality } = useWorld();
-  const geometry = useMemo(() => buildTerrain(quality.foliage < 0.4 ? 4 : 2.5), [quality.foliage]);
+  const geometry = useMemo(() => terrainGeometry(quality.foliage < 0.4 ? 4 : 2.5), [quality.foliage]);
   const material = useMemo(() => createGroundMaterial(assets), [assets]);
   useEffect(
     () => () => {

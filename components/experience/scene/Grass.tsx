@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { CAMP, PATH_HALF_WIDTH, TREE, lakeDistance, pathInfo, riverHalfWidth, riverInfo, terrainHeight, terrainNormal } from "@/lib/world/layout";
+import { CAMP, PATH_HALF_WIDTH, TREE, lakeDistance, pathInfo, riverHalfWidth, riverInfo, terrainHeight } from "@/lib/world/layout";
 import { SimplexNoise, createRng, smoothstep } from "@/lib/world/noise";
 import { shared } from "@/lib/world/materials";
 import { useWorld } from "./WorldContext";
@@ -20,17 +20,24 @@ import { useWorld } from "./WorldContext";
 
 const FIELD = { x0: -230, z0: -760, x1: 250, z1: 90, step: 2 };
 
-function bakeField() {
+/** The baked field data is pure CPU work; keep it for the visit so re-entering the world is fast. */
+let fieldData: { data: Uint16Array; w: number; h: number } | null = null;
+
+function bakeFieldData() {
+  if (fieldData) return fieldData;
   const noise = new SimplexNoise(919);
-  const nrm = new THREE.Vector3();
   const w = Math.round((FIELD.x1 - FIELD.x0) / FIELD.step) + 1;
   const h = Math.round((FIELD.z1 - FIELD.z0) / FIELD.step) + 1;
+  // Heights once per cell; slopes from the neighbouring cells (no extra samples).
+  const heights = new Float32Array(w * h);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) heights[j * w + i] = terrainHeight(FIELD.x0 + i * FIELD.step, FIELD.z0 + j * FIELD.step);
+  const at = (i: number, j: number) => heights[Math.min(h - 1, Math.max(0, j)) * w + Math.min(w - 1, Math.max(0, i))];
   const data = new Uint16Array(w * h * 4);
   for (let j = 0; j < h; j++) {
     for (let i = 0; i < w; i++) {
       const x = FIELD.x0 + i * FIELD.step;
       const z = FIELD.z0 + j * FIELD.step;
-      const y = terrainHeight(x, z);
+      const y = heights[j * w + i];
       let d = 1;
       const p = pathInfo(x, z);
       const r = riverInfo(x, z);
@@ -41,8 +48,10 @@ function bakeField() {
       d *= smoothstep(1.02, 1.12, lakeDistance(x, z));
       d *= smoothstep(4, 7, camp);
       d *= smoothstep(138, 170, Math.hypot(x - TREE.x, z - TREE.z));
-      terrainNormal(x, z, nrm);
-      d *= smoothstep(0.84, 0.92, nrm.y);
+      const gx = at(i - 1, j) - at(i + 1, j);
+      const gz = at(i, j - 1) - at(i, j + 1);
+      const ny = (4 * FIELD.step) / Math.hypot(gx, 4 * FIELD.step, gz);
+      d *= smoothstep(0.84, 0.92, ny);
       d *= 1 - smoothstep(18, 30, y);
       // Patches and bare spots, so the meadow is not a carpet.
       d *= 0.45 + 0.55 * smoothstep(-0.45, 0.2, noise.fbm2(x * 0.035, z * 0.035, 3));
@@ -54,6 +63,11 @@ function bakeField() {
       data[k + 3] = THREE.DataUtils.toHalfFloat(1);
     }
   }
+  return (fieldData = { data, w, h });
+}
+
+function bakeField() {
+  const { data, w, h } = bakeFieldData();
   const tex = new THREE.DataTexture(data, w, h, THREE.RGBAFormat, THREE.HalfFloatType);
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearFilter;

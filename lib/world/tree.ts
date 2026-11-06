@@ -897,11 +897,30 @@ export function buildHallFloor(): THREE.BufferGeometry {
   return geo;
 }
 
-export function cavityAt(y: number) {
-  const sp = spine(y);
+/** Exact hollow radius at height y: the narrowest of 64 wall samples. */
+function cavityRadiusExact(y: number) {
   let min = Infinity;
   for (let k = 0; k < 64; k++) min = Math.min(min, innerRadius((k / 64) * TAU, y));
-  return { x: sp.x, z: sp.y, radius: min };
+  return min;
+}
+
+/** Hollow radius sampled every metre once, then interpolated (motes, threads and rings call this thousands of times). */
+const CAVITY_STEP = 1;
+const CAVITY_MIN = -12;
+const CAVITY_MAX = 420;
+let cavityTable: Float32Array | null = null;
+
+/** Hall axis and the hollow's smallest radius at local height y. */
+export function cavityAt(y: number) {
+  const sp = spine(y);
+  if (!cavityTable) {
+    cavityTable = new Float32Array(Math.round((CAVITY_MAX - CAVITY_MIN) / CAVITY_STEP) + 1);
+    for (let i = 0; i < cavityTable.length; i++) cavityTable[i] = cavityRadiusExact(CAVITY_MIN + i * CAVITY_STEP);
+  }
+  const f = (clamp(y, CAVITY_MIN, CAVITY_MAX) - CAVITY_MIN) / CAVITY_STEP;
+  const i = Math.min(Math.floor(f), cavityTable.length - 2);
+  const t = f - i;
+  return { x: sp.x, z: sp.y, radius: cavityTable[i] + (cavityTable[i + 1] - cavityTable[i]) * t };
 }
 
 /** Local position of a relic's plinth (the alcove floor, a little inside the hall). */
