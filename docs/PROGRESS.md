@@ -29,7 +29,7 @@ the no-JS page and the rollback tag `portfolio-pre-world-tree-production` are al
 | 7 — Performance | ✅ measured | below |
 | 8 — Visual quality | ✅ reviewed | screenshots of every region and chapter checked at 1920×1080 |
 | 9 — Tests | ✅ | below |
-| 10 — Release | see `docs/DEPLOYMENT.md` | |
+| 10 — Release | ✅ deployed 2026-11-06 | merges `2ac30b6` and `6bd6527` on www.yukithjoseph.me; all four browser suites pass against the live site (`docs/DEPLOYMENT.md`); rollback tag unchanged |
 
 ### Decisions
 
