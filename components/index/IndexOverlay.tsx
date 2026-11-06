@@ -5,7 +5,7 @@ import { closeIndex, openGame, openIndex, openRecord, ui, useUi } from "@/lib/wo
 import { DISCOVERABLES, useDiscoveryCount } from "@/lib/discoveries";
 import { getLenis, scrollToId } from "@/components/providers/smooth-scroll";
 import { scrollToProgress } from "@/lib/world/scroll";
-import { CHAPTERS } from "@/lib/world/chapters";
+import { CHAPTERS, JOURNEY_VH } from "@/lib/world/chapters";
 import { COLLABORATIONS, FEATURED, MORE_WORK } from "@/src/data/projects";
 import { SECTIONS } from "@/components/portfolio/sections";
 import { useView } from "@/lib/view";
@@ -116,7 +116,7 @@ export function IndexOverlay() {
                   <ol className="mt-3 space-y-1">
                     {CHAPTERS.map((c, i) => (
                       <li key={c.id}>
-                        <button type="button" onClick={() => go(() => scrollToProgress(c.start + (i === 0 ? 0 : 0.012)))} className="group flex w-full gap-3 py-1.5 text-left">
+                        <button type="button" onClick={() => go(() => scrollToProgress(c.start + (i === 0 ? 0 : 0.3 / JOURNEY_VH)))} className="group flex w-full gap-3 py-1.5 text-left">
                           <span className="label w-6 pt-1 tabular-nums">{String(i + 1).padStart(2, "0")}</span>
                           <span>
                             <span className="group-hover:text-signal">{c.title}</span>

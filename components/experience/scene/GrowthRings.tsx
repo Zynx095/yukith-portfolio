@@ -241,7 +241,7 @@ export function GrowthRings() {
 
   useFrame(() => {
     const p = frame.progress;
-    if (group.current) group.current.visible = p > 0.74 && p < 0.97;
+    if (group.current) group.current.visible = p > 0.74 && p < 0.97 && !frame.region;
     // Each ring brightens as the camera reaches it.
     res.parts.forEach((part, k) => {
       const d = Math.abs(p - RINGS[k].progress);

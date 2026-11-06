@@ -1,5 +1,5 @@
 import { getLenis } from "@/components/providers/smooth-scroll";
-import { JOURNEY_VH } from "./chapters";
+import { JOURNEY_VH, storyToScroll } from "./chapters";
 
 /**
  * The journey is driven by the page's own scroll position: a tall spacer
@@ -26,7 +26,7 @@ export function readScroll() {
   };
 }
 
-/** Scroll the page to a journey progress (used by "skip" links and the perf harness). */
+/** Scroll the page to a journey scroll position, 0..1 (chapter jumps, the perf harness). */
 export function scrollToProgress(p: number, immediate = false) {
   const end = Math.max(1, journeyHeight() - window.innerHeight);
   const top = p * end;
@@ -42,3 +42,6 @@ export function scrollToPortfolio() {
   if (lenis) lenis.scrollTo(top, { duration: 2.4 });
   else window.scrollTo({ top, behavior: "smooth" });
 }
+
+/** Scroll the page to a story time (lib/world/chapters.ts). */
+export const scrollToStory = (story: number, immediate = false) => scrollToProgress(storyToScroll(story), immediate);

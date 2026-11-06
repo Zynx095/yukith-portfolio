@@ -257,9 +257,11 @@ const clickView = (page, v) => page.click(`button[data-opt="${v}"]`);
     h1: document.querySelector("h1")?.textContent,
     projects: document.querySelectorAll("#work article").length,
     details: document.querySelectorAll("#work details").length,
-    sections: ["about", "work", "experience", "leadership", "achievements", "skills", "education", "contact"].filter((id) => document.getElementById(id)).length,
+    sections: ["about", "work", "experience", "competitions", "gaming", "leadership", "skills", "interests", "education", "contact"].filter((id) => document.getElementById(id)).length,
+    events: document.querySelectorAll("#competitions [id^='event-']").length,
+    ranks: ["valorant-rank", "csgo-rank", "mlbb-rank", "amd-valorant"].filter((id) => document.getElementById(id)).length,
   }));
-  check("no-JS: the page is the complete Classic portfolio", n.view === "classic" && n.journey === "none" && n.loader === "none" && n.h1 && n.projects >= 9 && n.sections === 8, JSON.stringify(n));
+  check("no-JS: the page is the complete Classic portfolio", n.view === "classic" && n.journey === "none" && n.loader === "none" && n.h1 && n.projects >= 9 && n.sections === 10 && n.events === 20 && n.ranks === 4, JSON.stringify(n));
   check("no-JS: controls that need JavaScript are hidden", n.switcher === "none");
   await page.click("#project-warden summary");
   const opened = await page.evaluate(() => document.querySelector("#project-warden details")?.open);
