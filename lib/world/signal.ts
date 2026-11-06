@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import { PATH_CURVE, PATH_HALF_WIDTH, TREE, TREE_ENTRANCE_ANGLE, WAYSTONES, terrainHeight, waystonePosition } from "./layout";
 import { ARCHIVE, HALL_CENTER, hallAxis } from "./archive";
-import { createRng, range } from "./noise";
-import { HALL_FLOOR, cavityAt, spine } from "./tree";
+import { createRng } from "./noise";
+import { HALL_FLOOR, cavityAt, rootPaths, spine, treeSkeleton } from "./tree";
+import { tubeUpVectors } from "./geometry";
 
 /**
  * The root network — the site's one "technological" element (docs/ART_DIRECTION.md).
@@ -16,7 +17,7 @@ export interface Thread {
   points: THREE.Vector3[];
   radius: number;
   /** Which group the thread belongs to (inside threads light up per relic). */
-  group: "outside" | "entrance" | "hall" | "chimney";
+  group: "outside" | "entrance" | "veins" | "hall" | "chimney";
   /** For hall threads: the relic index it feeds. */
   relic?: number;
 }
@@ -64,20 +65,25 @@ export function buildThreads(): Thread[] {
     threads.push({ points: [a, onGround(mid.x + 0.6, mid.z), b], radius: 0.06, group: "outside" });
   });
 
-  // Roots of light radiating from the base of the World Tree across the clearing.
-  for (let k = 0; k < 14; k++) {
-    const a0 = (k / 14) * Math.PI * 2 + range(rng, -0.15, 0.15);
-    if (Math.abs(((a0 - TREE_ENTRANCE_ANGLE + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < 0.35) continue;
-    const reach = range(rng, 120, 210);
-    const pts: THREE.Vector3[] = [];
-    const steps = 40;
-    for (let s = steps; s >= 0; s--) {
-      const f = s / steps;
-      const r = 58 + f * reach;
-      const a = a0 + Math.sin(f * 5 + k) * 0.08 + f * f * 0.25 * Math.sin(k * 2.1);
-      pts.push(onGround(TREE.x + Math.cos(a) * r, TREE.z + Math.sin(a) * r));
-    }
-    threads.push({ points: pts, radius: 0.09, group: "entrance" });
+  // The tree's own veins: every main root carries a thread along its crest,
+  // from where it surfaces in the clearing to where it merges into the trunk,
+  // and the signal climbs the aerial roots that have reached the ground.
+  const origin = new THREE.Vector3(TREE.x, TREE.y, TREE.z);
+  for (const root of rootPaths()) {
+    if (!root.main && rng() < 0.4) continue;
+    const ups = tubeUpVectors(root.points);
+    const pts = root.points.map((p, i) => p.clone().addScaledVector(ups[i], root.radii[i] * root.ellipse[i][1] * 1.14).add(origin));
+    threads.push({ points: pts.reverse(), radius: root.main ? 0.5 : 0.28, group: "veins" });
+  }
+  for (const prop of treeSkeleton().props) {
+    // A loose helix up the pillar, from the ground into the limb.
+    const pts = prop.points.map((p, i, all) => {
+      const f = 1 - i / (all.length - 1);
+      const a = f * Math.PI * 3 + p.x;
+      const r = prop.radii[i] * 1.12;
+      return new THREE.Vector3(p.x + Math.cos(a) * r, p.y, p.z + Math.sin(a) * r).add(origin);
+    });
+    threads.push({ points: pts.reverse(), radius: 0.24, group: "veins" });
   }
 
   // Inside: a star from the heart to every relic's plinth.

@@ -471,7 +471,7 @@ export function createWaterMaterial() {
  * Pulses travel outward like packets; `aSeed` desynchronises threads. Additive,
  * HDR (so bloom picks it up), stronger as night falls.
  */
-export function createSignalMaterial(opts: { color?: string; intensity?: number; speed?: number } = {}) {
+export function createSignalMaterial(opts: { color?: string; intensity?: number; speed?: number; floor?: number } = {}) {
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -485,6 +485,7 @@ export function createSignalMaterial(opts: { color?: string; intensity?: number;
           uIntensity: { value: opts.intensity ?? 1 },
           uSpeed: { value: opts.speed ?? 0.12 },
           uFocus: { value: 0 },
+          uFloor: { value: opts.floor ?? 0.18 },
         },
       ]),
       uTime: shared.uTime,
@@ -513,7 +514,7 @@ export function createSignalMaterial(opts: { color?: string; intensity?: number;
       #include <common>
       #include <fog_pars_fragment>
       uniform vec3 uColor;
-      uniform float uIntensity, uSpeed, uFocus;
+      uniform float uIntensity, uSpeed, uFocus, uFloor;
       uniform float uTime, uNight;
       varying vec2 vUv;
       varying float vSeed;
@@ -525,7 +526,7 @@ export function createSignalMaterial(opts: { color?: string; intensity?: number;
         float s = vUv.x * 9.0 - uTime * uSpeed * 9.0 + vSeed * 17.0;
         float pulse = pow(0.5 + 0.5 * sin(s), 18.0) + pow(0.5 + 0.5 * sin(s * 0.37 + 1.7), 30.0) * 0.7;
         float base = 0.12 + 0.88 * mix(0.25, 1.0, uNight);
-        float a = (0.18 * base + pulse * (0.9 + uFocus)) * rim * uIntensity;
+        float a = (uFloor * base + pulse * (0.9 + uFocus)) * rim * uIntensity;
         vec3 glow = uColor * a;
         gl_FragColor = vec4(glow, 1.0);
         #include <fog_fragment>

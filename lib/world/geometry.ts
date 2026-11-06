@@ -28,6 +28,33 @@ export interface TubeOptions {
 const _up = new THREE.Vector3(0, 1, 0);
 
 /**
+ * The "up" axis of buildTube's cross-sections at every point (parallel-transport
+ * frames, started perpendicular to the first tangent and biased to world-up).
+ * Lets other systems place things exactly on a tube's crest.
+ */
+export function tubeUpVectors(points: THREE.Vector3[]): THREE.Vector3[] {
+  const n = points.length;
+  const tangents: THREE.Vector3[] = [];
+  for (let i = 0; i < n; i++) tangents.push(new THREE.Vector3().subVectors(points[Math.min(n - 1, i + 1)], points[Math.max(0, i - 1)]).normalize());
+  let nrm = new THREE.Vector3().crossVectors(tangents[0], _up);
+  if (nrm.lengthSq() < 1e-6) nrm.set(1, 0, 0);
+  nrm.normalize().cross(tangents[0]).normalize();
+  const out: THREE.Vector3[] = [];
+  for (let i = 0; i < n; i++) {
+    if (i > 0) {
+      const axis = new THREE.Vector3().crossVectors(tangents[i - 1], tangents[i]);
+      const s = axis.length();
+      if (s > 1e-6) {
+        axis.divideScalar(s);
+        nrm = nrm.clone().applyAxisAngle(axis, Math.acos(THREE.MathUtils.clamp(tangents[i - 1].dot(tangents[i]), -1, 1)));
+      } else nrm = nrm.clone();
+    }
+    out.push(nrm.clone());
+  }
+  return out;
+}
+
+/**
  * Variable-radius tube along a polyline using parallel-transport frames
  * (no twisting), with optional elliptical sections and organic bumps.
  * Produces UVs suitable for the bark textures (u around, v along length).

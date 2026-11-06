@@ -63,7 +63,8 @@ function buildCanopy(data: WorldTreeData, density: number): Canopy {
   const blob: number[] = [];
 
   for (const a of data.anchors) {
-    const count = Math.max(1, Math.round((a.scale / 5.5) * density));
+    // Shallow pads need fewer masses than round clumps of the same footprint.
+    const count = Math.max(1, Math.round((a.scale / 5.5) * density * (0.55 + 0.45 * a.flat)));
     blobCenter.copy(a.position).add(new THREE.Vector3(0, -a.scale * 0.32, 0));
     for (let k = 0; k < count; k++) {
       // Points inside a flattened ellipsoid, biased to its upper, outer skin.
@@ -71,7 +72,7 @@ function buildCanopy(data: WorldTreeData, density: number): Canopy {
       const th = rng() * Math.PI * 2;
       const ring = Math.sqrt(1 - u * u);
       const rr = a.scale * 0.55 * Math.pow(rng(), 0.45);
-      p.set(Math.cos(th) * ring * rr, Math.abs(u) * rr * 0.62 * (u < 0 ? 0.55 : 1), Math.sin(th) * ring * rr).add(a.position);
+      p.set(Math.cos(th) * ring * rr, Math.abs(u) * rr * 0.62 * (u < 0 ? 0.55 : 1) * a.flat, Math.sin(th) * ring * rr).add(a.position);
       const size = a.scale * range(rng, 0.17, 0.26);
       e.set(range(rng, -0.4, 0.4), rng() * Math.PI * 2, range(rng, -0.4, 0.4));
       q.setFromEuler(e);
