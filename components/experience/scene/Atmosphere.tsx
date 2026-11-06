@@ -9,9 +9,10 @@ import { INTERIOR_FOG, createSkyMaterial, createSkyState, skyAt } from "@/lib/wo
 import { shared } from "@/lib/world/materials";
 import { frame } from "@/lib/world/store";
 import { CAMP, TREE, TREE_ENTRANCE_ANGLE } from "@/lib/world/layout";
-import { spine } from "@/lib/world/tree";
-import { HALL_CENTER } from "@/lib/world/archive";
-import { FOCUS_STOPS } from "@/lib/world/journey";
+import { cavityAt, spine } from "@/lib/world/tree";
+import { HALL_CENTER, hallAxis } from "@/lib/world/archive";
+import { FOCUS_STOPS, RINGS } from "@/lib/world/journey";
+import { RING_STAGES } from "@/lib/world/rings";
 import { isOff } from "@/lib/world/debug";
 import { useWorld } from "./WorldContext";
 
@@ -171,7 +172,7 @@ export function Atmosphere() {
         sun.intensity = state.sunIntensity * day;
       } else {
         sun.color.copy(MOON_COLOR);
-        sun.intensity = 0.55 * moon;
+        sun.intensity = 0.95 * moon;
       }
       sun.intensity *= 1 - inside * 0.97;
       const extent = shadowExtent(p);
@@ -226,9 +227,30 @@ export function Atmosphere() {
         fire.distance = 34;
       }
     }
-    // A warm key over the relic nearest the camera (inside only).
+    // A warm key over the relic nearest the camera (inside only) — or, in the rings
+    // chapter, the light of the ring in view, from across the hollow.
     const key = keyRef.current;
-    if (key) {
+    let nearRing = -1;
+    let ringDist = Infinity;
+    RINGS.forEach((r, i) => {
+      const d = Math.abs(r.progress - p);
+      if (d < ringDist) {
+        ringDist = d;
+        nearRing = i;
+      }
+    });
+    if (key && ringDist < 0.035 && inside > 0.5) {
+      const r = RINGS[nearRing];
+      const c = cavityAt(r.localY);
+      hallAxis(r.localY - 2.5, tmp.focus);
+      tmp.fwd.set(Math.cos(r.theta), 0, Math.sin(r.theta));
+      key.position.copy(tmp.focus).addScaledVector(tmp.fwd, -c.radius * 0.2);
+      key.color.set(RING_STAGES[nearRing].color);
+      key.distance = 48;
+      key.intensity = 95 * (1 - THREE.MathUtils.smoothstep(ringDist, 0.01, 0.035));
+    } else if (key) {
+      key.color.set("#ffd29a");
+      key.distance = 16;
       let nearest = FOCUS_STOPS[0];
       let best = Infinity;
       for (const stop of FOCUS_STOPS) {

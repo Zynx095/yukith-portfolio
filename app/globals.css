@@ -180,6 +180,17 @@ html.lenis body {
   }
 }
 
+/* Growth-ring caption: on wide but short screens the year's groups sit in two columns. */
+@media (min-width: 64rem) and (max-height: 880px) {
+  .ring-panel {
+    max-width: 47rem;
+  }
+  .ring-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 2rem;
+  }
+}
+
 /* Classic: sections rise into place as they enter the viewport (CSS only, no JS). */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {

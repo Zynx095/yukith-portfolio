@@ -4,15 +4,14 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { ARCHIVE, HALL_CENTER, PLINTH_HEIGHT, hallAxis } from "@/lib/world/archive";
-import { createBarkMaterial, createSignalMaterial, shared } from "@/lib/world/materials";
-import { threadGeometry } from "@/lib/world/signal";
-import { RINGS } from "@/lib/world/journey";
+import { createBarkMaterial, shared } from "@/lib/world/materials";
 import { buildTube } from "@/lib/world/geometry";
 import { SimplexNoise, createRng, range } from "@/lib/world/noise";
 import { HALL_FLOOR, cavityAt } from "@/lib/world/tree";
 import { TREE } from "@/lib/world/layout";
 import { frame } from "@/lib/world/store";
 import { Relics } from "./Relics";
+import { GrowthRings } from "./GrowthRings";
 import { useWorld } from "./WorldContext";
 
 /**
@@ -45,7 +44,7 @@ function heartKnot() {
 }
 
 /** Shafts of light: tapered, open-ended cones with a soft additive falloff. */
-function createShaftMaterial() {
+export function createShaftMaterial() {
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -173,20 +172,7 @@ export function ArchiveHall() {
       const q = new THREE.Quaternion().setFromRotationMatrix(m).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2));
       return { geometry: g, position: top, quaternion: q };
     });
-    // Growth rings: a band of sap-light carved round the hollow for every year.
-    const ringThreads = RINGS.map((r) => {
-      const pts: THREE.Vector3[] = [];
-      for (let k = 0; k <= 160; k++) {
-        const a = (k / 160) * Math.PI * 2;
-        const c = cavityAt(r.localY);
-        const ax = hallAxis(r.localY);
-        pts.push(new THREE.Vector3(ax.x + Math.cos(a) * (c.radius - 0.2), ax.y + Math.sin(a * 3) * 0.25, ax.z + Math.sin(a) * (c.radius - 0.2)));
-      }
-      return { points: pts, radius: 0.22, group: "chimney" as const };
-    });
-    const rings = threadGeometry(ringThreads, 6);
-    const ringMat = createSignalMaterial({ color: "#e0a94a", intensity: 1.5, speed: 0.025 });
-    return { plinth, cap, stone, bronze, knotGeos, knotMat, coreMat, shaftMat, shafts, rings, ringMat };
+    return { plinth, cap, stone, bronze, knotGeos, knotMat, coreMat, shaftMat, shafts };
   }, [assets]);
 
   useEffect(
@@ -200,8 +186,6 @@ export function ArchiveHall() {
       res.coreMat.dispose();
       res.shaftMat.dispose();
       res.shafts.forEach((s) => s.geometry.dispose());
-      res.rings.dispose();
-      res.ringMat.dispose();
     },
     [res]
   );
@@ -233,7 +217,7 @@ export function ArchiveHall() {
       {res.shafts.map((s, i) => (
         <mesh key={i} geometry={s.geometry} material={res.shaftMat} position={s.position} quaternion={s.quaternion} renderOrder={7} />
       ))}
-      <mesh geometry={res.rings} material={res.ringMat} renderOrder={4} />
+      <GrowthRings />
       <Motes />
       <Relics />
     </group>

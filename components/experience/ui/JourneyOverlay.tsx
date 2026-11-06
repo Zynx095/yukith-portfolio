@@ -6,8 +6,10 @@ import { CHAPTERS } from "@/lib/world/chapters";
 import { frame, openRecord, useUi } from "@/lib/world/store";
 import { scrollToProgress } from "@/lib/world/scroll";
 import { projectById, DOMAIN_LABEL } from "@/src/data/projects";
-import { ringEntries } from "@/lib/world/rings";
-import { ArrowRight } from "@/components/shared/Icons";
+import { RING_STAGES, type RingKind } from "@/lib/world/rings";
+import { ArrowRight, GitHubIcon, LinkedInIcon, MailIcon } from "@/components/shared/Icons";
+import { socialData } from "@/src/data/social";
+import { scrollToId } from "@/components/providers/smooth-scroll";
 
 /**
  * Everything drawn over the World Tree: one line of narration at a time, the
@@ -56,9 +58,34 @@ function Narration({ beat }: { beat: number }) {
               <p className="mt-2 font-display text-[clamp(1.4rem,3vw,2.3rem)] leading-snug text-paper [text-shadow:0_2px_24px_rgba(0,0,0,0.55)]">{b.line}</p>
             )}
             {b.sub && <p className="mt-3 text-sm text-paper/80 md:text-base [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">{b.sub}</p>}
+            {b.contact && <CrownContact />}
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** The journey's last beat is actionable: write, connect, or read everything in writing. */
+function CrownContact() {
+  const email = socialData.find((l) => l.platform === "Email")!;
+  const linkedIn = socialData.find((l) => l.platform === "LinkedIn")!;
+  const github = socialData.find((l) => l.platform === "GitHub")!;
+  const pill = "inline-flex min-h-11 items-center gap-2 rounded-full border border-paper/30 bg-ink/40 px-4 text-sm text-paper backdrop-blur-sm transition-colors hover:border-signal hover:text-signal";
+  return (
+    <div className="pointer-events-auto mt-6 flex flex-wrap items-center gap-2">
+      <a href={email.url} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-paper px-5 text-sm font-medium text-ink transition-colors hover:bg-signal">
+        <MailIcon size={16} /> {email.handle}
+      </a>
+      <a href={linkedIn.url} target="_blank" rel="noopener noreferrer" className={pill}>
+        <LinkedInIcon size={16} /> LinkedIn
+      </a>
+      <a href={github.url} target="_blank" rel="noopener noreferrer" className={pill}>
+        <GitHubIcon size={16} /> GitHub
+      </a>
+      <button type="button" onClick={() => scrollToId("record")} className={pill}>
+        Read the full portfolio <ArrowRight />
+      </button>
     </div>
   );
 }
@@ -171,24 +198,71 @@ function RelicLabel() {
   );
 }
 
-function RingCard({ ring }: { ring: number }) {
-  const r = ring >= 0 ? RINGS[ring] : null;
-  const entries = r ? ringEntries(r.year) : [];
+const RING_LABEL: Record<RingKind, string> = {
+  Milestone: "Milestone",
+  Built: "Built",
+  Experience: "Industry work",
+  Result: "Results",
+  Role: "Roles taken on",
+  Entered: "Also competed in",
+  Continuing: "Still running",
+};
+
+/**
+ * The year in view, as a short documentary caption beside the ring rather than
+ * a card: the three-year timeline, the stage, one line, and what it holds.
+ * Every item here is one node on the ring.
+ */
+function RingPanel({ ring }: { ring: number }) {
+  const stage = ring >= 0 ? RING_STAGES[ring] : null;
   return (
-    <div className={`pointer-events-none absolute right-4 top-24 w-[min(380px,calc(100vw-2rem))] transition-all duration-500 md:right-12 md:top-28 ${r ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`} aria-live="polite">
-      {r && (
-        <div className="rounded-xl border border-line bg-ink/80 p-5 backdrop-blur-sm">
-          <p className="label">Ring</p>
-          <p className="font-display text-5xl text-sap">{r.year}</p>
-          <ul className="mt-4 space-y-3">
-            {entries.map((e) => (
-              <li key={e.title + e.detail}>
-                <p className="label text-[0.6rem]">{e.kind}</p>
-                <p className="leading-tight">{e.title}</p>
-                <p className="text-sm text-paper-dim">{e.detail}</p>
+    <div
+      className={`pointer-events-none absolute inset-0 flex items-start transition-opacity duration-500 md:items-center ${stage ? "opacity-100" : "opacity-0"}`}
+      aria-live="polite"
+    >
+      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/25 to-transparent md:bg-gradient-to-r md:from-black/65 md:via-black/30 md:via-35% md:to-transparent md:to-60%" />
+      {stage && (
+        <div key={stage.year} className="ring-panel relative w-full max-w-[33rem] px-5 pt-20 md:px-12 md:pb-16 md:pt-16" style={{ animation: "beat-in 800ms var(--ease-out-soft) both" }}>
+          <ol className="label flex items-center gap-2 text-[0.62rem]" aria-label="Timeline">
+            {RING_STAGES.map((st, i) => (
+              <li key={st.year} className="flex items-center gap-2" aria-current={i === ring ? "step" : undefined}>
+                <span className={i === ring ? "" : i < ring ? "text-paper/75" : "text-paper/40"} style={i === ring ? { color: st.color } : undefined}>
+                  {st.year}
+                </span>
+                {i < RING_STAGES.length - 1 && (
+                  <span aria-hidden="true" className="relative block h-px w-7 overflow-hidden bg-paper/25 md:w-10">
+                    <span className="absolute inset-0 origin-left bg-paper/70" style={{ transform: `scaleX(${i < ring ? 1 : 0})` }} />
+                  </span>
+                )}
               </li>
             ))}
-          </ul>
+          </ol>
+          <p className="mt-3 font-display text-[clamp(2.75rem,min(7vw,9.5svh),5.5rem)] leading-[0.9] tracking-tight [text-shadow:0_2px_30px_rgba(0,0,0,0.5)] md:mt-5" style={{ color: stage.color }}>
+            {stage.year}
+          </p>
+          <p className="label mt-3 text-paper">
+            Ring {ring + 1} · {stage.stage}
+          </p>
+          <p className="mt-3 max-w-md font-display text-lg leading-snug text-paper [text-shadow:0_1px_16px_rgba(0,0,0,0.6)] md:text-xl">{stage.summary}</p>
+          <dl className="ring-groups mt-4 grid gap-y-2.5 md:mt-5 md:gap-y-3">
+            {stage.groups.map((g) => (
+              <div key={g.kind}>
+                <dt className="label text-[0.6rem]" style={{ color: stage.color }}>
+                  {RING_LABEL[g.kind]}
+                </dt>
+                <dd>
+                  <ul className="mt-1 space-y-0.5">
+                    {g.items.map((it) => (
+                      <li key={it.title + (it.detail ?? "")} className="text-[0.85rem] leading-snug text-paper md:text-[0.95rem] [text-shadow:0_1px_10px_rgba(0,0,0,0.7)]">
+                        {it.title}
+                        {it.detail && <span className="text-paper/70"> — {it.detail}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
       )}
     </div>
@@ -270,7 +344,7 @@ export function JourneyOverlay() {
       <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/45 to-transparent" />
       <Outro />
       <Narration beat={beat} />
-      <RingCard ring={ring} />
+      <RingPanel ring={ring} />
       <RelicLabel />
       <PetHint />
       <ScrollCue />

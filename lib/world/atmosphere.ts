@@ -40,7 +40,7 @@ const KEYS = [
   { p: 0.32, elev: 4.5, sun: C("#ffb56a"), sunI: 3.0, zen: C("#33598f"), hor: C("#d8b993"), horSun: C("#f79d52"), fog: C("#b29c84"), dens: 0.0007, env: 0.6, night: 0.05 },
   { p: 0.43, elev: -1.5, sun: C("#ff8c4a"), sunI: 1.2, zen: C("#26406f"), hor: C("#b48d7a"), horSun: C("#e0784a"), fog: C("#7a6a68"), dens: 0.00075, env: 0.42, night: 0.45 },
   { p: 0.9, elev: -6, sun: C("#ff7a45"), sunI: 0.35, zen: C("#141f3d"), hor: C("#4f4b62"), horSun: C("#8c5a52"), fog: C("#3b3a4a"), dens: 0.0009, env: 0.28, night: 0.85 },
-  { p: 1.0, elev: -8, sun: C("#ff7a45"), sunI: 0.2, zen: C("#0d1530"), hor: C("#3b3c56"), horSun: C("#6f4c4f"), fog: C("#2c2e40"), dens: 0.0008, env: 0.24, night: 1 },
+  { p: 1.0, elev: -8, sun: C("#ff7a45"), sunI: 0.2, zen: C("#101a3a"), hor: C("#454766"), horSun: C("#6f4c4f"), fog: C("#30334a"), dens: 0.0008, env: 0.34, night: 1 },
 ];
 
 const tmpA = new THREE.Color();

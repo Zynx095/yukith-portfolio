@@ -19,19 +19,21 @@ export interface Beat {
   kicker: string;
   line: string;
   sub?: string;
+  /** Show the contact links with this beat. */
+  contact?: boolean;
 }
 
 export const BEATS: Beat[] = [
   { start: 0.0, end: 0.045, kicker: "Bengaluru, India", line: "Yukith M Joseph", sub: "Computer Science & Engineering · Networks · Presidency University" },
-  { start: 0.075, end: 0.105, kicker: "Home", line: "Every build starts somewhere. Mine started here — with family, and Bella." },
+  { start: 0.075, end: 0.105, kicker: "Home", line: "Every build starts somewhere. Mine started at home — family, Bella, and a PC built from scrap parts." },
   { start: 0.11, end: 0.14, kicker: "Off the clock", line: "Elden Ring, Valorant, Bleach, Lookism — and stories I write myself." },
   { start: 0.145, end: 0.168, kicker: "The lesson", line: "Never give up." },
   { start: 0.18, end: 0.215, kicker: "The path", line: "Four things I keep coming back to." },
   { start: 0.295, end: 0.335, kicker: "The World Tree", line: "Everything I build connects here." },
   { start: 0.345, end: 0.378, kicker: "The network", line: "Its roots carry the signal — like the networks I study." },
   { start: 0.405, end: 0.44, kicker: "The archive", line: "Nine projects inside. Click any relic to open its record." },
-  { start: 0.825, end: 0.85, kicker: "The rings", line: "Every year leaves a ring." },
-  { start: 0.94, end: 1.01, kicker: "The crown", line: "Let's build something.", sub: "yukithj@gmail.com" },
+  { start: 0.806, end: 0.826, kicker: "The rings", line: "Every year leaves a ring.", sub: "2024 to 2026, read from the bottom up." },
+  { start: 0.948, end: 1.01, kicker: "The crown", line: "Let's build something.", sub: "Internships, research, projects or a hackathon team — write to me.", contact: true },
 ];
 
 // ─── Archive stops ──────────────────────────────────────────────────────────
@@ -66,12 +68,18 @@ export const FOCUS_STOPS: FocusStop[] = ARCHIVE.map((a, i) => ({
   camera: orbitPoint(a.slot.theta, ORBIT_R + 6.5, EYE - 0.9),
 }));
 
-/** Achievement rings carved inside the trunk: local heights. */
+/**
+ * Growth rings carved inside the trunk, one per year (content: lib/world/rings.ts).
+ * `theta` is the direction of the wall the camera looks at; the year's nodes
+ * are spread across that wall.
+ */
 export const RINGS = [
-  { year: "2024", localY: 58, progress: 0.845 },
-  { year: "2025", localY: 128, progress: 0.87 },
-  { year: "2026", localY: 198, progress: 0.895 },
+  { year: "2024", localY: 58, progress: 0.838, theta: TREE_ENTRANCE_ANGLE + Math.PI * 0.35 },
+  { year: "2025", localY: 128, progress: 0.866, theta: TREE_ENTRANCE_ANGLE + Math.PI * 0.35 + 2.1 },
+  { year: "2026", localY: 198, progress: 0.894, theta: TREE_ENTRANCE_ANGLE + Math.PI * 0.35 + 4.2 },
 ];
+/** Height of the camera below a ring, and how far across the hollow it stands (fraction of the radius). */
+export const RING_VIEW = { below: 9.5, across: 0.45 };
 
 // ─── Camera keyframes ─────────────────────────────────────────────────────────
 
@@ -117,6 +125,8 @@ function archiveKeyframes(): Keyframe[] {
 const first = FOCUS_STOPS[0];
 const last = FOCUS_STOPS[FOCUS_STOPS.length - 1];
 const way = (i: number) => waystonePosition(i);
+/** A point in the World Tree's local frame (origin on the trunk axis at ground level). */
+const crown = (x: number, y: number, z: number) => V(TREE.x + x, TREE.y + y, TREE.z + z);
 const chimney = (localY: number, lookUp = 60, sideTheta = 0, side = 0) => {
   const c = cavityAt(localY);
   const pos = V(TREE.x + c.x + Math.cos(sideTheta) * side, TREE.y + localY, TREE.z + c.z + Math.sin(sideTheta) * side);
@@ -125,12 +135,21 @@ const chimney = (localY: number, lookUp = 60, sideTheta = 0, side = 0) => {
 
 const ringKeys = (): Keyframe[] =>
   RINGS.flatMap((r, k) => {
-    // Rise to each ring and look across at the band carved into the far wall.
-    const th = entryTheta + Math.PI * 0.35 + k * 2.1;
+    // Stand below each ring on the near side of the hollow and look across and up at
+    // the far wall, so the ring sweeps over the frame as an arc with the year's nodes on it.
+    const th = r.theta;
     const c = cavityAt(r.localY);
-    const wall = V(TREE.x + c.x + Math.cos(th) * c.radius, TREE.y + r.localY + 1, TREE.z + c.z + Math.sin(th) * c.radius);
-    const pos = V(TREE.x + c.x - Math.cos(th) * c.radius * 0.35, TREE.y + r.localY - 3, TREE.z + c.z - Math.sin(th) * c.radius * 0.35);
-    return [{ p: r.progress, pos, look: wall, fov: 52 }];
+    const look = V(TREE.x + c.x + Math.cos(th - 0.2) * c.radius, TREE.y + r.localY + 0.5, TREE.z + c.z + Math.sin(th - 0.2) * c.radius);
+    const pos = V(TREE.x + c.x - Math.cos(th) * c.radius * RING_VIEW.across, TREE.y + r.localY - RING_VIEW.below, TREE.z + c.z - Math.sin(th) * c.radius * RING_VIEW.across);
+    const keys: Keyframe[] = [{ p: r.progress, pos, look, fov: 62 }];
+    // Between two rings, rise up the axis looking up at the next one: the years above
+    // show as bands of light stacked up the hollow.
+    const next = RINGS[k + 1];
+    if (next) {
+      const midY = r.localY + (next.localY - r.localY) * 0.42;
+      keys.push({ p: (r.progress + next.progress) / 2, pos: hallAxis(midY).add(V(Math.cos(r.theta) * 2, 0, Math.sin(r.theta) * 2)), look: hallAxis(next.localY + 34), fov: 64 });
+    }
+    return keys;
   });
 
 export const KEYFRAMES: Keyframe[] = [
@@ -165,9 +184,14 @@ export const KEYFRAMES: Keyframe[] = [
   { p: last.progress + 0.02, pos: orbitPoint(ARCHIVE[ARCHIVE.length - 1].slot.theta + 0.4, 4, EYE + 3), look: hallAxis(60), fov: 56 },
   ...ringKeys(),
   { p: 0.925, ...chimney(300, 80), fov: 56 },
-  // The crown: out of the broken top, over the canopy, the valley below at blue hour.
-  { p: 0.955, pos: hallAxis(380), look: V(20, 120, -300), fov: 56 },
-  { p: 1.0, pos: V(TREE.x + 30, TREE.y + 620, TREE.z + 120), look: V(20, 0, -150), fov: 54 },
+  // The crown: out of the broken top, up between the leaders (a corridor kept clear of
+  // foliage — see scripts/check-tree.ts), then above the tiers of the canopy with the
+  // valley below at night and the trail of signal leading home.
+  { p: 0.942, pos: hallAxis(372), look: crown(0, 640, 130), fov: 60 },
+  { p: 0.956, pos: crown(-30, 470, 110), look: crown(-60, 900, 260), fov: 60 },
+  { p: 0.97, pos: crown(-60, 640, 150), look: V(0, 300, -250), fov: 58 },
+  { p: 0.985, pos: crown(-60, 760, 155), look: V(0, 330, -120), fov: 57 },
+  { p: 1.0, pos: crown(-60, 860, 160), look: V(0, 360, 20), fov: 58 },
 ];
 
 // ─── Smooth pacing: monotone cubic (PCHIP) from progress to keyframe index ──
