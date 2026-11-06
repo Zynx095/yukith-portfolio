@@ -236,7 +236,7 @@ function Watchdog() {
       const blocked = now - lastTick > 2500;
       lastTick = now;
       const s = ui.get();
-      const shouldRun = s.ready && s.inWorld && s.openId === null && !s.indexOpen && document.visibilityState === "visible";
+      const shouldRun = s.ready && s.inWorld && s.openId === null && !s.indexOpen && !s.gameOpen && document.visibilityState === "visible";
       if (!shouldRun || blocked) {
         last.current = now;
         return;
@@ -262,7 +262,7 @@ export default function WorldCanvas() {
   const maxDpr = Math.min(QUALITY[tier].maxDpr, typeof window !== "undefined" ? Math.max(1, window.devicePixelRatio) : 1);
   const [dpr, setDpr] = useState(() => Math.min(typeof window !== "undefined" ? window.devicePixelRatio : 1, maxDpr));
   useEffect(() => ui.set({ quality: tier }), [tier]);
-  const open = useUi((s) => s.openId !== null || s.indexOpen);
+  const open = useUi((s) => s.openId !== null || s.indexOpen || s.gameOpen);
   // Controlled frameloop (R3F re-applies this prop on every render). No frames until every
   // shader has compiled — a frame drawn mid-compile blocks on each program in turn and
   // defeats the driver's parallel compilation — and none while the portfolio or a dialog

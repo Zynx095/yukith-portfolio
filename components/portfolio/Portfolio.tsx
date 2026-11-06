@@ -1,7 +1,7 @@
 import { profile, education } from "@/src/data/profile";
 import { COLLABORATIONS, FEATURED, MORE_WORK, DOMAIN_LABEL, PROJECTS, type Project } from "@/src/data/projects";
 import { experience } from "@/src/data/experience";
-import { achievements } from "@/src/data/achievements";
+import { EVENTS, EVENT_RESULTS } from "@/src/data/events";
 import { leadership } from "@/src/data/leadership";
 import { skillGroups, certifications } from "@/src/data/skills";
 import { interests, home } from "@/src/data/about";
@@ -11,6 +11,10 @@ import { ArrowRight, ArrowUpRight, FileIcon, MailIcon } from "@/components/share
 import { BackToTree } from "./BackToTree";
 import { ProjectDetails } from "./ProjectDetails";
 import { Chip, Section } from "./Section";
+import { Competitions } from "./Competitions";
+import { Gaming } from "./Gaming";
+import { Interests } from "./Interests";
+import { Origins } from "./Origins";
 
 /**
  * The written portfolio. It is the Classic presentation on its own (light,
@@ -49,14 +53,12 @@ function Stack({ items, label = "Stack" }: { items: readonly string[]; label?: s
 
 export function Portfolio() {
   const email = socialData.find((s) => s.platform === "Email")!;
-  const placements = achievements.filter((a) => a.tier === "placement");
-  const participation = achievements.filter((a) => a.tier === "participation");
   const ownProjects = PROJECTS.filter((p) => !p.collaboration);
   const stats = [
     { value: ownProjects.length, label: "projects, each linked to its source" },
     { value: experience.length, label: "industry engagements — internship and capstone" },
-    { value: placements.length, label: "competition finals and placings" },
-    { value: leadership.length, label: "leadership and organising roles" },
+    { value: EVENTS.length, label: "hackathons, competitions and events" },
+    { value: EVENT_RESULTS.length, label: "finals and placings" },
   ];
 
   return (
@@ -150,6 +152,9 @@ export function Portfolio() {
               <p className="mt-1 font-display text-xl text-paper">{profile.lesson}</p>
             </li>
           </ul>
+        </div>
+        <div className="mt-20 border-t border-line pt-12">
+          <Origins />
         </div>
       </Section>
 
@@ -289,8 +294,24 @@ export function Portfolio() {
         </ol>
       </Section>
 
+      {/* ── Hackathons & competitions ───────────────────────────── */}
+      <Section
+        id="competitions"
+        n="04"
+        label="Competitions"
+        title="Hackathons, competitions and events."
+        intro={`${EVENTS.length} events — results first. Taking part is recorded as taking part; a placing is shown only where a source states it.`}
+      >
+        <Competitions />
+      </Section>
+
+      {/* ── Gaming ───────────────────────────────────────────────── */}
+      <Section id="gaming" n="05" label="Gaming" title="Competitive gaming.">
+        <Gaming />
+      </Section>
+
       {/* ── Leadership ───────────────────────────────────────────── */}
-      <Section id="leadership" n="04" label="Leadership" title="Events organised, communities run.">
+      <Section id="leadership" n="06" label="Leadership" title="Events organised, communities run.">
         <ul className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-2">
           {leadership.map((r) => (
             <li key={r.role + r.organisation} className="bg-ink p-6">
@@ -311,48 +332,8 @@ export function Portfolio() {
         </ul>
       </Section>
 
-      {/* ── Achievements ─────────────────────────────────────────── */}
-      <Section id="achievements" n="05" label="Achievements" title="Finals reached, and where I placed.">
-        <div className="grid gap-14 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-          <div>
-            <h3 className="label">Results</h3>
-            <ul className="mt-4 divide-y divide-line border-y border-line">
-              {placements.map((a) => (
-                <li key={a.title} className="grid grid-cols-[1fr_auto] items-baseline gap-6 py-5">
-                  <span>
-                    <span className="block font-display text-[1.4rem] leading-snug">{a.result}</span>
-                    <span className="block text-paper-dim">
-                      {a.title}
-                      {a.organiser ? ` — ${a.organiser}` : ""}
-                    </span>
-                  </span>
-                  <span className="label tabular-nums text-sap">{a.year}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3 className="label">Competitions entered</h3>
-            <ul className="mt-4 space-y-3">
-              {participation.map((a) => (
-                <li key={a.title} className="flex items-baseline justify-between gap-4 border-b border-line pb-3">
-                  <span>
-                    {a.title}
-                    <span className="block text-sm text-paper-dim">
-                      {a.result}
-                      {a.organiser ? ` · ${a.organiser}` : ""}
-                    </span>
-                  </span>
-                  <span className="label tabular-nums">{a.year}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </Section>
-
       {/* ── Skills ───────────────────────────────────────────────── */}
-      <Section id="skills" n="06" label="Skills" title="Tools I've used — and where." intro="Each skill names the project it was used in, or the coursework it comes from.">
+      <Section id="skills" n="07" label="Skills" title="Tools I've used — and where." intro="Each skill names the project it was used in, or the coursework it comes from.">
         <div className="grid gap-x-10 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
           {skillGroups.map((g) => (
             <div key={g.title}>
@@ -370,8 +351,13 @@ export function Portfolio() {
         </div>
       </Section>
 
+      {/* ── Library ──────────────────────────────────────────────── */}
+      <Section id="interests" n="08" label="Library" title="Manhwa, manga, anime — and stories of my own.">
+        <Interests />
+      </Section>
+
       {/* ── Education & certification ────────────────────────────── */}
-      <Section id="education" n="07" label="Education" title="Education and certification.">
+      <Section id="education" n="09" label="Education" title="Education and certification.">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
           <article className="rounded-2xl border border-line p-6 md:p-8">
             <p className="label">{education.period}</p>
@@ -406,7 +392,7 @@ export function Portfolio() {
       </Section>
 
       {/* ── Contact ──────────────────────────────────────────────── */}
-      <Section id="contact" n="08" label="Contact" title="Write to me about internships, research, projects or a hackathon team.">
+      <Section id="contact" n="10" label="Contact" title="Write to me about internships, research, projects or a hackathon team.">
         <a href={email.url} className="group inline-flex max-w-full items-center gap-4 break-all font-display text-[clamp(1.6rem,5vw,3.75rem)] leading-none underline decoration-line-strong decoration-1 underline-offset-[0.2em] hover:decoration-signal">
           {email.handle}
           <ArrowRight size={32} className="shrink-0 transition-transform duration-300 group-hover:translate-x-1" />

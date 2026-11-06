@@ -57,6 +57,8 @@ export interface UiState {
   /** Project record open in the panel. */
   openId: string | null;
   indexOpen: boolean;
+  /** The aim-trainer mini-game is open (the world pauses). */
+  gameOpen: boolean;
   /** World is (at least partly) visible — false once the portfolio covers it. */
   inWorld: boolean;
   quality: QualityTier;
@@ -74,6 +76,7 @@ const initial: UiState = {
   hoverId: null,
   openId: null,
   indexOpen: false,
+  gameOpen: false,
   inWorld: true,
   quality: "high",
   sound: false,
@@ -130,4 +133,6 @@ export function resetWorldState(overrides: Partial<UiState> = {}) {
 export const openRecord = (id: string) => ui.set({ openId: id, indexOpen: false });
 export const closeRecord = () => ui.set({ openId: null });
 export const openIndex = () => ui.set({ indexOpen: true });
+export const openGame = () => ui.set({ gameOpen: true, indexOpen: false, openId: null });
+export const closeGame = () => ui.set({ gameOpen: false });
 export const closeIndex = () => ui.set({ indexOpen: false });

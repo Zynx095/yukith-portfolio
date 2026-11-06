@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { closeIndex, openIndex, openRecord, ui, useUi } from "@/lib/world/store";
+import { closeIndex, openGame, openIndex, openRecord, ui, useUi } from "@/lib/world/store";
+import { DISCOVERABLES, useDiscoveryCount } from "@/lib/discoveries";
 import { getLenis, scrollToId } from "@/components/providers/smooth-scroll";
 import { scrollToProgress } from "@/lib/world/scroll";
 import { CHAPTERS } from "@/lib/world/chapters";
@@ -20,6 +21,7 @@ import { CloseIcon } from "@/components/shared/Icons";
 export function IndexOverlay() {
   const open = useUi((s) => s.indexOpen);
   const view = useView();
+  const found = useDiscoveryCount();
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -140,6 +142,15 @@ export function IndexOverlay() {
                   ))}
                 </ul>
               </nav>
+              <div>
+                <h3 className="label">Play &amp; discover</h3>
+                <button type="button" onClick={() => go(openGame)} className="mt-3 inline-flex min-h-11 items-center rounded-full border border-line-strong px-4 text-sm hover:border-signal hover:text-signal">
+                  Open the aim trainer
+                </button>
+                <p className="mt-3 text-sm text-paper-dim">
+                  Discovered {found} of {DISCOVERABLES.length} things in the world — relics, exhibits, memories and more.
+                </p>
+              </div>
               <div>
                 <h3 className="label">Contact</h3>
                 <SocialLinks className="mt-3" />
