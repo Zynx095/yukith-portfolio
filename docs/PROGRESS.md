@@ -23,7 +23,7 @@ Branch: `feat/world-tree-rebuild`, merged into `main` for production (see `docs/
 | K — Browser testing | ✅ | `qa-world.mjs` 8/8, `qa-view.mjs` 34/34 |
 | L — Documentation | ✅ | README, ASSETS, this file, DEPLOYMENT |
 | M — Presentations | ✅ | Immersive / Classic, switcher, `?view=`, fallbacks, no-JS Classic |
-| N — Production | see `docs/DEPLOYMENT.md` | rollback tag `portfolio-pre-world-tree-production` |
+| N — Production | ✅ deployed 2026-11-06 | `971c029` on www.yukithjoseph.me; verified live (`docs/DEPLOYMENT.md`); rollback tag `portfolio-pre-world-tree-production` |
 
 ## Decisions
 
