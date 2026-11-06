@@ -42,7 +42,7 @@ export function TopBar() {
           </span>
           <span className="hidden text-sm sm:block">
             <span className="block leading-tight">Yukith M Joseph</span>
-            <span className="label hidden text-[0.6rem] md:block">Networks · Security · Applied AI</span>
+            <span className="label hidden whitespace-nowrap text-[0.6rem] md:block xl:hidden 2xl:block">Networks · Security · Applied AI</span>
           </span>
           <span className="sr-only sm:hidden">Yukith M Joseph — introduction</span>
         </a>
