@@ -64,6 +64,8 @@ export interface Project {
   links: ProjectLink[];
   /** Shown as a relic in the World Tree's archive hall. */
   featured: boolean;
+  /** Co-built work in someone else's repository — listed under Collaborations, never as a solo build. */
+  collaboration?: boolean;
   relic?: RelicKind;
   gallery?: ProjectImage[];
 }
@@ -328,7 +330,7 @@ export const PROJECTS: Project[] = [
     stack: ["TypeScript", "Next.js", "PWA", "WebAuthn"],
     contribution: "Solo build.",
     status: "Hackathon build · synthetic data",
-    context: "Built for PromptWars 2026",
+    context: "Built solo for PromptWars × ACM SRM Student Chapter (SRM Institute of Science and Technology), Oct 2026",
     links: [gh("promptwarsXACM"), { label: "Live demo", href: "https://fairshift-nine-red.vercel.app" }],
     featured: false,
   },
@@ -425,11 +427,37 @@ export const PROJECTS: Project[] = [
     links: [gh("Dayflow---Human-Resource-Management-System")],
     featured: false,
   },
+  {
+    id: "prana",
+    title: "PRANA",
+    kind: "Design-intelligence web app · collaboration",
+    tagline: "Local AI image generation and architectural image analysis in one web app.",
+    domain: "ai",
+    period: "Jul 2026",
+    problem: "Generating concept visuals and analysing architectural photos usually means juggling separate cloud tools.",
+    summary:
+      "A collaborative project in Pranathi Nagabhushana's repository: a Next.js client and a FastAPI server that route prompts to a local ComfyUI image-generation workflow and images to Gemini Vision for architectural analysis, with a local project library.",
+    features: [
+      "Local image generation through ComfyUI (FLUX workflow)",
+      "Architectural and campus image analysis with Gemini Vision",
+      "Next.js client and FastAPI server over a REST API",
+      "Local JSON and image storage for generated assets",
+    ],
+    stack: ["Next.js", "FastAPI", "Python", "ComfyUI", "Gemini Vision"],
+    contribution:
+      "Collaboration with Pranathi Nagabhushana, who owns the repository. Yukith's commits (Jul 2026) set up the project foundation and integrated local ComfyUI FLUX generation.",
+    status: "Collaboration · 2 of 5 commits",
+    links: [{ label: "Source (Pranathi's repository)", href: "https://github.com/nagabhushanapranathi-droid/NvidiaProject" }],
+    featured: false,
+    collaboration: true,
+  },
 ];
 
 export const projectById = (id: string) => PROJECTS.find((p) => p.id === id);
 export const FEATURED = PROJECTS.filter((p) => p.featured);
-export const MORE_WORK = PROJECTS.filter((p) => !p.featured);
+export const MORE_WORK = PROJECTS.filter((p) => !p.featured && !p.collaboration);
+/** Work co-built in someone else's repository. */
+export const COLLABORATIONS = PROJECTS.filter((p) => p.collaboration);
 
 export const DOMAIN_LABEL: Record<ProjectDomain, string> = {
   security: "Security",

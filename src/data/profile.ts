@@ -10,11 +10,12 @@ export const profile = {
   role: "Computer Science & Engineering student · Networks",
   location: "Bengaluru, India",
   /** One-line introduction. */
-  intro: "I build security systems, applied-AI tools and the occasional robot — and I like them to explain themselves.",
+  intro: "I build working systems across security, applied AI, networking and hardware — and I'm precise about what each one does.",
   /** A few sentences for the about section. */
   about: [
-    "I'm a Computer Science & Engineering student at Presidency University, Bengaluru, specialising in networks. Most of what I build sits where networks, security and applied AI meet: agents that are checked before they act, devices that have to keep earning trust, traffic that is analysed without being decrypted.",
-    "I learn by shipping. Hackathons are where a lot of my projects start, and I like the people side of them as much as the code — so I organise them too, from InnovateX to club events at my university.",
+    "I study Computer Science & Engineering, specialising in networks, at Presidency University, Bengaluru. Most of what I build sits where networks, security and applied AI meet: a gateway that keeps re-checking whether an IoT device can still be trusted, a policy layer that inspects an AI agent's actions before they run, a pipeline that looks for threats in encrypted traffic without decrypting it.",
+    "Several of these projects began at hackathons, and I compete often: a Top 30 national final at Smart India Hackathon 2025, national finalist at Nirmith 2026, runner-up twice at InnovateX 4.0. I help run them too — I organised the InnovateX Tech Fest and lead events for three university clubs.",
+    "Every project here links to its source, and every record says what is simulated, partial or not deployed yet.",
   ],
   focus: ["Network security", "Applied AI", "Distributed systems", "Embedded systems"],
   currentlyLearning: ["Threat management", "Intrusion detection systems", "Advanced networking concepts"],
