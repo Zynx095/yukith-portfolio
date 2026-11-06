@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { JOURNEY_VH } from "@/lib/world/chapters";
 import { readScroll } from "@/lib/world/scroll";
 import { ui, useUi } from "@/lib/world/store";
+import { Loader } from "./ui/Loader";
+import { JourneyOverlay } from "./ui/JourneyOverlay";
 
 const WorldCanvas = dynamic(() => import("./WorldCanvas"), { ssr: false });
 
@@ -46,10 +48,12 @@ export function Experience() {
     <>
       {/* Without JavaScript the journey cannot run: hide it and show the portfolio. */}
       <noscript>
-        <style>{`#journey{display:none!important}`}</style>
+        <style>{`#journey,#loader{display:none!important}`}</style>
       </noscript>
       <div id="journey" aria-hidden="true" style={{ height: `${JOURNEY_VH * 100}svh` }} />
       {mounted && <WorldCanvas />}
+      {mounted && <JourneyOverlay />}
+      <Loader />
     </>
   );
 }

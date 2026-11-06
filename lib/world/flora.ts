@@ -35,7 +35,7 @@ function branch(start: THREE.Vector3, dir: THREE.Vector3, length: number, radius
     p.addScaledVector(d, length / segs);
     pts.push(p.clone());
   }
-  const curve = resampleCurve(pts, segs * 3);
+  const curve = resampleCurve(pts, segs * 2);
   const radii = curve.map((_, i) => lerp(radius, radius * 0.18, i / (curve.length - 1)));
   return { pts: curve, radii };
 }
@@ -53,7 +53,7 @@ export function generateBroadleaf(seed: number): TreeVariant {
   );
   const r0 = height * 0.038;
   geos.push(
-    buildTube({ points: trunkPts, radii: trunkPts.map((_, i) => lerp(r0 * 1.35, r0 * 0.62, i / (trunkPts.length - 1))), radialSegments: 10, bumpiness: 0.1, noise: N, vScale: 3, uRepeats: 2 })
+    buildTube({ points: trunkPts, radii: trunkPts.map((_, i) => lerp(r0 * 1.35, r0 * 0.62, i / (trunkPts.length - 1))), radialSegments: 8, bumpiness: 0.1, noise: N, vScale: 3, uRepeats: 2 })
   );
   const primaries = 5 + Math.floor(rng() * 2);
   for (let b = 0; b < primaries; b++) {
@@ -65,13 +65,13 @@ export function generateBroadleaf(seed: number): TreeVariant {
     const dir = new THREE.Vector3(Math.cos(a), up, Math.sin(a));
     const len = height * range(rng, 0.32, 0.46);
     const br = branch(start, dir, len, r0 * 0.62, rng, 0.25);
-    geos.push(buildTube({ points: br.pts, radii: br.radii, radialSegments: 7, bumpiness: 0.06, noise: N, vScale: 3, uRepeats: 1 }));
+    geos.push(buildTube({ points: br.pts, radii: br.radii, radialSegments: 5, bumpiness: 0.06, noise: N, vScale: 3, uRepeats: 1 }));
     for (let c = 0; c < 3; c++) {
       const ci = Math.floor(lerp(0.45, 0.95, c / 2) * (br.pts.length - 1));
       const cs = br.pts[ci];
       const cdir = new THREE.Vector3(Math.cos(a + range(rng, -1, 1)), range(rng, 0.3, 0.9), Math.sin(a + range(rng, -1, 1)));
       const sub = branch(cs, cdir, len * range(rng, 0.35, 0.55), br.radii[ci] * 0.55, rng, 0.2, 3);
-      geos.push(buildTube({ points: sub.pts, radii: sub.radii, radialSegments: 5, vScale: 3, uRepeats: 1 }));
+      geos.push(buildTube({ points: sub.pts, radii: sub.radii, radialSegments: 3, vScale: 3, uRepeats: 1 }));
       const tip = sub.pts[sub.pts.length - 1];
       const s = range(rng, 2.6, 3.8);
       clumps.push({ position: tip.clone(), scale: new THREE.Vector3(s, s * 0.85, s), cell: rng() < 0.5 ? 0 : 1 });
@@ -101,7 +101,7 @@ export function generateConifer(seed: number): TreeVariant {
   const clumps: Clump[] = [];
   const trunkPts = resampleCurve([new THREE.Vector3(0, -1, 0), new THREE.Vector3(range(rng, -0.3, 0.3), height * 0.5, range(rng, -0.3, 0.3)), new THREE.Vector3(0, height, 0)], 22);
   const r0 = height * 0.024;
-  geos.push(buildTube({ points: trunkPts, radii: trunkPts.map((_, i) => lerp(r0 * 1.3, 0.05, i / (trunkPts.length - 1))), radialSegments: 9, bumpiness: 0.06, noise: N, vScale: 3, uRepeats: 2 }));
+  geos.push(buildTube({ points: trunkPts, radii: trunkPts.map((_, i) => lerp(r0 * 1.3, 0.05, i / (trunkPts.length - 1))), radialSegments: 7, bumpiness: 0.06, noise: N, vScale: 3, uRepeats: 2 }));
   const whorls = 9;
   for (let w = 0; w < whorls; w++) {
     const t = lerp(0.22, 0.95, w / (whorls - 1));
@@ -113,7 +113,7 @@ export function generateConifer(seed: number): TreeVariant {
       const start = new THREE.Vector3(0, y, 0);
       const dir = new THREE.Vector3(Math.cos(a), -0.08, Math.sin(a));
       const br = branch(start, dir, reach, r0 * 0.4 * (1 - t * 0.6) + 0.04, rng, 0.35, 3);
-      geos.push(buildTube({ points: br.pts, radii: br.radii, radialSegments: 4, vScale: 3, uRepeats: 1 }));
+      geos.push(buildTube({ points: br.pts, radii: br.radii, radialSegments: 3, vScale: 3, uRepeats: 1 }));
       for (let c = 0; c < 2; c++) {
         const ci = Math.floor(lerp(0.4, 1, c) * (br.pts.length - 1));
         const s = reach * range(rng, 0.55, 0.75) + 0.6;

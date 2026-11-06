@@ -186,6 +186,25 @@ export class SimplexNoise {
     return sum / norm;
   }
 
+  /** 2D ridged multifractal with crest weighting — mountain ranges. Range ~[0, 1]. */
+  ridged2(x: number, y: number, octaves = 5): number {
+    let sum = 0;
+    let amp = 0.5;
+    let norm = 0;
+    let weight = 1;
+    for (let o = 0; o < octaves; o++) {
+      let n = 1 - Math.abs(this.noise2(x, y));
+      n *= n * weight;
+      weight = Math.min(1, n * 1.6);
+      sum += amp * n;
+      norm += amp;
+      amp *= 0.5;
+      x *= 2.03;
+      y *= 2.03;
+    }
+    return sum / norm;
+  }
+
   /** Ridged multifractal — sharp crests, useful for rock strata and bark. Range ~[0, 1]. */
   ridged3(x: number, y: number, z: number, octaves = 4): number {
     let sum = 0;

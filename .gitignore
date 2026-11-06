@@ -6,3 +6,5 @@ node_modules/
 
 .handoff/
 tsconfig.tsbuildinfo
+
+.cache/

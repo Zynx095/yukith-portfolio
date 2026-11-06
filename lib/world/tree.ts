@@ -2,7 +2,6 @@ import * as THREE from "three";
 import { SimplexNoise, clamp, createRng, lerp, range, smoothstep } from "./noise";
 import { buildTube, resampleCurve } from "./geometry";
 import { TREE_ENTRANCE_ANGLE } from "./layout";
-type ArtifactId = string;
 
 /**
  * The World Tree generator — an Erdtree-scale colossus.
@@ -189,36 +188,29 @@ function cavityProfile(y: number) {
   return pts[pts.length - 1][1];
 }
 
-// ─── Archive slots (artifact mounts inside the hall) ────────────────────────
+// ─── Archive slots (relic alcoves around the hall) ──────────────────────────
 
-export type MountKind = "roots" | "alcove" | "branch" | "fungus" | "suspended";
+/**
+ * The archive hall at the foot of the hollow: relics stand in alcoves carved
+ * into the wall all round the hall, leaving the side facing the entrance open.
+ * Slot i is assigned to a project by lib/world/archive.ts.
+ */
+export const ARCHIVE_COUNT = 9;
+/** Angular gap kept free on each side of the entrance. */
+const ENTRANCE_CLEAR = 0.95;
+const ALCOVE = { y: 2.2, centerY: 7.2, halfWidth: 4.2, halfHeight: 5.6, depth: 5.4 };
 
 export interface ArchiveSlot {
-  id: ArtifactId;
-  y: number;
+  index: number;
   theta: number;
-  mount: MountKind;
+  /** Local Y of the alcove floor (plinths stand on it). */
+  y: number;
 }
 
-const FAR = ENTRANCE.angle + Math.PI;
-const SLOT_ORDER: [ArtifactId, MountKind][] = [
-  ["aura", "roots"],
-  ["etth", "alcove"],
-  ["shadowguard", "branch"],
-  ["qshield", "fungus"],
-  ["jiva", "alcove"],
-  ["sugarai", "fungus"],
-  ["street-hierarchy", "alcove"],
-  ["trc", "branch"],
-  ["achievements", "alcove"],
-  ["leadership", "suspended"],
-  ["experience", "alcove"],
-];
-export const ARCHIVE_SLOTS: ArchiveSlot[] = SLOT_ORDER.map(([id, mount], i) => ({
-  id,
-  mount,
-  y: 12 + i * 16,
-  theta: FAR + 0.25 + i * 1.72,
+export const ARCHIVE_SLOTS: ArchiveSlot[] = Array.from({ length: ARCHIVE_COUNT }, (_, i) => ({
+  index: i,
+  y: ALCOVE.y,
+  theta: ENTRANCE.angle + ENTRANCE_CLEAR + (i * (TAU - 2 * ENTRANCE_CLEAR)) / (ARCHIVE_COUNT - 1),
 }));
 
 /** Inner (cavity) wall radius at (θ, y), clamped so the wall keeps a minimum thickness. */
@@ -233,12 +225,13 @@ export function innerRadius(theta: number, y: number, outer?: number) {
   // An antechamber opening towards the portal at floor level.
   const de = angleDiff(theta, ENTRANCE.angle);
   r += 8 * Math.exp(-(de * de) / (0.42 * 0.42)) * Math.exp(-Math.max(y, 0) / 32);
-  // Niches carved into the wall behind alcove-mounted artifacts.
+  // Alcoves carved into the wall behind every relic: round-topped arches with a flat floor.
   for (const slot of ARCHIVE_SLOTS) {
-    if (slot.mount !== "alcove") continue;
-    const da = angleDiff(theta, slot.theta) * r;
-    const dy = y - (slot.y + 2);
-    r += 4.6 * Math.exp(-(da * da) / 26 - (dy * dy) / 30);
+    const da = (angleDiff(theta, slot.theta) * r) / ALCOVE.halfWidth;
+    const dy = (y - ALCOVE.centerY) / ALCOVE.halfHeight;
+    const below = y < ALCOVE.y ? (ALCOVE.y - y) / 0.6 : 0;
+    const shape = Math.pow(Math.abs(da), 3) + Math.pow(Math.max(dy, -0.85), 2) + below * below;
+    r += ALCOVE.depth * Math.exp(-Math.pow(shape, 2.2) * 1.4);
   }
   const o = outer ?? outerRadius(theta, y);
   return Math.min(r, o - TRUNK.wallMin);
@@ -786,7 +779,7 @@ export function wallPoint(theta: number, y: number, inset: number) {
   return new THREE.Vector3(sp.x + Math.cos(theta) * r, y, sp.y + Math.sin(theta) * r);
 }
 
-/** Root tendrils climbing the hall walls, floor roots, and the branch stubs that carry artifacts. */
+/** Root tendrils climbing the hall walls and roots running across the hall floor. */
 function buildInterior(): THREE.BufferGeometry[] {
   const rng = createRng(5151);
   const geos: THREE.BufferGeometry[] = [];
@@ -795,8 +788,8 @@ function buildInterior(): THREE.BufferGeometry[] {
     let theta = (k / 20) * TAU + range(rng, -0.12, 0.12);
     if (Math.abs(angleDiff(theta, ENTRANCE.angle)) < 0.45) theta += 0.7;
     const top = range(rng, 40, 230);
-    // Never let a tendril hang between a relic and the hall.
-    if (ARCHIVE_SLOTS.some((s) => s.y - 8 < top && Math.abs(angleDiff(theta, s.theta)) < 0.5)) continue;
+    // Never let a tendril hang in front of a relic's alcove.
+    if (ARCHIVE_SLOTS.some((s) => Math.abs(angleDiff(theta, s.theta)) < 0.3)) continue;
     const ctrl: THREE.Vector3[] = [];
     const steps = 9;
     for (let s = 0; s <= steps; s++) {
@@ -812,24 +805,16 @@ function buildInterior(): THREE.BufferGeometry[] {
   for (let k = 0; k < 12; k++) {
     let theta = (k / 12) * TAU + 0.3;
     if (Math.abs(angleDiff(theta, ENTRANCE.angle)) < 0.4) theta += 0.5;
+    // Roots grow between the alcoves, never out of one.
+    if (ARCHIVE_SLOTS.some((s) => Math.abs(angleDiff(theta, s.theta)) < 0.16)) continue;
+    // Short: they buttress the wall but stay clear of the camera's circle around the hall.
     const a = wallPoint(theta, 5, 0.5);
-    const b = wallPoint(theta + 0.12, 2.6, 8);
-    const c = wallPoint(theta + 0.2, 1.6, 15);
-    const d = wallPoint(theta + 0.26, -0.8, 20);
-    const pts = resampleCurve([a, b, c, d], 26);
-    const r0 = range(rng, 1.6, 2.8);
+    const b = wallPoint(theta + 0.06, 2.6, 4);
+    const c = wallPoint(theta + 0.1, 1.4, 7.5);
+    const d = wallPoint(theta + 0.13, -0.8, 10);
+    const pts = resampleCurve([a, b, c, d], 22);
+    const r0 = range(rng, 1.3, 2.2);
     geos.push(buildTube({ points: pts, radii: pts.map((_, i) => lerp(r0, 0.5, i / (pts.length - 1))), radialSegments: 10, bumpiness: 0.12, noise: N, vScale: 5, uRepeats: 2 }));
-  }
-  // Branch stubs growing inward from the wall: artifacts rest at their tips.
-  for (const slot of ARCHIVE_SLOTS) {
-    if (slot.mount !== "branch") continue;
-    const a = wallPoint(slot.theta, slot.y - 3.2, -3);
-    const b = wallPoint(slot.theta + 0.04, slot.y - 2.2, 4);
-    const c = wallPoint(slot.theta + 0.02, slot.y - 1.6, 7.5);
-    const pts = resampleCurve([a, b, c], 20);
-    geos.push(
-      buildTube({ points: pts, radii: pts.map((_, i) => lerp(3.2, 1.6, i / (pts.length - 1))), radialSegments: 14, bumpiness: 0.1, noise: N, vScale: 5, uRepeats: 3, capEnd: true })
-    );
   }
   return geos;
 }
@@ -916,19 +901,7 @@ export function cavityAt(y: number) {
   return { x: sp.x, z: sp.y, radius: min };
 }
 
-/** Local position where an archive slot's artifact rests. */
+/** Local position of a relic's plinth (the alcove floor, a little inside the hall). */
 export function slotPosition(slot: ArchiveSlot) {
-  switch (slot.mount) {
-    case "branch":
-      return wallPoint(slot.theta + 0.02, slot.y + 0.2, 7.5);
-    case "alcove":
-      return wallPoint(slot.theta, slot.y + 1.2, 2.2);
-    case "fungus":
-      return wallPoint(slot.theta, slot.y + 0.8, 5.2);
-    case "suspended":
-      return wallPoint(slot.theta, slot.y + 1, 7);
-    case "roots":
-    default:
-      return wallPoint(slot.theta, slot.y + 0.6, 6);
-  }
+  return wallPoint(slot.theta, slot.y, 2.6);
 }
